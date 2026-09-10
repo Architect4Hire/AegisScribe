@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AegisScribe Armory UI Reference</title>
+<meta name="description" content="The AegisScribe design system and screen reference for the character armory — tokens, components, and four screens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* ============================================================================
+   AEGISSCRIBE DESIGN SYSTEM — tokens
+   Single-theme by decision, not omission: an armory is read beside the game,
+   and the game is dark. Every colour is painted explicitly so the page holds
+   on any host background.
+   ========================================================================= */
+:root{
+  /* --- ground & surfaces: cold gunmetal, hue-biased toward the brass accent's
+         complement so the neutrals read as chosen rather than inherited grey --- */
+  --ground:        #0A0E13;
+  --surface-1:     #111823;
+  --surface-2:     #18212D;
+  --surface-3:     #212C3A;
+  --line:          #26313F;
+  --line-soft:     #1C2531;
+  --line-strong:   #38465A;
+
+  /* --- ink --- */
+  --ink:           #E6EBF2;
+  --ink-2:         #97A3B4;
+  --ink-3:         #616D7E;
+
+  /* --- accent: burnished brass. Deliberately desaturated and used in exactly
+         three roles (active nav, focus ring, primary action) so it never
+         competes with the item-quality palette, which is the only colour on
+         this page that carries data. --- */
+  --brass:         #CBA76A;
+  --brass-bright:  #E3C48D;
+  --brass-dim:     rgba(203,167,106,.14);
+  --brass-line:    rgba(203,167,106,.38);
+
+  /* --- semantic state. Kept cool and desaturated so a status pill is never
+         mistaken for an item quality. Status colour appears ONLY on pills and
+         stripes; quality colour appears ONLY on item names, borders and dots. --- */
+  --ok:            #3E9C77;
+  --ok-bg:         rgba(62,156,119,.14);
+  --attention:     #D08A2C;
+  --attention-bg:  rgba(208,138,44,.14);
+  --critical:      #C25A50;
+  --critical-bg:   rgba(194,90,80,.14);
+
+  /* --- item quality: canonical values, used for borders, dots and swatches --- */
+  --q-poor:        #9D9D9D;
+  --q-common:      #FFFFFF;
+  --q-uncommon:    #1EFF00;
+  --q-rare:        #0070DD;
+  --q-epic:        #A335EE;
+  --q-legendary:   #FF8000;
+  --q-artifact:    #E6CC80;
+  --q-heirloom:    #00CCFF;
+
+  /* --- item quality, text-on-dark variants. Rare and epic fail contrast as
+         text at 13–15px on our ground; these are the lightened values used for
+         item NAMES. Borders and dots keep the canonical values above. --- */
+  --q-rare-text:   #3D9BFF;
+  --q-epic-text:   #C77DFF;
+
+  /* --- type --- */
+  --font-display:  "Cinzel", "Iowan Old Style", Georgia, serif;
+  --font-ui:       "Barlow Semi Condensed", "Helvetica Neue", Arial, sans-serif;
+  --font-body:     "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-h1:   1.75rem;
+  --t-h2:   1.1875rem;
+  --t-h3:   1rem;
+  --t-body: 0.9375rem;
+  --t-sm:   0.8125rem;
+  --t-xs:   0.6875rem;
+
+  /* --- space --- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* --- form. Radii stay small: this is a tool, and a 12px radius on a stat
+         tile reads as a consumer app. --- */
+  --r-1: 3px;  --r-2: 6px;  --r-pill: 999px;
+
+  --shadow-raise: 0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.45);
+}
+
+/* ============================================================================
+   RESET & BASE
+   ========================================================================= */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:var(--t-body);
+  line-height:1.55;
+  font-feature-settings:"kern" 1;
+}
+img{ max-width:100%; }
+h1,h2,h3,h4{ font-family:var(--font-ui); font-weight:600; margin:0; text-wrap:balance; line-height:1.2; }
+p{ margin:0; }
+a{ color:var(--brass); text-underline-offset:2px; }
+a:hover{ color:var(--brass-bright); }
+:focus-visible{ outline:2px solid var(--brass); outline-offset:2px; border-radius:var(--r-1); }
+code,.mono{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
+
+/* ============================================================================
+   DOC CHROME — the reference document's own shell
+   ========================================================================= */
+.doc{ display:grid; grid-template-columns:232px minmax(0,1fr); gap:var(--s-7); max-width:1480px; margin:0 auto; padding:0 var(--s-5); }
+@media (max-width:1080px){ .doc{ grid-template-columns:1fr; gap:var(--s-5); } .doc-nav{ position:static !important; height:auto !important; } }
+
+.doc-nav{ position:sticky; top:0; height:100vh; overflow-y:auto; padding:var(--s-6) 0 var(--s-6); border-right:1px solid var(--line-soft); }
+.wordmark{ font-family:var(--font-display); font-size:1.375rem; letter-spacing:.22em; color:var(--ink); margin:0 0 var(--s-1); }
+.wordmark-sub{ font-family:var(--font-ui); font-size:var(--t-xs); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); }
+.nav-group{ margin-top:var(--s-5); }
+.nav-group-label{ font-family:var(--font-ui); font-size:var(--t-xs); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); padding:0 0 var(--s-2); }
+.nav-link{ display:block; font-family:var(--font-ui); font-size:var(--t-sm); color:var(--ink-2); text-decoration:none; padding:5px 0 5px var(--s-3); border-left:2px solid var(--line); }
+.nav-link:hover{ color:var(--ink); border-left-color:var(--line-strong); background:var(--surface-1); }
+.nav-link.is-active{ color:var(--brass); border-left-color:var(--brass); }
+
+.doc-main{ padding:var(--s-6) 0 var(--s-8); min-width:0; }
+
+.masthead{ border-bottom:1px solid var(--line); padding-bottom:var(--s-5); margin-bottom:var(--s-6); }
+.masthead h1{ font-size:var(--t-h1); letter-spacing:-.01em; }
+.masthead .lede{ color:var(--ink-2); max-width:62ch; margin-top:var(--s-3); }
+.meta-row{ display:flex; flex-wrap:wrap; gap:var(--s-2) var(--s-4); margin-top:var(--s-4); font-family:var(--font-mono); font-size:var(--t-xs); color:var(--ink-3); }
+.meta-row b{ color:var(--ink-2); font-weight:500; }
+
+section.doc-section{ margin-top:var(--s-8); scroll-margin-top:var(--s-4); }
+.section-head{ display:flex; align-items:baseline; gap:var(--s-3); border-bottom:1px solid var(--line); padding-bottom:var(--s-3); margin-bottom:var(--s-5); }
+.section-num{ font-family:var(--font-mono); font-size:var(--t-sm); color:var(--brass); }
+.section-head h2{ font-size:var(--t-h2); letter-spacing:.01em; }
+.section-head .hint{ margin-left:auto; font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); }
+.note{ color:var(--ink-2); max-width:70ch; margin-bottom:var(--s-4); }
+.note + .note{ margin-top:calc(-1 * var(--s-2)); }
+.rule-callout{ border-left:2px solid var(--brass); background:var(--brass-dim); padding:var(--s-3) var(--s-4); margin:var(--s-4) 0; color:var(--ink-2); font-size:var(--t-sm); max-width:78ch; }
+.rule-callout b{ color:var(--ink); font-weight:600; }
+
+/* route frame — a screen shown in situ */
+.frame{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); overflow:hidden; margin-top:var(--s-4); }
+.frame-bar{ display:flex; align-items:center; gap:var(--s-3); padding:var(--s-2) var(--s-3); background:var(--surface-2); border-bottom:1px solid var(--line); }
+.frame-dots{ display:flex; gap:5px; }
+.frame-dots i{ width:8px; height:8px; border-radius:50%; background:var(--line-strong); display:block; }
+.frame-route{ font-family:var(--font-mono); font-size:var(--t-xs); color:var(--ink-3); }
+.frame-tag{ margin-left:auto; font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); }
+.frame-body{ padding:var(--s-5); background:var(--ground); }
+
+/* ============================================================================
+   FOUNDATIONS — swatches & scales
+   ========================================================================= */
+.swatch-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(148px,1fr)); gap:var(--s-3); }
+.swatch{ border:1px solid var(--line); border-radius:var(--r-1); background:var(--surface-1); overflow:hidden; }
+.swatch-chip{ height:48px; border-bottom:1px solid var(--line); }
+.swatch-meta{ padding:var(--s-2) var(--s-3) var(--s-3); }
+.swatch-name{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; color:var(--ink); }
+.swatch-var{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); word-break:break-all; }
+.swatch-hex{ font-family:var(--font-mono); font-size:10px; color:var(--ink-2); }
+
+.type-scale{ display:flex; flex-direction:column; gap:var(--s-4); }
+.type-row{ display:grid; grid-template-columns:200px minmax(0,1fr); gap:var(--s-4); align-items:baseline; padding-bottom:var(--s-4); border-bottom:1px solid var(--line-soft); }
+@media (max-width:640px){ .type-row{ grid-template-columns:1fr; gap:var(--s-2); } }
+.type-spec{ font-family:var(--font-mono); font-size:var(--t-xs); color:var(--ink-3); line-height:1.6; }
+.type-spec b{ display:block; color:var(--ink-2); font-weight:500; }
+
+.scale-strip{ display:flex; align-items:flex-end; gap:var(--s-3); flex-wrap:wrap; }
+.scale-unit{ text-align:center; }
+.scale-bar{ background:var(--brass-dim); border:1px solid var(--brass-line); border-radius:var(--r-1); }
+.scale-label{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); margin-top:var(--s-1); }
+
+/* ============================================================================
+   COMPONENTS
+   ========================================================================= */
+.spec-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--s-4); }
+.spec-card{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-4); }
+.spec-card h3{ font-size:var(--t-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:600; margin-bottom:var(--s-3); }
+.spec-demo{ display:flex; flex-wrap:wrap; gap:var(--s-2); align-items:center; }
+.spec-foot{ margin-top:var(--s-3); font-size:var(--t-xs); color:var(--ink-3); font-family:var(--font-mono); line-height:1.6; }
+
+/* buttons */
+.btn{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; letter-spacing:.02em; padding:7px 14px; border-radius:var(--r-1); border:1px solid transparent; cursor:pointer; background:transparent; color:var(--ink); line-height:1.3; }
+.btn-primary{ background:var(--brass); color:#1A1206; border-color:var(--brass); }
+.btn-primary:hover{ background:var(--brass-bright); border-color:var(--brass-bright); }
+.btn-secondary{ background:var(--surface-2); border-color:var(--line-strong); color:var(--ink); }
+.btn-secondary:hover{ background:var(--surface-3); border-color:var(--brass-line); }
+.btn-ghost{ color:var(--ink-2); border-color:transparent; }
+.btn-ghost:hover{ color:var(--ink); background:var(--surface-2); }
+.btn-danger{ background:transparent; border-color:var(--critical); color:var(--critical); }
+.btn-danger:hover{ background:var(--critical-bg); }
+.btn:disabled{ opacity:.4; cursor:not-allowed; }
+.btn-sm{ font-size:var(--t-xs); padding:4px 10px; }
+
+/* input */
+.field{ display:flex; align-items:center; gap:var(--s-2); background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--r-1); padding:0 10px; }
+.field:focus-within{ border-color:var(--brass); box-shadow:0 0 0 2px var(--brass-dim); }
+.field input{ background:transparent; border:0; outline:0; color:var(--ink); font-family:var(--font-body); font-size:var(--t-sm); padding:8px 0; width:100%; min-width:0; }
+.field input::placeholder{ color:var(--ink-3); }
+.field .icon{ color:var(--ink-3); flex:none; }
+.label{ display:block; font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); margin-bottom:5px; }
+
+/* pills, chips, badges */
+.pill{ display:inline-flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill); border:1px solid transparent; }
+.pill-ok{ color:var(--ok); background:var(--ok-bg); border-color:rgba(62,156,119,.3); }
+.pill-attention{ color:var(--attention); background:var(--attention-bg); border-color:rgba(208,138,44,.3); }
+.pill-critical{ color:var(--critical); background:var(--critical-bg); border-color:rgba(194,90,80,.3); }
+.pill-neutral{ color:var(--ink-2); background:var(--surface-2); border-color:var(--line-strong); }
+.pill i{ width:6px; height:6px; border-radius:50%; background:currentColor; display:block; }
+
+.chip{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-ui); font-size:var(--t-sm); color:var(--ink); background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--r-1); padding:3px 4px 3px 9px; }
+.chip .chip-key{ color:var(--ink-3); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.08em; }
+.chip .chip-x{ font-family:var(--font-mono); color:var(--ink-3); border:0; background:transparent; cursor:pointer; padding:0 4px; line-height:1; font-size:13px; }
+.chip .chip-x:hover{ color:var(--critical); }
+.chip-add{ border-style:dashed; color:var(--ink-3); padding:3px 9px; }
+
+.ai-badge{ display:inline-flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--brass); border:1px solid var(--brass-line); background:var(--brass-dim); border-radius:var(--r-1); padding:2px 7px; }
+
+/* stat tile */
+.tile{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-3) var(--s-4); }
+.tile-label{ font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); }
+.tile-value{ font-family:var(--font-mono); font-size:1.5rem; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; line-height:1.15; margin-top:2px; }
+.tile-sub{ font-size:var(--t-xs); color:var(--ink-3); font-family:var(--font-mono); }
+
+/* item cell — the core repeated object of this UI */
+.item{ display:flex; align-items:center; gap:var(--s-3); padding:7px 9px; background:var(--surface-1); border:1px solid var(--line); border-left-width:3px; border-radius:var(--r-1); text-decoration:none; min-width:0; }
+.item:hover{ background:var(--surface-2); border-color:var(--line-strong); }
+.item:hover .item-name{ text-decoration:underline; }
+.item-icon{ width:34px; height:34px; flex:none; border-radius:2px; background:var(--surface-3); border:1px solid var(--line-strong); display:grid; place-items:center; color:var(--ink-3); }
+.item-body{ min-width:0; flex:1; }
+.item-name{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.item-meta{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-ilvl{ font-family:var(--font-mono); font-size:var(--t-sm); font-weight:700; color:var(--ink-2); font-variant-numeric:tabular-nums; flex:none; }
+.item.is-empty{ border-left-color:var(--line); opacity:.55; }
+.item.is-empty .item-name{ color:var(--ink-3); font-weight:400; font-style:italic; }
+/* Flagged = "this slot is your weakest". It tints the cell and adds a word to the
+   meta line; it does NOT repaint the left border, because that border belongs to
+   item quality. Semantic state and quality state never share a surface. */
+.item.is-flagged{ background:var(--attention-bg); border-color:rgba(208,138,44,.34); }
+.item.is-flagged:hover{ background:rgba(208,138,44,.2); }
+.item-flag{ font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--attention); flex:none; }
+
+.q-poor{ border-left-color:var(--q-poor); }        .q-poor .item-name{ color:var(--q-poor); }
+.q-common{ border-left-color:var(--q-common); }    .q-common .item-name{ color:var(--q-common); }
+.q-uncommon{ border-left-color:var(--q-uncommon); }.q-uncommon .item-name{ color:var(--q-uncommon); }
+.q-rare{ border-left-color:var(--q-rare); }        .q-rare .item-name{ color:var(--q-rare-text); }
+.q-epic{ border-left-color:var(--q-epic); }        .q-epic .item-name{ color:var(--q-epic-text); }
+.q-legendary{ border-left-color:var(--q-legendary); } .q-legendary .item-name{ color:var(--q-legendary); }
+.q-artifact{ border-left-color:var(--q-artifact); }.q-artifact .item-name{ color:var(--q-artifact); }
+.q-heirloom{ border-left-color:var(--q-heirloom); }.q-heirloom .item-name{ color:var(--q-heirloom); }
+
+/* tabs — scroll in their own container rather than pushing the page sideways.
+   A tab row is wide content like any table; it just doesn't look like one. */
+.tabs{ display:flex; gap:var(--s-1); border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:thin; }
+.tab{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; color:var(--ink-3); background:transparent; border:0; border-bottom:2px solid transparent; padding:9px 14px; cursor:pointer; margin-bottom:-1px; white-space:nowrap; flex:none; }
+.tab:hover{ color:var(--ink-2); }
+.tab.is-active{ color:var(--brass); border-bottom-color:var(--brass); }
+
+/* table */
+.table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); }
+table.data{ width:100%; border-collapse:collapse; font-size:var(--t-sm); min-width:680px; }
+table.data th{ font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); font-weight:600; text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); background:var(--surface-2); white-space:nowrap; }
+table.data th.num, table.data td.num{ text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+table.data td{ padding:9px 12px; border-bottom:1px solid var(--line-soft); color:var(--ink-2); }
+table.data tr:last-child td{ border-bottom:0; }
+table.data tbody tr:hover{ background:var(--surface-2); }
+th.sorted::after{ content:" ▾"; color:var(--brass); }
+
+/* portrait */
+.portrait{ width:72px; height:72px; border-radius:var(--r-1); background:linear-gradient(160deg,var(--surface-3),var(--surface-1)); border:2px solid var(--line-strong); display:grid; place-items:center; flex:none; }
+.portrait span{ font-family:var(--font-display); font-size:1.5rem; color:var(--ink-3); }
+
+/* skeleton */
+.sk{ background:linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 37%,var(--surface-2) 63%); background-size:400% 100%; animation:shimmer 1.4s ease infinite; border-radius:var(--r-1); }
+@keyframes shimmer{ 0%{background-position:100% 0} 100%{background-position:0 0} }
+
+/* ============================================================================
+   SCREEN: CHARACTER PROFILE
+   ========================================================================= */
+.char-banner{ display:flex; align-items:center; gap:var(--s-4); padding:var(--s-4); background:linear-gradient(90deg,var(--surface-2),var(--surface-1) 60%); border:1px solid var(--line); border-left:3px solid var(--class-color,var(--brass)); border-radius:var(--r-2); flex-wrap:wrap; }
+.char-id{ min-width:0; flex:1 1 260px; }
+.char-name{ font-family:var(--font-ui); font-size:1.625rem; font-weight:700; color:var(--class-color,var(--ink)); letter-spacing:.005em; line-height:1.15; }
+.char-sub{ font-family:var(--font-ui); font-size:var(--t-sm); color:var(--ink-2); margin-top:2px; }
+.char-sub .sep{ color:var(--ink-3); margin:0 6px; }
+.char-guild{ color:var(--ink); }
+.char-stats{ display:flex; gap:var(--s-2); flex-wrap:wrap; }
+.char-actions{ display:flex; gap:var(--s-2); flex-wrap:wrap; align-items:center; }
+
+.armory{ display:grid; grid-template-columns:minmax(0,1fr) 232px minmax(0,1fr); gap:var(--s-4); margin-top:var(--s-4); }
+@media (max-width:900px){ .armory{ grid-template-columns:1fr; } .armory-centre{ order:-1; } }
+.slot-rail{ display:flex; flex-direction:column; gap:6px; }
+.armory-centre{ display:flex; flex-direction:column; gap:var(--s-3); }
+/* Weapons get a full-width row of their own rather than sitting under the render.
+   Weapon names are the longest in the game and a 232px column truncates every one. */
+.weapon-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:6px; margin-top:6px; }
+.render{ aspect-ratio:3/4; border:1px solid var(--line); border-radius:var(--r-2); background:
+    radial-gradient(120% 80% at 50% 10%, rgba(51,147,127,.13), transparent 62%),
+    linear-gradient(180deg,var(--surface-2),var(--ground));
+  display:grid; place-items:center; text-align:center; padding:var(--s-3); }
+.render-note{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); line-height:1.7; }
+
+.panel{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); margin-top:var(--s-4); }
+.panel-head{ display:flex; align-items:center; gap:var(--s-3); padding:var(--s-3) var(--s-4); border-bottom:1px solid var(--line); }
+.panel-head h3{ font-size:var(--t-sm); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-2); font-weight:600; }
+.panel-head .spacer{ margin-left:auto; }
+.panel-body{ padding:var(--s-4); }
+
+.kv{ display:grid; grid-template-columns:auto 1fr; gap:6px var(--s-4); font-size:var(--t-sm); }
+.kv dt{ color:var(--ink-3); font-family:var(--font-ui); text-transform:uppercase; font-size:var(--t-xs); letter-spacing:.09em; align-self:center; }
+.kv dd{ margin:0; color:var(--ink); font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+
+/* progression meter */
+.prog-row{ display:grid; grid-template-columns:130px minmax(0,1fr) 58px; gap:var(--s-3); align-items:center; padding:7px 0; border-bottom:1px solid var(--line-soft); }
+.prog-row:last-child{ border-bottom:0; }
+.prog-name{ font-family:var(--font-ui); font-size:var(--t-sm); color:var(--ink-2); }
+.meter{ height:7px; background:var(--surface-3); border-radius:var(--r-pill); overflow:hidden; border:1px solid var(--line); }
+.meter i{ display:block; height:100%; background:var(--brass); }
+.meter i.is-partial{ background:var(--ink-3); }
+.prog-count{ font-family:var(--font-mono); font-size:var(--t-xs); color:var(--ink-2); text-align:right; font-variant-numeric:tabular-nums; }
+
+/* profession bar */
+.prof{ display:grid; grid-template-columns:120px minmax(0,1fr) 70px; gap:var(--s-3); align-items:center; padding:8px 0; border-bottom:1px solid var(--line-soft); }
+.prof:last-child{ border-bottom:0; }
+
+/* ============================================================================
+   SCREEN: SEARCH
+   ========================================================================= */
+.search-hero{ display:flex; gap:var(--s-2); flex-wrap:wrap; align-items:flex-end; }
+.search-hero .field{ flex:1 1 200px; }
+.result-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:var(--s-3); margin-top:var(--s-4); }
+.result-card{ border:1px solid var(--line); border-left:3px solid var(--class-color,var(--line-strong)); border-radius:var(--r-1); background:var(--surface-1); padding:var(--s-3); display:flex; gap:var(--s-3); align-items:center; text-decoration:none; }
+.result-card:hover{ background:var(--surface-2); border-color:var(--line-strong); border-left-color:var(--class-color,var(--brass)); }
+.result-portrait{ width:42px; height:42px; border-radius:2px; background:var(--surface-3); border:1px solid var(--line-strong); display:grid; place-items:center; font-family:var(--font-display); color:var(--ink-3); font-size:.9rem; flex:none; }
+.result-name{ font-family:var(--font-ui); font-weight:600; font-size:var(--t-sm); color:var(--class-color,var(--ink)); }
+.result-meta{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); }
+
+.state-box{ border:1px dashed var(--line-strong); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-6) var(--s-5); text-align:center; }
+.state-box h4{ font-family:var(--font-ui); font-size:var(--t-h3); color:var(--ink); margin-bottom:var(--s-2); }
+.state-box p{ color:var(--ink-2); font-size:var(--t-sm); max-width:52ch; margin:0 auto var(--s-4); }
+.state-box.is-error{ border-style:solid; border-color:rgba(194,90,80,.4); background:var(--critical-bg); }
+
+/* ============================================================================
+   SCREEN: ROSTER + NL QUERY
+   ========================================================================= */
+.nlq{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-4); }
+.interp{ display:flex; flex-wrap:wrap; gap:var(--s-2); align-items:center; margin-top:var(--s-3); padding-top:var(--s-3); border-top:1px solid var(--line-soft); }
+.interp-label{ font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); }
+.class-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:middle; flex:none; }
+
+/* ============================================================================
+   SCREEN: CRAFTING ADVISOR
+   ========================================================================= */
+.chat{ display:grid; grid-template-columns:minmax(0,1fr) 264px; gap:var(--s-4); }
+/* Generic two-column splits. These exist as CLASSES rather than inline
+   grid-template-columns because an inline style beats a media query — a split
+   declared inline never collapses on a phone, silently. */
+.split{ display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:var(--s-4); }
+.split-even{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:var(--s-4); }
+@media (max-width:900px){ .chat, .split, .split-even{ grid-template-columns:1fr; } }
+.thread{ display:flex; flex-direction:column; gap:var(--s-4); }
+.msg{ display:flex; gap:var(--s-3); }
+.msg-avatar{ width:28px; height:28px; border-radius:var(--r-1); flex:none; display:grid; place-items:center; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:700; }
+.msg-user .msg-avatar{ background:var(--surface-3); color:var(--ink-2); border:1px solid var(--line-strong); }
+.msg-ai .msg-avatar{ background:var(--brass-dim); color:var(--brass); border:1px solid var(--brass-line); }
+.msg-body{ min-width:0; flex:1; }
+.msg-head{ display:flex; align-items:center; gap:var(--s-2); margin-bottom:5px; }
+.msg-who{ font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); font-weight:600; }
+.msg-text{ font-size:var(--t-body); color:var(--ink); line-height:1.6; max-width:66ch; }
+.msg-text p + p{ margin-top:var(--s-3); }
+.cite{ font-family:var(--font-mono); font-size:10px; color:var(--brass); border:1px solid var(--brass-line); border-radius:2px; padding:1px 4px; text-decoration:none; vertical-align:2px; margin-left:3px; }
+.grounding{ margin-top:var(--s-3); border:1px solid var(--line); border-radius:var(--r-1); background:var(--surface-1); }
+.grounding summary{ cursor:pointer; padding:7px 11px; font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); }
+.grounding summary:hover{ color:var(--ink-2); }
+.grounding-body{ padding:0 11px 11px; font-family:var(--font-mono); font-size:10px; color:var(--ink-3); line-height:1.8; }
+.caret{ display:inline-block; width:7px; height:15px; background:var(--brass); vertical-align:-3px; animation:blink 1s step-end infinite; }
+@keyframes blink{ 50%{ opacity:0 } }
+.composer{ display:flex; gap:var(--s-2); align-items:center; margin-top:var(--s-5); padding-top:var(--s-4); border-top:1px solid var(--line); }
+.rail-card{ border:1px solid var(--line); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-3) var(--s-4); }
+.rail-card h4{ font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); margin-bottom:var(--s-3); font-weight:600; }
+
+/* ============================================================================
+   TENANT CHROME — the app header, present on every tenant route
+   ========================================================================= */
+.appbar{ display:flex; align-items:center; gap:var(--s-4); padding:var(--s-2) var(--s-4); background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-2); flex-wrap:wrap; }
+.appbar .brand{ font-family:var(--font-display); font-size:.9rem; letter-spacing:.18em; color:var(--ink-2); flex:none; }
+.appnav{ display:flex; gap:2px; flex-wrap:wrap; }
+.appnav a{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; color:var(--ink-3); text-decoration:none; padding:5px 10px; border-radius:var(--r-1); }
+.appnav a:hover{ color:var(--ink); background:var(--surface-3); }
+.appnav a.is-active{ color:var(--brass); background:var(--brass-dim); }
+.appbar .spacer{ margin-left:auto; }
+
+.tenant-switch{ display:flex; align-items:center; gap:var(--s-2); background:var(--surface-1); border:1px solid var(--line-strong); border-radius:var(--r-1); padding:4px 9px; cursor:pointer; }
+.tenant-switch:hover{ border-color:var(--brass-line); }
+.tenant-crest{ width:24px; height:24px; border-radius:2px; background:var(--surface-3); border:1px solid var(--line-strong); display:grid; place-items:center; font-family:var(--font-display); font-size:.7rem; color:var(--ink-2); flex:none; }
+.tenant-name{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; color:var(--ink); line-height:1.2; }
+.tenant-role{ font-family:var(--font-ui); font-size:10px; text-transform:uppercase; letter-spacing:.09em; color:var(--brass); }
+.tenant-caret{ color:var(--ink-3); font-size:10px; }
+
+.bell{ position:relative; background:var(--surface-1); border:1px solid var(--line-strong); border-radius:var(--r-1); width:32px; height:30px; display:grid; place-items:center; color:var(--ink-2); cursor:pointer; }
+.bell:hover{ border-color:var(--brass-line); color:var(--ink); }
+.bell .count{ position:absolute; top:-6px; right:-6px; min-width:16px; height:16px; padding:0 4px; border-radius:var(--r-pill); background:var(--critical); color:#fff; font-family:var(--font-mono); font-size:9px; font-weight:700; display:grid; place-items:center; border:1px solid var(--ground); }
+
+/* rank pill — the community's own ladder, NOT the game's guild rank */
+.rank{ display:inline-flex; align-items:center; gap:6px; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:var(--r-1); border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink-2); }
+.rank i{ width:3px; height:11px; border-radius:1px; background:var(--rank-color,var(--ink-3)); display:block; flex:none; }
+.rank-blizz{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); }
+
+/* alt grouping in the roster */
+.alt-row td:first-child{ padding-left:var(--s-6); position:relative; }
+.alt-row td:first-child::before{ content:"↳"; position:absolute; left:var(--s-4); color:var(--ink-3); }
+
+/* ============================================================================
+   SCREEN: CALENDAR
+   ========================================================================= */
+.cal-head{ display:flex; align-items:center; gap:var(--s-3); flex-wrap:wrap; margin-bottom:var(--s-3); }
+.cal-title{ font-family:var(--font-ui); font-size:var(--t-h2); font-weight:600; }
+.tz-note{ font-family:var(--font-mono); font-size:var(--t-xs); color:var(--ink-3); border:1px solid var(--line); border-radius:var(--r-1); padding:3px 8px; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-2); overflow:hidden; }
+.cal-dow{ background:var(--surface-2); padding:6px 8px; font-family:var(--font-ui); font-size:var(--t-xs); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); text-align:center; }
+.cal-cell{ background:var(--surface-1); min-height:92px; padding:6px; display:flex; flex-direction:column; gap:4px; }
+.cal-cell.is-out{ background:var(--ground); }
+.cal-cell.is-today{ background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--brass-line); }
+.cal-date{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); }
+.cal-cell.is-today .cal-date{ color:var(--brass); font-weight:700; }
+.cal-event{ display:block; text-decoration:none; background:var(--surface-3); border-left:2px solid var(--brass); border-radius:2px; padding:3px 5px; }
+.cal-event:hover{ background:var(--line); }
+.cal-event .ce-time{ font-family:var(--font-mono); font-size:9px; color:var(--ink-3); display:block; }
+.cal-event .ce-name{ font-family:var(--font-ui); font-size:11px; font-weight:600; color:var(--ink); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-event.is-cancelled{ opacity:.5; border-left-color:var(--critical); }
+.cal-event.is-cancelled .ce-name{ text-decoration:line-through; }
+
+.signup{ display:inline-flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; padding:3px 8px; border-radius:var(--r-1); border:1px solid transparent; }
+.su-accepted{ color:var(--ok); background:var(--ok-bg); border-color:rgba(62,156,119,.3); }
+.su-tentative{ color:var(--attention); background:var(--attention-bg); border-color:rgba(208,138,44,.3); }
+.su-declined{ color:var(--critical); background:var(--critical-bg); border-color:rgba(194,90,80,.3); }
+.su-benched{ color:var(--ink-2); background:var(--surface-3); border-color:var(--line-strong); }
+.su-unknown{ color:var(--ink-3); background:transparent; border-color:var(--line); border-style:dashed; }
+
+.roster-slots{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:6px; }
+.slot-card{ display:flex; align-items:center; gap:var(--s-2); background:var(--surface-1); border:1px solid var(--line); border-left:3px solid var(--class-color,var(--line-strong)); border-radius:var(--r-1); padding:6px 8px; }
+.slot-card .sc-name{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; color:var(--class-color,var(--ink)); }
+.slot-card .sc-meta{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); }
+
+/* ============================================================================
+   SCREEN: NOTIFICATIONS
+   ========================================================================= */
+.notif{ display:flex; gap:var(--s-3); padding:var(--s-3); border-bottom:1px solid var(--line-soft); }
+.notif:last-child{ border-bottom:0; }
+.notif.is-unread{ background:var(--surface-2); border-left:2px solid var(--brass); }
+.notif-icon{ width:28px; height:28px; border-radius:var(--r-1); background:var(--surface-3); border:1px solid var(--line-strong); display:grid; place-items:center; color:var(--ink-3); flex:none; }
+.notif-body{ min-width:0; flex:1; }
+.notif-text{ font-size:var(--t-sm); color:var(--ink); }
+.notif-meta{ font-family:var(--font-mono); font-size:10px; color:var(--ink-3); margin-top:2px; }
+.notif-channels{ display:flex; gap:4px; flex:none; align-items:flex-start; }
+.ch{ font-family:var(--font-ui); font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 5px; border-radius:2px; border:1px solid var(--line-strong); color:var(--ink-3); }
+.ch.is-sent{ color:var(--ok); border-color:rgba(62,156,119,.35); }
+.ch.is-failed{ color:var(--critical); border-color:rgba(194,90,80,.4); }
+
+.pref-row{ display:grid; grid-template-columns:minmax(0,1fr) 70px 70px; gap:var(--s-3); align-items:center; padding:8px 0; border-bottom:1px solid var(--line-soft); }
+.pref-row:last-child{ border-bottom:0; }
+.pref-name{ font-family:var(--font-ui); font-size:var(--t-sm); color:var(--ink); }
+.pref-sub{ font-size:var(--t-xs); color:var(--ink-3); }
+.toggle{ width:34px; height:19px; border-radius:var(--r-pill); background:var(--surface-3); border:1px solid var(--line-strong); position:relative; justify-self:center; }
+.toggle.is-on{ background:var(--brass-dim); border-color:var(--brass-line); }
+.toggle::after{ content:""; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--ink-3); }
+.toggle.is-on::after{ left:auto; right:2px; background:var(--brass); }
+
+/* ============================================================================
+   FOOTER / ATTRIBUTION
+   ========================================================================= */
+.app-footer{ margin-top:var(--s-5); padding-top:var(--s-3); border-top:1px solid var(--line); font-size:var(--t-xs); color:var(--ink-3); display:flex; flex-wrap:wrap; gap:var(--s-2) var(--s-4); }
+.doc-footer{ margin-top:var(--s-8); padding:var(--s-5) 0 var(--s-4); border-top:1px solid var(--line); color:var(--ink-3); font-size:var(--t-sm); }
+
+.map-list{ list-style:none; padding:0; margin:0; display:grid; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--r-2); overflow:hidden; }
+.map-list li{ display:grid; grid-template-columns:minmax(160px,240px) minmax(0,1fr); gap:var(--s-4); background:var(--surface-1); padding:9px var(--s-4); font-size:var(--t-sm); }
+.map-list code{ color:var(--brass); font-size:var(--t-xs); }
+.map-list span{ color:var(--ink-2); }
+@media (max-width:640px){ .map-list li{ grid-template-columns:1fr; gap:2px; } }
+</style>
+</head>
+<body>
+
+<!-- Slot glyphs. Deliberately abstract: the real icons come from Blizzard's
+     /data/wow/media/item/{id} endpoint at runtime. These exist so the layout can
+     be judged with the right visual weight in each cell. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="g-head" viewBox="0 0 24 24"><path d="M5 11a7 7 0 0114 0v4a3 3 0 01-3 3H8a3 3 0 01-3-3z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 12h2M13 12h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+  <symbol id="g-neck" viewBox="0 0 24 24"><path d="M6 6a6 6 0 0012 0" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 12l2.5 4-2.5 3-2.5-3z" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="g-shoulder" viewBox="0 0 24 24"><path d="M3 15c0-4 2.5-7 5-7s4 2 4 4-2 4-4.5 4S3 15 3 15z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M21 15c0-4-2.5-7-5-7s-4 2-4 4 2 4 4.5 4S21 15 21 15z" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="g-chest" viewBox="0 0 24 24"><path d="M6 5l6 2 6-2 1 12-7 3-7-3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 7v13" stroke="currentColor" stroke-width="1.2"/></symbol>
+  <symbol id="g-hand" viewBox="0 0 24 24"><path d="M8 4v7M11 3v8M14 4v7M17 8v6a6 6 0 01-6 6H9l-4-5 2-2 2 2V9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="g-leg" viewBox="0 0 24 24"><path d="M6 3h12l-1 8-2 10h-3l-.5-9L11 21H8L7 11z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+  <symbol id="g-ring" viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 6l3-3 3 3-3 2z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+  <symbol id="g-trinket" viewBox="0 0 24 24"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  <symbol id="g-weapon" viewBox="0 0 24 24"><path d="M18 3l3 3-9 9-3-3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M9 12l-4 4 4 4 4-4M5 16l-2 2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+  <symbol id="g-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="doc">
+
+<!-- ======================= NAV ======================= -->
+<nav class="doc-nav" aria-label="Contents">
+  <p class="wordmark">AEGISSCRIBE</p>
+  <p class="wordmark-sub">Armory UI Reference</p>
+
+  <div class="nav-group">
+    <p class="nav-group-label">Foundations</p>
+    <a class="nav-link" href="#colour">Colour</a>
+    <a class="nav-link" href="#quality">Quality &amp; class</a>
+    <a class="nav-link" href="#type">Typography</a>
+    <a class="nav-link" href="#space">Space &amp; form</a>
+  </div>
+  <div class="nav-group">
+    <p class="nav-group-label">Components</p>
+    <a class="nav-link" href="#components">Primitives</a>
+    <a class="nav-link" href="#item-cell">Item cell</a>
+  </div>
+  <div class="nav-group">
+    <p class="nav-group-label">Tenancy</p>
+    <a class="nav-link" href="#chrome">App chrome</a>
+    <a class="nav-link" href="#tenant-parts">Ranks &amp; signups</a>
+  </div>
+  <div class="nav-group">
+    <p class="nav-group-label">Screens</p>
+    <a class="nav-link" href="#s-character">Character profile</a>
+    <a class="nav-link" href="#s-search">Search &amp; states</a>
+    <a class="nav-link" href="#s-roster">Roster &amp; NL query</a>
+    <a class="nav-link" href="#s-advisor">Crafting advisor</a>
+    <a class="nav-link" href="#s-calendar">Calendar &amp; signups</a>
+    <a class="nav-link" href="#s-notifications">Notifications</a>
+  </div>
+  <div class="nav-group">
+    <p class="nav-group-label">Build</p>
+    <a class="nav-link" href="#map">Component map</a>
+    <a class="nav-link" href="#rules">Non-negotiables</a>
+  </div>
+</nav>
+
+<!-- ======================= MAIN ======================= -->
+<main class="doc-main">
+
+<header class="masthead">
+  <h1>AegisScribe Armory — design reference</h1>
+  <p class="lede">The visual system for the character armory, and the four screens that define it. This
+  page is the source of truth for anything visual in <code>src/web/</code>: tokens are copied from here,
+  not invented, and a component that disagrees with this page is the thing that is wrong.</p>
+  <div class="meta-row">
+    <span><b>Status</b> v2 — multi-tenant</span>
+    <span><b>Theme</b> Dark only, by decision</span>
+    <span><b>Data shown</b> Fictional characters, real ID conventions</span>
+    <span><b>Skill</b> .claude/skills/aegisscribe-design-system</span>
+  </div>
+</header>
+
+<div class="rule-callout">
+  <b>Read this before building anything.</b> Three things on this page are not aesthetic preferences and
+  cannot be dropped in implementation: the <b>Blizzard attribution</b> in the app footer, the
+  <b>generated-content label and stop control</b> on every AI surface, and the <b>interpreted-filter chip
+  row</b> above natural-language results. Each one discharges an obligation in
+  <code>CLAUDE.md → Restrictions</code>. They are drawn here so nobody has to remember them.
+</div>
+
+<!-- ======================= COLOUR ======================= -->
+<section class="doc-section" id="colour">
+  <div class="section-head"><span class="section-num">01</span><h2>Colour</h2><span class="hint">Foundations</span></div>
+
+  <p class="note">The item-quality palette already owns green, blue, purple and orange, and an experienced
+  player reads gear by colour before reading any text. So the interface itself is near-monochrome: cold
+  gunmetal surfaces, one brass accent, and semantic colours held to muted, cooler values. <strong>The only
+  saturated colour on an AegisScribe screen is data.</strong> If a new UI element wants its own hue, the answer is
+  no.</p>
+
+  <p class="label" style="margin-top:var(--s-5)">Ground &amp; surfaces</p>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-chip" style="background:#0A0E13"></div><div class="swatch-meta"><div class="swatch-name">Ground</div><div class="swatch-var">--ground</div><div class="swatch-hex">#0A0E13</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#111823"></div><div class="swatch-meta"><div class="swatch-name">Surface 1</div><div class="swatch-var">--surface-1</div><div class="swatch-hex">#111823</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#18212D"></div><div class="swatch-meta"><div class="swatch-name">Surface 2</div><div class="swatch-var">--surface-2</div><div class="swatch-hex">#18212D</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#212C3A"></div><div class="swatch-meta"><div class="swatch-name">Surface 3</div><div class="swatch-var">--surface-3</div><div class="swatch-hex">#212C3A</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#26313F"></div><div class="swatch-meta"><div class="swatch-name">Line</div><div class="swatch-var">--line</div><div class="swatch-hex">#26313F</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#38465A"></div><div class="swatch-meta"><div class="swatch-name">Line strong</div><div class="swatch-var">--line-strong</div><div class="swatch-hex">#38465A</div></div></div>
+  </div>
+
+  <p class="label" style="margin-top:var(--s-5)">Ink</p>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-chip" style="background:#E6EBF2"></div><div class="swatch-meta"><div class="swatch-name">Ink</div><div class="swatch-var">--ink</div><div class="swatch-hex">#E6EBF2 · body, values</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#97A3B4"></div><div class="swatch-meta"><div class="swatch-name">Ink 2</div><div class="swatch-var">--ink-2</div><div class="swatch-hex">#97A3B4 · secondary</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#616D7E"></div><div class="swatch-meta"><div class="swatch-name">Ink 3</div><div class="swatch-var">--ink-3</div><div class="swatch-hex">#616D7E · labels only</div></div></div>
+  </div>
+
+  <p class="label" style="margin-top:var(--s-5)">Accent — three roles, no more</p>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-chip" style="background:#CBA76A"></div><div class="swatch-meta"><div class="swatch-name">Brass</div><div class="swatch-var">--brass</div><div class="swatch-hex">#CBA76A</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#E3C48D"></div><div class="swatch-meta"><div class="swatch-name">Brass bright</div><div class="swatch-var">--brass-bright</div><div class="swatch-hex">#E3C48D · hover</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#1F1D18"></div><div class="swatch-meta"><div class="swatch-name">Brass dim</div><div class="swatch-var">--brass-dim</div><div class="swatch-hex">14% on ground</div></div></div>
+  </div>
+  <p class="note" style="margin-top:var(--s-3)">Brass appears on: the active navigation item, the focus ring,
+  and the primary action. Nothing else. It is also the AI surface's marker colour — which works precisely
+  because it is otherwise so rare.</p>
+
+  <p class="label" style="margin-top:var(--s-5)">Semantic state</p>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-chip" style="background:#3E9C77"></div><div class="swatch-meta"><div class="swatch-name">OK</div><div class="swatch-var">--ok</div><div class="swatch-hex">#3E9C77 · synced, healthy</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#D08A2C"></div><div class="swatch-meta"><div class="swatch-name">Attention</div><div class="swatch-var">--attention</div><div class="swatch-hex">#D08A2C · stale, weak slot</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#C25A50"></div><div class="swatch-meta"><div class="swatch-name">Critical</div><div class="swatch-var">--critical</div><div class="swatch-hex">#C25A50 · failed, suppressed</div></div></div>
+  </div>
+  <div class="rule-callout"><b>Semantic and quality colour never meet.</b> Status colour appears only on pills
+  and left stripes. Quality colour appears only on item names, item borders and quality dots. An orange
+  <em>pill</em> means stale data; an orange <em>item name</em> means legendary. Keeping them on different
+  shapes is what stops that being ambiguous.</div>
+</section>
+
+<!-- ======================= QUALITY & CLASS ======================= -->
+<section class="doc-section" id="quality">
+  <div class="section-head"><span class="section-num">02</span><h2>Item quality &amp; class colour</h2><span class="hint">Data palettes</span></div>
+
+  <p class="note">These are the game's values, not ours — players know them by heart, and changing them would
+  be a usability bug rather than a rebrand. Two of them fail contrast as small text on our ground, so each
+  has a lightened <em>text</em> variant. Borders, dots and swatches keep the canonical value.</p>
+
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-chip" style="background:#9D9D9D"></div><div class="swatch-meta"><div class="swatch-name">Poor</div><div class="swatch-var">--q-poor</div><div class="swatch-hex">#9D9D9D</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#FFFFFF"></div><div class="swatch-meta"><div class="swatch-name">Common</div><div class="swatch-var">--q-common</div><div class="swatch-hex">#FFFFFF</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#1EFF00"></div><div class="swatch-meta"><div class="swatch-name">Uncommon</div><div class="swatch-var">--q-uncommon</div><div class="swatch-hex">#1EFF00</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#0070DD"></div><div class="swatch-meta"><div class="swatch-name">Rare</div><div class="swatch-var">--q-rare</div><div class="swatch-hex">#0070DD → text #3D9BFF</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#A335EE"></div><div class="swatch-meta"><div class="swatch-name">Epic</div><div class="swatch-var">--q-epic</div><div class="swatch-hex">#A335EE → text #C77DFF</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#FF8000"></div><div class="swatch-meta"><div class="swatch-name">Legendary</div><div class="swatch-var">--q-legendary</div><div class="swatch-hex">#FF8000</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#E6CC80"></div><div class="swatch-meta"><div class="swatch-name">Artifact</div><div class="swatch-var">--q-artifact</div><div class="swatch-hex">#E6CC80</div></div></div>
+    <div class="swatch"><div class="swatch-chip" style="background:#00CCFF"></div><div class="swatch-meta"><div class="swatch-name">Heirloom</div><div class="swatch-var">--q-heirloom</div><div class="swatch-hex">#00CCFF</div></div></div>
+  </div>
+
+  <p class="note" style="margin-top:var(--s-5)"><strong>Class colour</strong> is set once per character, as a
+  scoped custom property (<code>--class-color</code>) on the outermost element that represents that
+  character — banner, roster row, search result. Descendants inherit it. Nothing hard-codes a class hex.</p>
+
+  <div class="table-wrap" style="margin-top:var(--s-3)">
+    <table class="data">
+      <thead><tr><th>Class</th><th>Token</th><th>Hex</th><th>Class</th><th>Token</th><th>Hex</th></tr></thead>
+      <tbody>
+        <tr><td><span class="class-dot" style="background:#C41E3A"></span>Death Knight</td><td class="mono">--c-death-knight</td><td class="mono">#C41E3A</td>
+            <td><span class="class-dot" style="background:#00FF98"></span>Monk</td><td class="mono">--c-monk</td><td class="mono">#00FF98</td></tr>
+        <tr><td><span class="class-dot" style="background:#A330C9"></span>Demon Hunter</td><td class="mono">--c-demon-hunter</td><td class="mono">#A330C9</td>
+            <td><span class="class-dot" style="background:#F48CBA"></span>Paladin</td><td class="mono">--c-paladin</td><td class="mono">#F48CBA</td></tr>
+        <tr><td><span class="class-dot" style="background:#FF7C0A"></span>Druid</td><td class="mono">--c-druid</td><td class="mono">#FF7C0A</td>
+            <td><span class="class-dot" style="background:#FFFFFF"></span>Priest</td><td class="mono">--c-priest</td><td class="mono">#FFFFFF</td></tr>
+        <tr><td><span class="class-dot" style="background:#33937F"></span>Evoker</td><td class="mono">--c-evoker</td><td class="mono">#33937F</td>
+            <td><span class="class-dot" style="background:#FFF468"></span>Rogue</td><td class="mono">--c-rogue</td><td class="mono">#FFF468</td></tr>
+        <tr><td><span class="class-dot" style="background:#AAD372"></span>Hunter</td><td class="mono">--c-hunter</td><td class="mono">#AAD372</td>
+            <td><span class="class-dot" style="background:#0070DD"></span>Shaman</td><td class="mono">--c-shaman</td><td class="mono">#0070DD</td></tr>
+        <tr><td><span class="class-dot" style="background:#3FC7EB"></span>Mage</td><td class="mono">--c-mage</td><td class="mono">#3FC7EB</td>
+            <td><span class="class-dot" style="background:#8788EE"></span>Warlock</td><td class="mono">--c-warlock</td><td class="mono">#8788EE</td></tr>
+        <tr><td colspan="3"></td>
+            <td><span class="class-dot" style="background:#C69B6D"></span>Warrior</td><td class="mono">--c-warrior</td><td class="mono">#C69B6D</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ======================= TYPE ======================= -->
+<section class="doc-section" id="type">
+  <div class="section-head"><span class="section-num">03</span><h2>Typography</h2><span class="hint">Four roles</span></div>
+
+  <p class="note">A condensed grotesque for the interface, because armory screens are dense and label-heavy
+  and condensed type buys a column of width without shrinking the type. A monospace with tabular figures for
+  every number that sits in a column — item levels, IDs, counts — so digits align down a table. One lapidary
+  face, used once, for the wordmark.</p>
+
+  <div class="type-scale" style="margin-top:var(--s-5)">
+    <div class="type-row">
+      <div class="type-spec"><b>Cinzel 600</b>22px / .22em<br>Wordmark only</div>
+      <div style="font-family:var(--font-display);font-size:1.375rem;letter-spacing:.22em">AEGISSCRIBE</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><b>Barlow Semi Cond. 700</b>26px / 1.15<br>Character name</div>
+      <div style="font-family:var(--font-ui);font-size:1.625rem;font-weight:700;color:#33937F">Thornwake</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><b>Barlow Semi Cond. 600</b>19px / 1.2<br>Section heading</div>
+      <div style="font-family:var(--font-ui);font-size:var(--t-h2);font-weight:600">Equipped items</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><b>Barlow Semi Cond. 600</b>11px / .10em / upper<br>Every label in the app</div>
+      <div class="label" style="margin:0">Item level · Realm · Last synced</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><b>Barlow 400</b>15px / 1.55<br>Prose, AI answers<br>max 66ch</div>
+      <div style="max-width:66ch">Your weakest slot is the waist — an uncommon belt is holding 14 item levels
+      below the rest of your gear. Blacksmithing can craft a replacement at your current skill.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><b>JetBrains Mono 700</b>24px / tabular<br>Figures in columns</div>
+      <div class="mono" style="font-size:1.5rem;font-weight:700">639 · 11/11 M · 3 142</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SPACE ======================= -->
+<section class="doc-section" id="space">
+  <div class="section-head"><span class="section-num">04</span><h2>Space &amp; form</h2><span class="hint">Foundations</span></div>
+
+  <p class="note">A 4px base step. Radii stay small on purpose — a 12px corner on a stat tile reads as a
+  consumer app, and this is a tool people keep open on a second monitor.</p>
+
+  <div class="scale-strip" style="margin-top:var(--s-4)">
+    <div class="scale-unit"><div class="scale-bar" style="width:4px;height:32px"></div><div class="scale-label">4</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:8px;height:32px"></div><div class="scale-label">8</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:12px;height:32px"></div><div class="scale-label">12</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:16px;height:32px"></div><div class="scale-label">16</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:24px;height:32px"></div><div class="scale-label">24</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:32px;height:32px"></div><div class="scale-label">32</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:48px;height:32px"></div><div class="scale-label">48</div></div>
+    <div class="scale-unit"><div class="scale-bar" style="width:64px;height:32px"></div><div class="scale-label">64</div></div>
+  </div>
+
+  <div class="spec-grid" style="margin-top:var(--s-5)">
+    <div class="spec-card">
+      <h3>Radius</h3>
+      <div class="spec-demo">
+        <div style="width:56px;height:40px;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:3px"></div>
+        <div style="width:56px;height:40px;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:6px"></div>
+        <div style="width:56px;height:40px;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:999px"></div>
+      </div>
+      <div class="spec-foot">--r-1 3px · controls, item cells<br>--r-2 6px · panels, frames<br>--r-pill · status pills only</div>
+    </div>
+    <div class="spec-card">
+      <h3>Separation</h3>
+      <div class="spec-demo" style="flex-direction:column;align-items:stretch">
+        <div style="height:26px;background:var(--surface-1);border:1px solid var(--line);border-radius:3px"></div>
+        <div style="height:26px;background:var(--surface-1);border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:3px"></div>
+        <div style="height:26px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:3px;box-shadow:var(--shadow-raise)"></div>
+      </div>
+      <div class="spec-foot">Border for grouping · left stripe for<br>state or quality · shadow only for<br>things that float (menus, tooltips)</div>
+    </div>
+    <div class="spec-card">
+      <h3>Focus</h3>
+      <div class="spec-demo">
+        <button class="btn btn-secondary" style="outline:2px solid var(--brass);outline-offset:2px">Focused</button>
+        <div class="field" style="border-color:var(--brass);box-shadow:0 0 0 2px var(--brass-dim)"><input value="Focused field" readonly aria-label="Focused field example"></div>
+      </div>
+      <div class="spec-foot">2px brass, 2px offset, always visible.<br>Never removed, never colour-only.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= COMPONENTS ======================= -->
+<section class="doc-section" id="components">
+  <div class="section-head"><span class="section-num">05</span><h2>Primitives</h2><span class="hint">Components</span></div>
+
+  <div class="spec-grid">
+    <div class="spec-card">
+      <h3>Buttons</h3>
+      <div class="spec-demo">
+        <button class="btn btn-primary">Claim character</button>
+        <button class="btn btn-secondary">Re-sync</button>
+        <button class="btn btn-ghost">Cancel</button>
+      </div>
+      <div class="spec-demo" style="margin-top:var(--s-2)">
+        <button class="btn btn-danger btn-sm">Erase data</button>
+        <button class="btn btn-secondary btn-sm" disabled>Disabled</button>
+      </div>
+      <div class="spec-foot">One primary per view. Destructive is<br>outlined, never filled — filled red<br>invites the mis-click it warns about.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Status pills</h3>
+      <div class="spec-demo">
+        <span class="pill pill-ok"><i></i>Synced</span>
+        <span class="pill pill-attention"><i></i>Stale 12d</span>
+        <span class="pill pill-critical"><i></i>Suppressed</span>
+        <span class="pill pill-neutral">Officer</span>
+      </div>
+      <div class="spec-foot">Dot + word, never colour alone —<br>colour-blind users and greyscale<br>screenshots both have to work.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Filter chips</h3>
+      <div class="spec-demo">
+        <span class="chip"><span class="chip-key">ilvl &gt;</span> 620 <button class="chip-x" aria-label="Remove item level filter">×</button></span>
+        <span class="chip"><span class="chip-key">class</span> Evoker <button class="chip-x" aria-label="Remove class filter">×</button></span>
+        <span class="chip chip-add">+ Add filter</span>
+      </div>
+      <div class="spec-foot">Every chip is removable. This is how<br>a natural-language query shows its<br>work — see screen 03.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Stat tiles</h3>
+      <div class="spec-demo" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-2)">
+        <div class="tile"><div class="tile-label">Item level</div><div class="tile-value">639</div><div class="tile-sub">+4 this week</div></div>
+        <div class="tile"><div class="tile-label">Mythic+</div><div class="tile-value">2 841</div><div class="tile-sub">season 3</div></div>
+      </div>
+      <div class="spec-foot">Tabular figures. Sub-line carries<br>change or context, never a<br>duplicate of the label.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Inputs</h3>
+      <div class="spec-demo" style="flex-direction:column;align-items:stretch">
+        <div><span class="label">Character</span>
+          <div class="field"><svg class="icon" width="15" height="15"><use href="#g-search"/></svg><input placeholder="Name" aria-label="Character name"></div></div>
+        <div><span class="label">Realm</span>
+          <div class="field"><input value="Argent Dawn" aria-label="Realm"></div></div>
+      </div>
+      <div class="spec-foot">Label above, uppercase, 11px.<br>Placeholder never replaces a label.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Loading</h3>
+      <div class="spec-demo" style="flex-direction:column;align-items:stretch;gap:7px">
+        <div class="sk" style="height:34px"></div>
+        <div class="sk" style="height:34px;opacity:.75"></div>
+        <div class="sk" style="height:34px;opacity:.5"></div>
+      </div>
+      <div class="spec-foot">Skeletons match the shape of what<br>loads — a gear rail skeleton is<br>gear-cell-shaped, not a spinner.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ITEM CELL ======================= -->
+<section class="doc-section" id="item-cell">
+  <div class="section-head"><span class="section-num">06</span><h2>The item cell</h2><span class="hint">Most-repeated object</span></div>
+
+  <p class="note">Everything in this app eventually renders an item, so this cell is worth getting exactly
+  right. Icon, name, sub-line, item level — always in that order, always the same widths, so a rail of
+  sixteen reads as one column and the eye can scan the right edge for the weak slot.</p>
+
+  <div class="spec-grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+    <div class="spec-card">
+      <h3>By quality</h3>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <a class="item q-artifact" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-weapon"/></svg></span><span class="item-body"><span class="item-name">Scalecommander's Sundering Edge</span><span class="item-meta">Main hand · Artifact</span></span><span class="item-ilvl">652</span></a>
+        <a class="item q-legendary" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-ring"/></svg></span><span class="item-body"><span class="item-name">Band of the Emberwake</span><span class="item-meta">Ring · Legendary</span></span><span class="item-ilvl">645</span></a>
+        <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Chestguard of Sundered Dawn</span><span class="item-meta">Chest · Epic</span></span><span class="item-ilvl">639</span></a>
+        <a class="item q-rare" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-neck"/></svg></span><span class="item-body"><span class="item-name">Ashglass Pendant</span><span class="item-meta">Neck · Rare</span></span><span class="item-ilvl">628</span></a>
+        <a class="item q-uncommon is-flagged" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-leg"/></svg></span><span class="item-body"><span class="item-name">Frayed Emberweave Cinch</span><span class="item-meta">Waist · Uncommon</span></span><span class="item-flag">Weakest</span><span class="item-ilvl">625</span></a>
+        <div class="item is-empty"><span class="item-icon"><svg width="18" height="18"><use href="#g-trinket"/></svg></span><span class="item-body"><span class="item-name">Empty — trinket</span><span class="item-meta">No item equipped</span></span><span class="item-ilvl">—</span></div>
+      </div>
+      <div class="spec-foot">Quality sets the 3px left border and<br>the name colour. Nothing else in the<br>cell changes colour.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Anatomy &amp; behaviour</h3>
+      <dl class="kv">
+        <dt>Element</dt><dd>&lt;a&gt;, not &lt;div&gt;</dd>
+        <dt>Href</dt><dd>wowhead.com/item={id}</dd>
+        <dt>Rel</dt><dd>noopener noreferrer</dd>
+        <dt>Target</dt><dd>_blank</dd>
+        <dt>Icon</dt><dd>34px, from Blizzard media</dd>
+        <dt>Tooltip</dt><dd>Wowhead script, on hover</dd>
+        <dt>Flagged</dt><dd>tint + word, not border</dd>
+      </dl>
+      <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">The flagged cell tints its
+      background and adds a word. It does <strong>not</strong> repaint the left border — that border is item
+      quality, and letting a semantic state borrow it would make an uncommon belt look legendary.</p>
+      <div class="rule-callout" style="margin-bottom:0">
+        <b>The item cell is the Wowhead integration.</b> It renders an outbound link built from the Blizzard
+        item ID; Wowhead's own script attaches the tooltip on hover. The server never contacts Wowhead —
+        see <code>.claude/rules/external.md</code>. Set <code>renameLinks:false</code> in the tooltip config
+        or the script overwrites these names.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= APP CHROME ======================= -->
+<section class="doc-section" id="chrome">
+  <div class="section-head"><span class="section-num">07</span><h2>App chrome &amp; tenant context</h2><span class="hint">Multi-tenancy</span></div>
+
+  <p class="note">AegisScribe is multi-tenant, and the single most important job of the chrome is making
+  the <strong>active community obvious at all times</strong>. A user who is an officer in one guild and
+  a plain member in another will otherwise take an officer action in the wrong place — and the app will
+  correctly let them, because they really are an officer somewhere.</p>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/t/ashes-of-dawn/*</span><span class="frame-tag">Header — every tenant route</span></div>
+    <div class="frame-body">
+      <div class="appbar">
+        <span class="brand">AEGISSCRIBE</span>
+        <nav class="appnav">
+          <a href="#s-roster" class="is-active">Roster</a>
+          <a href="#s-calendar">Calendar</a>
+          <a href="#s-search">Armory</a>
+          <a href="#s-advisor">Advisor</a>
+        </nav>
+        <span class="spacer"></span>
+        <button class="tenant-switch">
+          <span class="tenant-crest">A</span>
+          <span style="text-align:left">
+            <span class="tenant-name">Ashes of Dawn</span><br>
+            <span class="tenant-role">Officer</span>
+          </span>
+          <span class="tenant-caret">▼</span>
+        </button>
+        <button class="bell" aria-label="Notifications">
+          <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0112 0v4l2 3H4l2-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span class="count">3</span>
+        </button>
+      </div>
+
+      <p style="margin-top:var(--s-4);font-size:var(--t-sm);color:var(--ink-2);max-width:70ch">
+        The switcher shows the community <em>and the viewer's role in it</em>. Opening it lists every
+        community they belong to; picking one <strong>navigates</strong> — it never mutates hidden
+        state, because a stored "current tenant" and the URL will drift, and when they do the user is
+        looking at one community's data inside another's chrome.
+      </p>
+
+      <div class="rule-callout" style="margin-bottom:0">
+        <b>The tenant lives in the route.</b> <code>/t/:tenantSlug/...</code>, mirroring the API.
+        Services build request URLs from the active route, never from a variable. A tenant guard
+        confirms membership before the route activates, and a <b>404 means "not yours"</b> — route to
+        the picker, never render an error, and never let the UI distinguish "doesn't exist" from "not
+        a member", because the API deliberately doesn't either.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= RANKS & SIGNUPS ======================= -->
+<section class="doc-section" id="tenant-parts">
+  <div class="section-head"><span class="section-num">08</span><h2>Ranks &amp; signup states</h2><span class="hint">Tenant primitives</span></div>
+
+  <div class="spec-grid">
+    <div class="spec-card">
+      <h3>Tenant rank</h3>
+      <div class="spec-demo">
+        <span class="rank" style="--rank-color:#CBA76A"><i></i>Officer</span>
+        <span class="rank" style="--rank-color:#3E9C77"><i></i>Raider</span>
+        <span class="rank" style="--rank-color:#3D9BFF"><i></i>Trial</span>
+        <span class="rank" style="--rank-color:#616D7E"><i></i>Social</span>
+      </div>
+      <div class="spec-foot">The community's own ladder, defined<br>per tenant. Colour is chosen by the<br>tenant, so it is a CSS variable, not<br>a token.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Two ranks, not one</h3>
+      <div class="spec-demo" style="flex-direction:column;align-items:flex-start;gap:var(--s-2)">
+        <div><span class="rank" style="--rank-color:#3E9C77"><i></i>Raider</span>
+          <span class="rank-blizz" style="margin-left:8px">in-game: Veteran (3)</span></div>
+      </div>
+      <div class="spec-foot">Left: <code>RosterEntry.TenantRankId</code> —<br>what the community says. Right:<br><code>GuildMember.BlizzardRank</code> — what<br>the game says. Neither derives from<br>the other; show both.</div>
+    </div>
+
+    <div class="spec-card">
+      <h3>Signup state</h3>
+      <div class="spec-demo">
+        <span class="signup su-accepted">Accepted</span>
+        <span class="signup su-tentative">Tentative</span>
+        <span class="signup su-declined">Declined</span>
+        <span class="signup su-benched">Benched</span>
+        <span class="signup su-unknown">No reply</span>
+      </div>
+      <div class="spec-foot">A signup is an intention recorded<br>before. Attendance is a fact recorded<br>after. Separate entities, because<br>they disagree constantly — and the<br>disagreement is the interesting data.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SCREEN 1: CHARACTER ======================= -->
+<section class="doc-section" id="s-character">
+  <div class="section-head"><span class="section-num">S1</span><h2>Character profile</h2><span class="hint">The core view</span></div>
+
+  <p class="note">The flanked composition — eight slots left, portrait and summary centre, eight right — is
+  the genre's signature, and players parse it without reading. Keep it. Everything modern happens inside the
+  cells rather than by rearranging them. Below 900px the rails stack and the centre column moves to the top,
+  because on a phone the identity matters more than the layout metaphor.</p>
+
+  <div class="frame">
+    <div class="frame-bar">
+      <span class="frame-dots"><i></i><i></i><i></i></span>
+      <span class="frame-route">/character/argent-dawn/thornwake</span>
+      <span class="frame-tag">Screen 01</span>
+    </div>
+    <div class="frame-body" style="--class-color:#33937F">
+
+      <div class="char-banner">
+        <div class="portrait"><span>T</span></div>
+        <div class="char-id">
+          <div class="char-name">Thornwake</div>
+          <div class="char-sub">Level 80 Dracthyr Evoker <span class="sep">·</span> Devastation</div>
+          <div class="char-sub">Argent Dawn (EU) <span class="sep">·</span> <span class="char-guild">&lt;Ashes of Dawn&gt;</span></div>
+          <div style="margin-top:var(--s-2);display:flex;gap:var(--s-2);flex-wrap:wrap">
+            <span class="pill pill-ok"><i></i>Synced 2h ago</span>
+            <span class="pill pill-neutral">Claimed by you</span>
+          </div>
+        </div>
+        <div class="char-stats">
+          <div class="tile"><div class="tile-label">Item level</div><div class="tile-value">639</div><div class="tile-sub">equipped</div></div>
+          <div class="tile"><div class="tile-label">Mythic+</div><div class="tile-value">2 841</div><div class="tile-sub">season 3</div></div>
+          <div class="tile"><div class="tile-label">Raid</div><div class="tile-value">8/9</div><div class="tile-sub">heroic</div></div>
+        </div>
+        <div class="char-actions">
+          <button class="btn btn-secondary btn-sm">Re-sync</button>
+          <button class="btn btn-primary btn-sm">Ask the advisor</button>
+        </div>
+      </div>
+
+      <div class="armory">
+        <!-- left rail -->
+        <div class="slot-rail">
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-head"/></svg></span><span class="item-body"><span class="item-name">Visage of the Emberwrought</span><span class="item-meta">Head · 2pc set</span></span><span class="item-ilvl">642</span></a>
+          <a class="item q-rare" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-neck"/></svg></span><span class="item-body"><span class="item-name">Ashglass Pendant</span><span class="item-meta">Neck</span></span><span class="item-ilvl">628</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-shoulder"/></svg></span><span class="item-body"><span class="item-name">Mantle of the Emberwrought</span><span class="item-meta">Shoulder · 2pc set</span></span><span class="item-ilvl">639</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Drape of Quiet Cinders</span><span class="item-meta">Back</span></span><span class="item-ilvl">636</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Chestguard of Sundered Dawn</span><span class="item-meta">Chest</span></span><span class="item-ilvl">639</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-hand"/></svg></span><span class="item-body"><span class="item-name">Bracers of Still Flight</span><span class="item-meta">Wrist</span></span><span class="item-ilvl">632</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-hand"/></svg></span><span class="item-body"><span class="item-name">Grips of the Emberwrought</span><span class="item-meta">Hands · 2pc set</span></span><span class="item-ilvl">639</span></a>
+          <a class="item q-uncommon is-flagged" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-leg"/></svg></span><span class="item-body"><span class="item-name">Frayed Emberweave Cinch</span><span class="item-meta">Waist · Uncommon</span></span><span class="item-flag">Weakest</span><span class="item-ilvl">625</span></a>
+        </div>
+
+        <!-- centre -->
+        <div class="armory-centre">
+          <div class="render">
+            <p class="render-note">CHARACTER RENDER<br><br>character-media endpoint<br>main-raw · 3:4<br><br>Skeleton while loading;<br>silhouette on 404</p>
+          </div>
+        </div>
+
+        <!-- right rail -->
+        <div class="slot-rail">
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-leg"/></svg></span><span class="item-body"><span class="item-name">Legguards of the Emberwrought</span><span class="item-meta">Legs · 2pc set</span></span><span class="item-ilvl">642</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-leg"/></svg></span><span class="item-body"><span class="item-name">Treads of Unbroken Ash</span><span class="item-meta">Feet</span></span><span class="item-ilvl">636</span></a>
+          <a class="item q-legendary" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-ring"/></svg></span><span class="item-body"><span class="item-name">Band of the Emberwake</span><span class="item-meta">Ring 1</span></span><span class="item-ilvl">645</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-ring"/></svg></span><span class="item-body"><span class="item-name">Circle of Waning Dusk</span><span class="item-meta">Ring 2</span></span><span class="item-ilvl">639</span></a>
+          <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-trinket"/></svg></span><span class="item-body"><span class="item-name">Ember-Sealed Reliquary</span><span class="item-meta">Trinket 1</span></span><span class="item-ilvl">639</span></a>
+          <div class="item is-empty"><span class="item-icon"><svg width="18" height="18"><use href="#g-trinket"/></svg></span><span class="item-body"><span class="item-name">Empty — trinket 2</span><span class="item-meta">No item equipped</span></span><span class="item-ilvl">—</span></div>
+          <a class="item q-common" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Dawnwatch Tabard</span><span class="item-meta">Tabard</span></span><span class="item-ilvl">1</span></a>
+          <a class="item q-poor" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Tattered Linen Shirt</span><span class="item-meta">Shirt</span></span><span class="item-ilvl">1</span></a>
+        </div>
+      </div>
+
+      <div class="weapon-row">
+        <a class="item q-artifact" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-weapon"/></svg></span><span class="item-body"><span class="item-name">Scalecommander's Sundering Edge</span><span class="item-meta">Main hand · Artifact</span></span><span class="item-ilvl">652</span></a>
+        <a class="item q-epic" href="#s-character"><span class="item-icon"><svg width="18" height="18"><use href="#g-weapon"/></svg></span><span class="item-body"><span class="item-name">Bulwark of the Quiet Wing</span><span class="item-meta">Off hand · Epic</span></span><span class="item-ilvl">639</span></a>
+      </div>
+
+      <div class="tabs" style="margin-top:var(--s-5)">
+        <button class="tab is-active">Overview</button>
+        <button class="tab">Specialisations</button>
+        <button class="tab">Progression</button>
+        <button class="tab">Professions</button>
+        <button class="tab">Collections</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--s-4);margin-top:var(--s-4)">
+        <div class="panel" style="margin-top:0">
+          <div class="panel-head"><h3>Raid progression</h3><span class="spacer"></span><span class="pill pill-neutral">Season 3</span></div>
+          <div class="panel-body">
+            <div class="prog-row"><span class="prog-name">Mythic</span><span class="meter"><i style="width:22%"></i></span><span class="prog-count">2/9</span></div>
+            <div class="prog-row"><span class="prog-name">Heroic</span><span class="meter"><i style="width:89%"></i></span><span class="prog-count">8/9</span></div>
+            <div class="prog-row"><span class="prog-name">Normal</span><span class="meter"><i style="width:100%"></i></span><span class="prog-count">9/9</span></div>
+            <div class="prog-row"><span class="prog-name">Raid finder</span><span class="meter"><i style="width:100%"></i></span><span class="prog-count">9/9</span></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:0">
+          <div class="panel-head"><h3>Professions</h3></div>
+          <div class="panel-body">
+            <div class="prof"><span class="prog-name">Blacksmithing</span><span class="meter"><i style="width:88%"></i></span><span class="prog-count">88/100</span></div>
+            <div class="prof"><span class="prog-name">Mining</span><span class="meter"><i style="width:100%"></i></span><span class="prog-count">100/100</span></div>
+            <div class="prof"><span class="prog-name">Cooking</span><span class="meter"><i class="is-partial" style="width:41%"></i></span><span class="prog-count">41/100</span></div>
+            <p style="margin-top:var(--s-3);font-size:var(--t-sm);color:var(--ink-2)">
+              <span class="mono" style="color:var(--brass)">14</span> craftable upgrades for your current gear —
+              <a href="#s-advisor">ask the advisor</a>.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:0">
+          <div class="panel-head"><h3>Data provenance</h3></div>
+          <div class="panel-body">
+            <dl class="kv">
+              <dt>Last synced</dt><dd>2026-09-02 07:41Z</dd>
+              <dt>Refresh due</dt><dd>2026-09-09</dd>
+              <dt>Source</dt><dd>profile-eu</dd>
+              <dt>Character ID</dt><dd>216441883</dd>
+            </dl>
+            <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">
+              Shown because staleness is user-visible information, not an implementation detail — a player
+              looking at yesterday's gear should be able to tell.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="app-footer">
+        <span>Game data from the Blizzard Developer API. AegisScribe is not affiliated with or endorsed by Blizzard Entertainment.</span>
+        <span style="margin-left:auto">Item tooltips by Wowhead</span>
+      </footer>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SCREEN 2: SEARCH ======================= -->
+<section class="doc-section" id="s-search">
+  <div class="section-head"><span class="section-num">S2</span><h2>Search &amp; states</h2><span class="hint">Including the ones people skip</span></div>
+
+  <p class="note">Two searches share one screen: an exact realm-and-name lookup, and the semantic item search
+  that runs against the embedded catalogue. They behave differently on failure and that difference is the
+  design problem — a character that doesn't exist is a normal answer, a Blizzard outage is not.</p>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/search?q=…</span><span class="frame-tag">Screen 02 — results</span></div>
+    <div class="frame-body">
+      <div class="tabs" style="margin-bottom:var(--s-4)">
+        <button class="tab is-active">Characters</button>
+        <button class="tab">Items</button>
+        <button class="tab">Guilds</button>
+      </div>
+
+      <div class="search-hero">
+        <div style="flex:1 1 200px"><span class="label">Character name</span>
+          <div class="field"><svg class="icon" width="15" height="15"><use href="#g-search"/></svg><input value="thorn" aria-label="Character name"></div></div>
+        <div style="flex:1 1 200px"><span class="label">Realm</span>
+          <div class="field"><input value="Argent Dawn" aria-label="Realm"></div></div>
+        <button class="btn btn-primary">Search</button>
+      </div>
+
+      <p style="margin-top:var(--s-4);font-size:var(--t-sm);color:var(--ink-3)" class="mono">4 characters · 0.21s</p>
+
+      <div class="result-grid">
+        <a class="result-card" href="#s-character" style="--class-color:#33937F"><span class="result-portrait">T</span><span><span class="result-name">Thornwake</span><br><span class="result-meta">80 Evoker · ilvl 639 · Argent Dawn</span></span></a>
+        <a class="result-card" href="#s-character" style="--class-color:#C41E3A"><span class="result-portrait">T</span><span><span class="result-name">Thornbite</span><br><span class="result-meta">80 Death Knight · ilvl 618 · Argent Dawn</span></span></a>
+        <a class="result-card" href="#s-character" style="--class-color:#C69B6D"><span class="result-portrait">T</span><span><span class="result-name">Thornguard</span><br><span class="result-meta">76 Warrior · ilvl 541 · Argent Dawn</span></span></a>
+        <a class="result-card" href="#s-character" style="--class-color:#8788EE"><span class="result-portrait">T</span><span><span class="result-name">Thornsong</span><br><span class="result-meta">80 Warlock · ilvl 627 · Argent Dawn</span></span></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/search?tab=items</span><span class="frame-tag">Screen 02 — semantic item search</span></div>
+    <div class="frame-body">
+      <div><span class="label">Describe what you're looking for</span>
+        <div class="field"><svg class="icon" width="15" height="15"><use href="#g-search"/></svg><input value="fire resistance cloak for a tank" aria-label="Item search"></div></div>
+      <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)" class="mono">Vector search · cosine · 8 nearest of 41 208 items</p>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:var(--s-3);max-width:560px">
+        <a class="item q-epic" href="#s-search"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Cinderweave Greatcloak</span><span class="item-meta">Back · Cloth · fire resistance, stamina</span></span><span class="item-ilvl">0.14</span></a>
+        <a class="item q-epic" href="#s-search"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Drape of Banked Embers</span><span class="item-meta">Back · Cloth · fire resistance, armour</span></span><span class="item-ilvl">0.19</span></a>
+        <a class="item q-rare" href="#s-search"><span class="item-icon"><svg width="18" height="18"><use href="#g-chest"/></svg></span><span class="item-body"><span class="item-name">Flame-Warded Shroud</span><span class="item-meta">Back · Cloth · fire resistance</span></span><span class="item-ilvl">0.23</span></a>
+      </div>
+      <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">The right-hand figure is cosine
+      distance, not item level — lower is closer. Labelled in the column header in the real view.</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--s-4);margin-top:var(--s-4)">
+    <div class="frame" style="margin-top:0">
+      <div class="frame-bar"><span class="frame-route">state: empty</span></div>
+      <div class="frame-body">
+        <div class="state-box">
+          <h4>No character called “Thornwake” on Argent Dawn</h4>
+          <p>Names are per-realm, and a character that transferred keeps its name on the new realm only.
+          Check the realm, or search every realm at once.</p>
+          <button class="btn btn-secondary btn-sm">Search all realms</button>
+        </div>
+      </div>
+    </div>
+    <div class="frame" style="margin-top:0">
+      <div class="frame-bar"><span class="frame-route">state: upstream unavailable</span></div>
+      <div class="frame-body">
+        <div class="state-box is-error">
+          <h4>Showing data from 6 days ago</h4>
+          <p>Blizzard's API isn't responding, so this is the last copy we synced. Gear and progression may
+          have changed since.</p>
+          <button class="btn btn-secondary btn-sm">Try again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="rule-callout"><b>Degradation is a designed state, not an error.</b> The data layer returns the
+  stale row when Blizzard is unreachable rather than failing the request, so the UI's job is to say <em>how
+  old</em> the answer is. Never show a blank error page over data we still hold.</div>
+</section>
+
+<!-- ======================= SCREEN 3: ROSTER ======================= -->
+<section class="doc-section" id="s-roster">
+  <div class="section-head"><span class="section-num">S3</span><h2>Guild roster &amp; natural-language query</h2><span class="hint">The interpreted filter</span></div>
+
+  <p class="note">The chip row under the query box is the most important element on this screen. The model
+  turns plain English into a constrained filter object; the chips are that object, rendered. A user who sees
+  “ilvl &gt; 620” when they meant 640 spots it in one read and fixes it by editing a chip — instead of
+  trusting a wrong answer that looks authoritative.</p>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/guild/argent-dawn/ashes-of-dawn</span><span class="frame-tag">Screen 03</span></div>
+    <div class="frame-body">
+
+      <div class="char-banner" style="--class-color:var(--brass)">
+        <div class="char-id">
+          <div class="char-name" style="color:var(--ink)">Ashes of Dawn</div>
+          <div class="char-sub">Argent Dawn (EU) <span class="sep">·</span> 214 members <span class="sep">·</span> Alliance</div>
+        </div>
+        <div class="char-stats">
+          <div class="tile"><div class="tile-label">Median ilvl</div><div class="tile-value">631</div><div class="tile-sub">raiders only</div></div>
+          <div class="tile"><div class="tile-label">Roster synced</div><div class="tile-value">4h</div><div class="tile-sub">ago</div></div>
+        </div>
+        <div class="char-actions"><span class="pill pill-neutral">You are an officer</span></div>
+      </div>
+
+      <div class="nlq" style="margin-top:var(--s-4)">
+        <span class="label">Ask about this roster</span>
+        <div class="field">
+          <input value="mains over 620 who haven't raided this week" aria-label="Natural language roster query">
+          <button class="btn btn-primary btn-sm">Run</button>
+        </div>
+        <div class="interp">
+          <span class="interp-label">Understood as</span>
+          <span class="chip"><span class="chip-key">item level &gt;</span> 620 <button class="chip-x" aria-label="Remove item level filter">×</button></span>
+          <span class="chip"><span class="chip-key">rank</span> Main <button class="chip-x" aria-label="Remove rank filter">×</button></span>
+          <span class="chip"><span class="chip-key">last raid before</span> 2026-08-26 <button class="chip-x" aria-label="Remove date filter">×</button></span>
+          <span class="chip"><span class="chip-key">sort</span> item level ↓ <button class="chip-x" aria-label="Remove sort">×</button></span>
+          <span class="chip chip-add">+ Add filter</span>
+          <span style="margin-left:auto"><span class="ai-badge">AI interpreted</span></span>
+        </div>
+      </div>
+
+      <p style="margin:var(--s-4) 0 var(--s-2);font-size:var(--t-sm);color:var(--ink-3)" class="mono">6 of 214 members</p>
+
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr><th>Character</th><th>Rank</th><th>In-game</th><th>Spec</th><th class="num sorted">Item level</th><th class="num">M+ score</th><th>Last raid</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="class-dot" style="background:#33937F"></span><span style="color:#33937F;font-weight:600">Thornwake</span></td><td><span class="rank" style="--rank-color:#CBA76A"><i></i>Officer</span></td><td class="rank-blizz">Veteran (3)</td><td>Devastation</td><td class="num">639</td><td class="num">2 841</td><td>11 days ago</td><td><span class="pill pill-ok"><i></i>Synced</span></td></tr>
+            <tr class="alt-row"><td><span class="class-dot" style="background:#C41E3A"></span><span style="color:#C41E3A;font-weight:600">Thornbite</span></td><td><span class="rank" style="--rank-color:#616D7E"><i></i>Alt</span></td><td class="rank-blizz">Alt (6)</td><td>Blood</td><td class="num">618</td><td class="num">1 204</td><td>—</td><td><span class="pill pill-ok"><i></i>Synced</span></td></tr>
+            <tr><td><span class="class-dot" style="background:#C41E3A"></span><span style="color:#C41E3A;font-weight:600">Baelmourn</span></td><td><span class="rank" style="--rank-color:#3E9C77"><i></i>Raider</span></td><td class="rank-blizz">Member (4)</td><td>Blood</td><td class="num">637</td><td class="num">2 610</td><td>9 days ago</td><td><span class="pill pill-ok"><i></i>Synced</span></td></tr>
+            <tr><td><span class="class-dot" style="background:#3FC7EB"></span><span style="color:#3FC7EB;font-weight:600">Sylvexa</span></td><td><span class="rank" style="--rank-color:#3E9C77"><i></i>Raider</span></td><td class="rank-blizz">Member (4)</td><td>Frost</td><td class="num">634</td><td class="num">2 977</td><td>8 days ago</td><td><span class="pill pill-attention"><i></i>Stale 12d</span></td></tr>
+            <tr><td><span class="class-dot" style="background:#AAD372"></span><span style="color:#AAD372;font-weight:600">Kessric</span></td><td><span class="rank" style="--rank-color:#3D9BFF"><i></i>Trial</span></td><td class="rank-blizz">Initiate (7)</td><td>Marksmanship</td><td class="num">629</td><td class="num">2 455</td><td>14 days ago</td><td><span class="pill pill-ok"><i></i>Synced</span></td></tr>
+            <tr><td><span class="class-dot" style="background:#8788EE"></span><span style="color:#8788EE;font-weight:600">Thornsong</span></td><td><span class="rank" style="--rank-color:#3E9C77"><i></i>Raider</span></td><td class="rank-blizz">Member (4)</td><td>Destruction</td><td class="num">627</td><td class="num">2 388</td><td>10 days ago</td><td><span class="pill pill-ok"><i></i>Synced</span></td></tr>
+            <tr><td><span class="class-dot" style="background:#C69B6D"></span><span style="color:#C69B6D;font-weight:600">Draveth</span></td><td><span class="rank" style="--rank-color:#616D7E"><i></i>Social</span></td><td class="rank-blizz">Alt (6)</td><td>Protection</td><td class="num">622</td><td class="num">2 104</td><td>16 days ago</td><td><span class="pill pill-critical"><i></i>Suppressed</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rule-callout" style="margin-bottom:0">
+        <b>“Suppressed” is a real row state.</b> A character whose data was erased on request keeps a
+        tombstone so the sync worker won't re-fetch it. The roster shows the rank and the state, and nothing
+        else — designing this state now is what stops someone later treating erasure as a plain delete.
+      </div>
+
+      <footer class="app-footer">
+        <span>Game data from the Blizzard Developer API. AegisScribe is not affiliated with or endorsed by Blizzard Entertainment.</span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SCREEN 4: ADVISOR ======================= -->
+<section class="doc-section" id="s-advisor">
+  <div class="section-head"><span class="section-num">S4</span><h2>Crafting &amp; gear advisor</h2><span class="hint">Grounded chat</span></div>
+
+  <p class="note">The advisor answers from retrieved context — this character's gear and the recipe catalogue —
+  and every claim it makes carries a citation back to the item or recipe it came from. That's not a nicety:
+  a model asked about this game will confidently produce a decade-old answer if you let it, so the citation
+  is how a player tells a grounded answer from a remembered one.</p>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/character/argent-dawn/thornwake/advisor</span><span class="frame-tag">Screen 04</span></div>
+    <div class="frame-body">
+      <div class="chat">
+        <div class="thread">
+
+          <div class="msg msg-user">
+            <div class="msg-avatar">RF</div>
+            <div class="msg-body">
+              <div class="msg-head"><span class="msg-who">You</span></div>
+              <div class="msg-text">What should I craft next?</div>
+            </div>
+          </div>
+
+          <div class="msg msg-ai">
+            <div class="msg-avatar">Æ</div>
+            <div class="msg-body">
+              <div class="msg-head">
+                <span class="msg-who">Advisor</span>
+                <span class="ai-badge">AI generated</span>
+                <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--ink-3)">1 284 tokens · 2.1s</span>
+              </div>
+              <div class="msg-text">
+                <p>Your waist is the clear gap. <em>Frayed Emberweave Cinch</em><a class="cite" href="#s-character">item 219043</a>
+                is uncommon at item level 625, fourteen below the rest of your gear, and it's the only slot
+                still holding a pre-season piece.</p>
+                <p>At Blacksmithing 88 you can craft <em>Ember-Forged Warbelt</em><a class="cite" href="#s-advisor">recipe 45219</a>
+                at item level running to 642. You have three of the four reagents; you're short 12
+                <em>Ironclaw Ore</em><a class="cite" href="#s-advisor">item 210936</a>.</p>
+                <p>After that the next-largest gap is your empty second trinket slot, but nothing your
+                professions can make will beat a dungeon drop there.<span class="caret" aria-hidden="true"></span></p>
+              </div>
+
+              <details class="grounding">
+                <summary>Grounding — 6 sources</summary>
+                <div class="grounding-body">
+                  character/argent-dawn/thornwake/equipment · synced 2026-09-02T07:41Z<br>
+                  character/argent-dawn/thornwake/professions · synced 2026-09-02T07:41Z<br>
+                  profession/164/skill-tier/2874 (Blacksmithing) · static-eu<br>
+                  recipe/45219 · static-eu<br>
+                  item/219043, item/210936 · static-eu
+                </div>
+              </details>
+
+              <div style="display:flex;gap:var(--s-2);margin-top:var(--s-3);flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm">■ Stop</button>
+                <button class="btn btn-ghost btn-sm">Regenerate</button>
+                <button class="btn btn-ghost btn-sm">Copy</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <aside style="display:flex;flex-direction:column;gap:var(--s-3)">
+          <div class="rail-card">
+            <h4>Grounded on</h4>
+            <div style="display:flex;align-items:center;gap:var(--s-3)">
+              <div class="result-portrait" style="width:34px;height:34px">T</div>
+              <div><div class="result-name" style="color:#33937F">Thornwake</div><div class="result-meta">ilvl 639 · Evoker</div></div>
+            </div>
+            <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">The advisor only sees
+            characters you can already view. Switching character restarts the thread.</p>
+          </div>
+
+          <div class="rail-card">
+            <h4>Suggested</h4>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button class="btn btn-secondary btn-sm" style="text-align:left">Where's my weakest slot?</button>
+              <button class="btn btn-secondary btn-sm" style="text-align:left">What reagents am I short?</button>
+              <button class="btn btn-secondary btn-sm" style="text-align:left">Compare my two rings</button>
+            </div>
+          </div>
+
+          <div class="rail-card">
+            <h4>Reagents needed</h4>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <a class="item q-uncommon is-flagged" href="#s-advisor" style="padding:5px 7px"><span class="item-body"><span class="item-name">Ironclaw Ore</span><span class="item-meta">have 4 of 16</span></span><span class="pill pill-attention">Short 12</span></a>
+              <a class="item q-uncommon" href="#s-advisor" style="padding:5px 7px"><span class="item-body"><span class="item-name">Cinderthread Bolt</span><span class="item-meta">have 8 of 8</span></span><span class="pill pill-ok"><i></i>Ready</span></a>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="composer">
+        <div class="field" style="flex:1"><input placeholder="Ask about gear, crafting or upgrades…" aria-label="Ask the advisor"></div>
+        <button class="btn btn-primary">Send</button>
+      </div>
+
+      <footer class="app-footer">
+        <span>Advisor answers are generated and can be wrong — check the cited items before spending materials.</span>
+        <span style="margin-left:auto">Game data from the Blizzard Developer API.</span>
+      </footer>
+    </div>
+  </div>
+
+  <div class="rule-callout"><b>Three things here are required by the rules, not chosen.</b> The
+  <em>AI generated</em> badge on every model-authored surface; the <em>Stop</em> control, visible while a
+  response streams; and the grounding disclosure, because an answer with no retrieved sources must say it
+  doesn't know rather than improvise. See <code>.claude/rules/ai.md</code>.</div>
+</section>
+
+<!-- ======================= SCREEN 5: CALENDAR ======================= -->
+<section class="doc-section" id="s-calendar">
+  <div class="section-head"><span class="section-num">S5</span><h2>Calendar &amp; signups</h2><span class="hint">Tenant-scoped</span></div>
+
+  <p class="note">The calendar's hard problem isn't layout, it's <strong>time</strong>. Guilds are
+  international, so every displayed time is labelled with the zone it's in — the tenant's by default,
+  the viewer's on hover. An unlabelled raid time is this screen's characteristic bug, and it doesn't
+  throw, it just assembles the wrong people at the wrong hour.</p>
+
+  <div class="frame">
+    <div class="frame-bar"><span class="frame-dots"><i></i><i></i><i></i></span><span class="frame-route">/t/ashes-of-dawn/calendar</span><span class="frame-tag">Screen 05</span></div>
+    <div class="frame-body">
+      <div class="cal-head">
+        <span class="cal-title">September 2026</span>
+        <button class="btn btn-ghost btn-sm">‹</button>
+        <button class="btn btn-ghost btn-sm">›</button>
+        <span class="tz-note">Times in Europe/Berlin — guild default</span>
+        <span class="spacer" style="margin-left:auto"></span>
+        <button class="btn btn-secondary btn-sm">Schedule with AI</button>
+        <button class="btn btn-primary btn-sm">New event</button>
+      </div>
+
+      <div class="cal-grid">
+        <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
+        <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+
+        <div class="cal-cell is-out"><span class="cal-date">31</span></div>
+        <div class="cal-cell"><span class="cal-date">1</span>
+          <a class="cal-event" href="#s-calendar"><span class="ce-time">20:00</span><span class="ce-name">Manaforge — Heroic</span></a></div>
+        <div class="cal-cell is-today"><span class="cal-date">2</span>
+          <a class="cal-event" href="#s-calendar"><span class="ce-time">19:30</span><span class="ce-name">Keys night</span></a></div>
+        <div class="cal-cell"><span class="cal-date">3</span>
+          <a class="cal-event" href="#s-calendar"><span class="ce-time">20:00</span><span class="ce-name">Manaforge — Mythic</span></a></div>
+        <div class="cal-cell"><span class="cal-date">4</span></div>
+        <div class="cal-cell"><span class="cal-date">5</span></div>
+        <div class="cal-cell"><span class="cal-date">6</span>
+          <a class="cal-event" href="#s-calendar"><span class="ce-time">14:00</span><span class="ce-name">Alt raid</span></a></div>
+
+        <div class="cal-cell"><span class="cal-date">7</span></div>
+        <div class="cal-cell"><span class="cal-date">8</span>
+          <a class="cal-event" href="#s-calendar"><span class="ce-time">20:00</span><span class="ce-name">Manaforge — Heroic</span></a></div>
+        <div class="cal-cell"><span class="cal-date">9</span></div>
+        <div class="cal-cell"><span class="cal-date">10</span>
+          <a class="cal-event is-cancelled" href="#s-calendar"><span class="ce-time">20:00</span><span class="ce-name">Manaforge — Mythic</span></a></div>
+        <div class="cal-cell"><span class="cal-date">11</span></div>
+        <div class="cal-cell"><span class="cal-date">12</span></div>
+        <div class="cal-cell"><span class="cal-date">13</span></div>
+      </div>
+
+      <div class="split" style="margin-top:var(--s-4)">
+        <div class="panel" style="margin-top:0">
+          <div class="panel-head">
+            <h3>Tue 1 Sep · Manaforge — Heroic</h3>
+            <span class="spacer"></span>
+            <span class="pill pill-ok"><i></i>Signups open</span>
+          </div>
+          <div class="panel-body">
+            <dl class="kv" style="margin-bottom:var(--s-4)">
+              <dt>Starts</dt><dd>20:00 Europe/Berlin <span style="color:var(--ink-3)">· 19:00 your time</span></dd>
+              <dt>Locks</dt><dd>19:00 Europe/Berlin</dd>
+              <dt>Repeats</dt><dd>Weekly on Tue, until 27 Oct</dd>
+            </dl>
+
+            <span class="label">Signed up — 14 of 20</span>
+            <div class="roster-slots" style="margin-bottom:var(--s-4)">
+              <div class="slot-card" style="--class-color:#33937F"><span><span class="sc-name">Thornwake</span><br><span class="sc-meta">Devastation · 639</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-accepted">Yes</span></div>
+              <div class="slot-card" style="--class-color:#C41E3A"><span><span class="sc-name">Baelmourn</span><br><span class="sc-meta">Blood · 637</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-accepted">Yes</span></div>
+              <div class="slot-card" style="--class-color:#3FC7EB"><span><span class="sc-name">Sylvexa</span><br><span class="sc-meta">Frost · 634</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-tentative">Maybe</span></div>
+              <div class="slot-card" style="--class-color:#AAD372"><span><span class="sc-name">Kessric</span><br><span class="sc-meta">Marksmanship · 629</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-declined">No</span></div>
+              <div class="slot-card" style="--class-color:#8788EE"><span><span class="sc-name">Thornsong</span><br><span class="sc-meta">Destruction · 627</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-benched">Bench</span></div>
+              <div class="slot-card" style="--class-color:#C69B6D"><span><span class="sc-name">Draveth</span><br><span class="sc-meta">Protection · 622</span></span><span class="spacer" style="margin-left:auto"></span><span class="signup su-unknown">—</span></div>
+            </div>
+
+            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm">Sign up</button>
+              <button class="btn btn-secondary btn-sm">Tentative</button>
+              <button class="btn btn-ghost btn-sm">Can't make it</button>
+              <span class="spacer" style="margin-left:auto"></span>
+              <button class="btn btn-secondary btn-sm">Remind non-repliers</button>
+            </div>
+          </div>
+        </div>
+
+        <aside style="display:flex;flex-direction:column;gap:var(--s-3)">
+          <div class="rail-card">
+            <h4>Composition</h4>
+            <div style="display:flex;gap:var(--s-2);flex-wrap:wrap;margin-bottom:var(--s-3)">
+              <span class="ai-badge">AI analysis</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <span class="pill pill-critical" style="justify-content:flex-start"><i></i>No battle rez</span>
+              <span class="pill pill-attention" style="justify-content:flex-start"><i></i>1 tank short</span>
+              <span class="pill pill-ok" style="justify-content:flex-start"><i></i>Healer count OK</span>
+            </div>
+            <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">
+              From 14 signups. Draveth (Protection) hasn't replied — that's the missing tank.
+              <a href="#s-calendar">See the working</a>.
+            </p>
+          </div>
+
+          <div class="rail-card">
+            <h4>Attendance</h4>
+            <div class="prog-row" style="grid-template-columns:1fr 60px"><span class="prog-name">Last 12 raids</span><span class="prog-count">9 / 12</span></div>
+            <div class="prog-row" style="grid-template-columns:1fr 60px"><span class="prog-name">Signed, no-show</span><span class="prog-count">1</span></div>
+            <p style="margin-top:var(--s-2);font-size:var(--t-xs);color:var(--ink-3)">
+              Three raids have no recorded attendance; they're excluded, not counted as absences.
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="rule-callout" style="margin-bottom:0">
+        <b>Signup is not attendance.</b> A signup is an intention recorded before; attendance is a fact
+        recorded after, and they disagree constantly. Two entities, and the disagreement is the data
+        officers actually want. Log-derived attendance is marked as such — it proves someone was in a
+        report, not that they weren't benched.
+      </div>
+
+      <footer class="app-footer">
+        <span>Game data from the Blizzard Developer API. AegisScribe is not affiliated with or endorsed by Blizzard Entertainment.</span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= SCREEN 6: NOTIFICATIONS ======================= -->
+<section class="doc-section" id="s-notifications">
+  <div class="section-head"><span class="section-num">S6</span><h2>Notifications</h2><span class="hint">In-app + Discord + push</span></div>
+
+  <p class="note">The in-app centre is the <strong>system of record</strong> — every notification exists
+  here whether or not it also reached Discord. Delivery status is shown per channel, because "did the
+  guild actually get told" is the question people ask when something goes wrong, and a silently dead
+  webhook is the most common way this feature fails.</p>
+
+  <div class="split-even">
+    <div class="frame" style="margin-top:var(--s-4)">
+      <div class="frame-bar"><span class="frame-route">/t/ashes-of-dawn/notifications</span><span class="frame-tag">Screen 06</span></div>
+      <div class="frame-body" style="padding:0">
+        <div class="notif is-unread">
+          <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.5"/></svg></span>
+          <span class="notif-body">
+            <span class="notif-text">Manaforge — Mythic on Thu 10 Sep was <strong>cancelled</strong> by Thornwake.</span>
+            <span class="notif-meta">14 minutes ago · 18 members notified</span>
+          </span>
+          <span class="notif-channels"><span class="ch is-sent">In-app</span><span class="ch is-sent">Discord</span></span>
+        </div>
+        <div class="notif is-unread">
+          <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 100 16 8 8 0 000-16z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5l3 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <span class="notif-body">
+            <span class="notif-text">6 raiders haven't replied to Tue 8 Sep. Signups lock in 2 hours.</span>
+            <span class="notif-meta">1 hour ago · officers only</span>
+          </span>
+          <span class="notif-channels"><span class="ch is-sent">In-app</span><span class="ch is-sent">Discord</span></span>
+        </div>
+        <div class="notif is-unread">
+          <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 100-8 4 4 0 000 8z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 20a7 7 0 0114 0" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+          <span class="notif-body">
+            <span class="notif-text">Kessric applied to join as a Marksmanship Hunter.</span>
+            <span class="notif-meta">3 hours ago · officers only</span>
+          </span>
+          <span class="notif-channels"><span class="ch is-sent">In-app</span><span class="ch is-failed">Discord</span></span>
+        </div>
+        <div class="notif">
+          <span class="notif-icon"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v6c0 4-3 7-8 8-5-1-8-4-8-8V7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+          <span class="notif-body">
+            <span class="notif-text">Sylvexa was promoted from Trial to Raider by Thornwake.</span>
+            <span class="notif-meta">Yesterday · audit entry #4192</span>
+          </span>
+          <span class="notif-channels"><span class="ch is-sent">In-app</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-4)">
+      <div class="rail-card">
+        <h4>Discord webhook</h4>
+        <span class="label">Channel</span>
+        <div class="field" style="margin-bottom:var(--s-3)"><input value="#raid-announcements" readonly aria-label="Discord channel"></div>
+        <span class="label">Webhook URL</span>
+        <div class="field" style="margin-bottom:var(--s-3)"><input value="https://discord.com/api/webhooks/····························" readonly aria-label="Webhook URL, masked"></div>
+        <div style="display:flex;gap:var(--s-2);flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm">Replace</button>
+          <button class="btn btn-ghost btn-sm">Send test</button>
+        </div>
+        <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">
+          A webhook URL is a credential — anyone holding it can post to that channel. Stored encrypted,
+          never shown in full, never logged.
+        </p>
+      </div>
+
+      <div class="rail-card">
+        <h4>Your preferences here</h4>
+        <div class="pref-row" style="grid-template-columns:minmax(0,1fr) 46px 46px">
+          <span></span><span class="tile-label" style="text-align:center">App</span><span class="tile-label" style="text-align:center">Disc</span>
+        </div>
+        <div class="pref-row" style="grid-template-columns:minmax(0,1fr) 46px 46px">
+          <span><span class="pref-name">Event created</span></span><span class="toggle is-on"></span><span class="toggle is-on"></span>
+        </div>
+        <div class="pref-row" style="grid-template-columns:minmax(0,1fr) 46px 46px">
+          <span><span class="pref-name">Signup reminder</span></span><span class="toggle is-on"></span><span class="toggle is-on"></span>
+        </div>
+        <div class="pref-row" style="grid-template-columns:minmax(0,1fr) 46px 46px">
+          <span><span class="pref-name">Rank changed</span></span><span class="toggle is-on"></span><span class="toggle"></span>
+        </div>
+        <div class="pref-row" style="grid-template-columns:minmax(0,1fr) 46px 46px">
+          <span><span class="pref-name">Weekly digest</span><br><span class="pref-sub">Mondays, 09:00</span></span><span class="toggle"></span><span class="toggle is-on"></span>
+        </div>
+        <p style="margin-top:var(--s-3);font-size:var(--t-xs);color:var(--ink-3)">
+          Preferences are <strong>per community</strong>. The same person can want reminders here and
+          silence somewhere else.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rule-callout">
+    <b>A failed Discord delivery is visible, not silent.</b> The third row above shows
+    <span class="ch is-failed">Discord</span> — retries were exhausted, so the notification still
+    exists in-app and the officers were told the webhook is failing. A webhook that returns 401 or 404
+    is marked invalid and retries stop; hammering a revoked URL forever is the alternative, and it's
+    worse.
+  </div>
+</section>
+
+<!-- ======================= COMPONENT MAP ======================= -->
+<section class="doc-section" id="map">
+  <div class="section-head"><span class="section-num">09</span><h2>Angular component map</h2><span class="hint">Build order</span></div>
+
+  <p class="note">Build the shared primitives first — every screen depends on them, and an item cell
+  re-invented per feature is how a design system dies in week three.</p>
+
+  <p class="label" style="margin-top:var(--s-4)">Shared — <code>src/web/src/app/shared/</code></p>
+  <ul class="map-list">
+    <li><code>&lt;scribe-item-cell&gt;</code><span>Icon, name, sub-line, item level. Renders the Wowhead anchor. Inputs: item, showSlot, flagged.</span></li>
+    <li><code>&lt;scribe-stat-tile&gt;</code><span>Label, value, sub-line. Tabular figures.</span></li>
+    <li><code>&lt;scribe-status-pill&gt;</code><span>Dot + word. Inputs: state (ok | attention | critical | neutral), label.</span></li>
+    <li><code>&lt;scribe-filter-chip&gt;</code><span>Key, value, remove. Emits removed.</span></li>
+    <li><code>&lt;scribe-meter&gt;</code><span>Progress bar for raid and profession rows.</span></li>
+    <li><code>&lt;scribe-empty-state&gt;</code><span>Heading, body, one action. Variant: error.</span></li>
+    <li><code>&lt;scribe-skeleton&gt;</code><span>Shape-matched placeholder. Inputs: height, count.</span></li>
+    <li><code>&lt;scribe-ai-badge&gt;</code><span>The generated-content marker. Never optional on AI output.</span></li>
+    <li><code>&lt;scribe-tenant-switcher&gt;</code><span>Active community + the viewer's role. Switching navigates; it never mutates hidden state.</span></li>
+    <li><code>&lt;scribe-rank-pill&gt;</code><span>A tenant rank. Colour comes from the tenant's own config as --rank-color, not from a token.</span></li>
+    <li><code>&lt;scribe-signup-chip&gt;</code><span>Accepted / Tentative / Declined / Benched / No reply.</span></li>
+    <li><code>&lt;scribe-local-time&gt;</code><span>Renders an instant in the tenant zone with the viewer's zone on hover. Both always labelled.</span></li>
+  </ul>
+
+  <p class="label" style="margin-top:var(--s-5)">Features</p>
+  <ul class="map-list">
+    <li><code>character/character-profile</code><span>Route container. Composes banner, rails, tabs.</span></li>
+    <li><code>character/character-banner</code><span>Portrait, identity, stat tiles, actions. Sets --class-color.</span></li>
+    <li><code>character/equipment-rail</code><span>Ordered slots → item cells. Inputs: slots, side.</span></li>
+    <li><code>character/progression-panel</code><span>Raid difficulty rows.</span></li>
+    <li><code>character/profession-panel</code><span>Skill rows + craftable-upgrade count.</span></li>
+    <li><code>search/character-search</code><span>Form, results grid, empty and error states.</span></li>
+    <li><code>search/item-search</code><span>Semantic search. Shows distance, not item level.</span></li>
+    <li><code>guild/guild-roster</code><span>Sortable table. Sets --class-color per row.</span></li>
+    <li><code>guild/nl-query-bar</code><span>Input + interpreted-filter chip row. Chips are the filter object.</span></li>
+    <li><code>advisor/crafting-advisor</code><span>Streaming thread, stop control, grounding disclosure, rail.</span></li>
+    <li><code>tenancy/tenant-picker</code><span>Lists the user's communities. Where a 404 on a tenant route lands.</span></li>
+    <li><code>roster/roster-table</code><span>Tenant ranks, in-game ranks, alt grouping, sortable.</span></li>
+    <li><code>guild/rank-manager</code><span>The community's own ladder — create, reorder, recolour. Officer only.</span></li>
+    <li><code>guild/member-management</code><span>Invites, join requests, role changes, removal. Every action audited.</span></li>
+    <li><code>calendar/calendar-month</code><span>Month grid. All times through scribe-local-time.</span></li>
+    <li><code>calendar/event-detail</code><span>Signup panel, composition rail, attendance panel.</span></li>
+    <li><code>calendar/event-composer</code><span>Manual create/edit, plus the NL scheduling preview-and-confirm.</span></li>
+    <li><code>notifications/notification-centre</code><span>The system of record. Per-channel delivery status.</span></li>
+    <li><code>notifications/notification-preferences</code><span>Per user, per tenant, per kind, per channel.</span></li>
+    <li><code>notifications/discord-webhook-settings</code><span>Masked URL, replace, send test.</span></li>
+  </ul>
+</section>
+
+<!-- ======================= NON-NEGOTIABLES ======================= -->
+<section class="doc-section" id="rules">
+  <div class="section-head"><span class="section-num">10</span><h2>Non-negotiables</h2><span class="hint">Carried from CLAUDE.md</span></div>
+
+  <p class="note">If a change to the UI would break one of these, the change is wrong. Each is drawn somewhere
+  on this page so it can be copied rather than remembered.</p>
+
+  <ul class="map-list">
+    <li><code>Tenant is visible</code><span>The switcher shows the active community and the viewer's role on every tenant route. Acting in the wrong guild is the failure this prevents.</span></li>
+    <li><code>Tenant lives in the route</code><span>/t/:tenantSlug/... — services build URLs from the active route, never a stored variable that can drift.</span></li>
+    <li><code>404 means "not yours"</code><span>Route to the picker. The UI never distinguishes "doesn't exist" from "not a member", because the API deliberately doesn't.</span></li>
+    <li><code>Times are labelled</code><span>Tenant zone by default, viewer's on hover, both named. An unlabelled raid time is a real bug, not a nit.</span></li>
+    <li><code>Delivery status is shown</code><span>Per-channel, including failures. A silently dead webhook is how this feature fails in practice.</span></li>
+    <li><code>Webhook URLs are masked</code><span>Never rendered in full, never logged. It is a credential.</span></li>
+    <li><code>Attribution</code><span>Every page footer names Blizzard as the data source and disclaims affiliation. Blizzard ToU.</span></li>
+    <li><code>No trademark</code><span>The product name is AegisScribe. No Blizzard mark in the title, the wordmark, or a URL.</span></li>
+    <li><code>Wowhead is client-side</code><span>Item cells render outbound anchors; the tooltip script decorates them. The server never calls Wowhead.</span></li>
+    <li><code>renameLinks: false</code><span>In the tooltip config, or the script overwrites our item names and breaks anything matching on them.</span></li>
+    <li><code>AI is labelled</code><span>Every model-authored surface carries the generated badge. Streaming views carry a stop control.</span></li>
+    <li><code>Filters are visible</code><span>Natural-language results always show the interpreted filter as removable chips.</span></li>
+    <li><code>Staleness is visible</code><span>A character page states when it was last synced. Degraded reads say how old they are.</span></li>
+    <li><code>State is never colour alone</code><span>Pills pair a dot with a word. Quality pairs a border with a name.</span></li>
+    <li><code>Roles hide, servers enforce</code><span>Role-conditional UI is cosmetic. Every protected view has a server policy behind it.</span></li>
+  </ul>
+</section>
+
+<footer class="doc-footer">
+  <p><strong>AegisScribe Armory UI reference</strong> — the visual source of truth for <code>src/web/</code>.
+  Procedure for building against it: <code>.claude/skills/aegisscribe-design-system/SKILL.md</code>.
+  Characters, guilds and items on this page are fictional; identifier formats and colour values are real.</p>
+  <p style="margin-top:var(--s-3);color:var(--ink-3);font-size:var(--t-xs)">AegisScribe is not affiliated with or
+  endorsed by Blizzard Entertainment. Game data conventions referenced here belong to their respective owners.</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+// Scrollspy for the contents rail. The only script on the page — everything else is static by design,
+// because this document's job is to be read and copied from, not operated.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+  var targets = links
+    .map(function (l) { return document.querySelector(l.getAttribute('href')); })
+    .filter(Boolean);
+  if (!targets.length || !('IntersectionObserver' in window)) return;
+
+  var seen = new Map();
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { seen.set(e.target.id, e.intersectionRatio); });
+    var best = null, bestRatio = 0;
+    seen.forEach(function (ratio, id) { if (ratio > bestRatio) { bestRatio = ratio; best = id; } });
+    links.forEach(function (l) {
+      l.classList.toggle('is-active', best !== null && l.getAttribute('href') === '#' + best);
+    });
+  }, { threshold: [0, 0.15, 0.4, 0.75], rootMargin: '-10% 0px -60% 0px' });
+
+  targets.forEach(function (t) { observer.observe(t); });
+})();
+</script>
+
+</body>
+</html>

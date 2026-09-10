@@ -1,0 +1,92 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  AegisScribe — line endings, diffs and language stats
+#
+#  The load-bearing rule is the shell one. Everything else is hygiene.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Let Git normalise text in the repo and check it out natively per platform.
+* text=auto
+
+# ── The one that actually breaks things ───────────────────────────────────────
+# `.claude/hooks/*.sh` start with `#!/usr/bin/env bash`. Checked out with CRLF on
+# Windows, the shebang becomes `/usr/bin/env bash\r` and every hook dies with
+# "bad interpreter" — which means secret-guard and wowhead-guard silently stop
+# guarding. These files must be LF on every platform, regardless of core.autocrlf.
+*.sh            text eol=lf
+*.bash          text eol=lf
+
+# Windows-native scripts want the opposite.
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf
+
+# ── Source and config: normalise ──────────────────────────────────────────────
+*.cs            text diff=csharp
+*.csproj        text
+*.sln           text eol=crlf
+*.props         text
+*.targets       text
+*.json          text
+*.jsonc         text
+*.xml           text
+*.yml           text
+*.yaml          text
+*.md            text diff=markdown
+*.ts            text
+*.js            text
+*.mjs           text
+*.html          text diff=html
+*.css           text
+*.scss          text
+*.sql           text
+*.razor         text
+*.xaml          text
+*.plist         text
+*.editorconfig  text
+Dockerfile      text
+
+# ── Binary: never normalise, never diff as text ───────────────────────────────
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.webp          binary
+*.ico           binary
+*.icns          binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.otf           binary
+*.pdf           binary
+*.zip           binary
+*.dll           binary
+*.so            binary
+*.dylib         binary
+*.pfx           binary
+*.p12           binary
+*.keystore      binary
+*.jks           binary
+*.apk           binary
+*.aab           binary
+*.ipa           binary
+
+# ── Generated: keep it out of the diff noise, but still reviewable ────────────
+# `linguist-generated` collapses these in a GitHub pull request by default. They
+# stay in the diff — collapsed, not hidden — which is the point for the contract:
+# a breaking change must remain findable, just not drown the review.
+contract/openapi.v1.json        linguist-generated=true
+**/Migrations/*.Designer.cs     linguist-generated=true
+**/Migrations/*ModelSnapshot.cs linguist-generated=true
+package-lock.json               linguist-generated=true
+pnpm-lock.yaml                  linguist-generated=true
+yarn.lock                       linguist-generated=true
+
+# EF migration files are source and should be reviewed normally — only the
+# designer/snapshot halves above are generated. Do not add *.cs here.
+
+# ── Language stats ────────────────────────────────────────────────────────────
+# Vendored skills aren't ours; the design reference is a spec, not a web page.
+.claude/skills/aspire*/**            linguist-vendored=true
+.claude/skills/playwright-cli/**     linguist-vendored=true
+design/aegisscribe-armory.html       linguist-documentation=true
+docs/**                              linguist-documentation=true
