@@ -135,7 +135,7 @@ BEHAVIOR: Give me a one-line health summary per resource and tell me what you fi
 
 ## Phase 1 — Identity
 
-### 1.1 DbContext and ApplicationUser
+### 1.1 DbContext and ApplicationUser - done
 ```
 SCOPE: Add ApplicationUser : IdentityUser (DisplayName, CreatedAt, LastTenantId) and
 AegisScribeDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>, registered via the
@@ -146,7 +146,7 @@ create the migration yet.
 BEHAVIOR: Show me the context and user shape, wait for approval, then confirm it resolves from DI.
 ```
 
-### 1.2 Identity as the user store
+### 1.2 Identity as the user store - done
 ```
 SCOPE: Add Identity's user store plus the registration and password-management endpoints under
 /api/v1/auth. Identity answers WHO SOMEONE IS; it does not issue the app's tokens.
@@ -159,7 +159,7 @@ no Battle.net OAuth.
 BEHAVIOR: Plan the group and the logout handler, wait for approval, implement.
 ```
 
-### 1.3 PlatformAdmin role
+### 1.3 PlatformAdmin role - done
 ```
 SCOPE: Add role support and seed exactly one Identity role at startup, idempotently: PlatformAdmin.
 Add the PlatformAdmin authorization policy.
@@ -170,7 +170,7 @@ is the exact bug the tenancy model exists to prevent.
 BEHAVIOR: Implement, and state plainly why only one role exists here.
 ```
 
-### 1.4 Initial migration
+### 1.4 Initial migration - done
 ```
 SCOPE: Create the initial EF migration covering the Identity schema and apply it via the migration
 service.
@@ -180,7 +180,7 @@ BEHAVIOR: Show me the migration, wait for approval, apply, and confirm
 `dotnet ef migrations has-pending-model-changes` is clean.
 ```
 
-### 1.5 Identity smoke tests
+### 1.5 Identity smoke tests - done
 ```
 SCOPE: Integration tests: register a user, confirm the user store round-trips, confirm password
 management works, and confirm an authenticated endpoint returns a bare 401 when called anonymously.

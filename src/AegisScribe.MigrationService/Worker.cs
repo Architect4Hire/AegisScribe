@@ -1,16 +1,24 @@
+using AegisScribe.ApiService.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace AegisScribe.MigrationService;
 
-public class Worker(IHostApplicationLifetime hostApplicationLifetime, ILogger<Worker> logger) : BackgroundService
+public class Worker(
+    IServiceProvider serviceProvider,
+    IHostApplicationLifetime hostApplicationLifetime,
+    ILogger<Worker> logger) : BackgroundService
 {
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Migration service starting.");
 
-        // AegisScribeDbContext doesn't exist yet. The execution-strategy migration call
-        // (.claude/rules/backend.md) attaches here once it does — this step is the
-        // run-once-and-exit host loop only.
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AegisScribeDbContext>();
 
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () => await db.Database.MigrateAsync(stoppingToken));
+
+        logger.LogInformation("Migration service finished.");
         hostApplicationLifetime.StopApplication();
-        return Task.CompletedTask;
     }
 }

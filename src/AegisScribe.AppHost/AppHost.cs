@@ -16,7 +16,9 @@ var cache = builder.AddRedis("cache", password: redisPassword)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
-var api = builder.AddProject<Projects.AegisScribe_ApiService>("api");
+var api = builder.AddProject<Projects.AegisScribe_ApiService>("api")
+    .WithReference(db)
+    .WaitForCompletion(migrations);
 
 var sync = builder.AddProject<Projects.AegisScribe_SyncWorker>("sync");
 
