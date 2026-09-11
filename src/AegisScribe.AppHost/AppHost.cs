@@ -18,12 +18,34 @@ var cache = builder.AddRedis("cache", password: redisPassword)
 
 var api = builder.AddProject<Projects.AegisScribe_ApiService>("api")
     .WithReference(db)
-    .WaitForCompletion(migrations);
+    .WaitForCompletion(migrations)
+    .WithExternalHttpEndpoints();
 
 var sync = builder.AddProject<Projects.AegisScribe_SyncWorker>("sync");
 
-var web = builder.AddViteApp("web", "../web")
-    .WithRunScript("start")
-    .WithReference(api);
+var gateway = builder.AddProject<Projects.AegisScribe_Gateway>("gateway")
+    .WithReference(api)
+    .WithReference(cache)
+    .WaitFor(api)
+    .WithExternalHttpEndpoints();
+
+var web = builder.AddProject<Projects.AegisScribe_Web>("web")
+    .WithReference(gateway)
+    .WithExternalHttpEndpoints();
+
+var bffSecret = builder.AddParameter("bff-client-secret", secret: true);
+var opsSecret = builder.AddParameter("ops-client-secret", secret: true);
+
+migrations.WithReference(gateway);
+migrations.WithEnvironment("Oidc__BffClientSecret", bffSecret);
+migrations.WithEnvironment("Oidc__OpsClientSecret", opsSecret);
+
+// The gateway needs its own copy to exchange the code and to revoke on logout (1B.6).
+gateway.WithEnvironment("Oidc__BffClientSecret", bffSecret);
+
+// So the gateway's CORS policy can read services:web:https:0 without a literal (1B.8; gateway.md
+// -> "CORS"). Declared as its own statement, not chained onto gateway's own declaration above,
+// because `web` needs `gateway` declared first — this closes the cycle the other way round.
+gateway.WithReference(web);
 
 builder.Build().Run();

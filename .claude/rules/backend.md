@@ -11,6 +11,18 @@ global reference or tenant-scoped — and that placement decides whether it carr
 it gets a query filter, and how its cache key is built. Nothing else in this file makes sense until
 that's settled.
 
+- **Controllers, not minimal API route mapping.** Every HTTP endpoint in the API — feature routes,
+  Identity glue, and OpenIddict's own protocol surface (`connect/authorize`, `connect/token`) alike —
+  is an MVC controller action under `Controllers/`, using constructor-injected dependencies. No
+  `app.MapGet`/`MapPost`/`MapMethods` for anything beyond what `AddServiceDefaults()`'s
+  `MapDefaultEndpoints()` already provides. This isn't just a style preference: minimal API's
+  `RequestDelegateFactory` infers whether a complex-type parameter is a service or a request body by
+  position and type, and a service type it doesn't specifically recognise (e.g. a second
+  `SignInManager<T>` parameter following a `UserManager<T>` one) gets misread as an inferred body —
+  which throws `InvalidOperationException` at **startup**, crashing the whole host, not at the call
+  site. Controllers don't have this failure mode, because DI happens unambiguously through the
+  constructor. OpenIddict's own samples use controllers for exactly this reason; follow that
+  convention rather than porting a minimal-API sample verbatim.
 - **Thin controllers.** Bind the ViewModel, call the facade, return a typed result. No business
   logic, validation, caching, or EF queries in controllers. `[Authorize(Policy = ...)]` on the
   action *is* allowed — it's declarative HTTP metadata, not logic. Tenant-scoped routes sit under

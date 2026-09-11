@@ -137,6 +137,9 @@ aspire-output/
 # ── Angular / Node ────────────────────────────────────────────────────────────
 node_modules/
 dist/
+# Angular's build output is redirected here so AegisScribe.Web can serve it
+# directly (.claude/rules/gateway.md → "The web host") — generated, not source.
+src/AegisScribe.Web/wwwroot/
 tmp/
 out-tsc/
 bazel-out/

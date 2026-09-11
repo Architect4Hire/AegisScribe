@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AegisScribe.ServiceDefaults\AegisScribe.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildAngularApp" BeforeTargets="Build"
+          Inputs="../web/package.json;../web/angular.json;../web/src/**/*.*"
+          Outputs="wwwroot/index.html">
+    <Exec Command="npm install" WorkingDirectory="../web" Condition="!Exists('../web/node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="../web" />
+  </Target>
+
+</Project>

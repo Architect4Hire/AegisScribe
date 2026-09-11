@@ -196,7 +196,7 @@ BEHAVIOR: Run `dotnet test` green and report.
 > Build this **before** tenancy, because every later endpoint is authenticated through it. Read
 > `.claude/rules/gateway.md` and the token section of `.claude/rules/auth.md` first.
 
-### 1B.1 The three public hosts
+### 1B.1 The three public hosts - done
 ```
 SCOPE: Add AegisScribe.Gateway (ASP.NET Core + Yarp.ReverseProxy 2.3) and AegisScribe.Web (thin static
 host). Register both in the AppHost. Gateway references the API and Redis; Web references the gateway.
@@ -212,7 +212,7 @@ dashboard with all three of web, gateway and api carrying an external endpoint �
 worker nor the migration service carrying one.
 ```
 
-### 1B.2 YARP routes via service discovery
+### 1B.2 YARP routes via service discovery - done
 ```
 SCOPE: Configure the gateway to proxy /api/{**catch-all} to the API using
 AddServiceDiscoveryDestinationResolver(), with the cluster address as the logical name http://api.
@@ -221,8 +221,7 @@ RESTRICTION: No literal addresses or ports anywhere in the YARP config. Do NOT a
 BEHAVIOR: Implement, then show me an anonymous request reaching the API through the gateway.
 ```
 
-### 1B.3 The web host serves the SPA
-```
+### 1B.3 The web host serves the SPA - done```
 SCOPE: AegisScribe.Web serves the built Angular bundle with UseStaticFiles + MapFallbackToFile, and
 exposes a runtime config endpoint returning the gateway's base URL.
 CONSTRAINT: .claude/rules/gateway.md → "The web host".
@@ -232,7 +231,7 @@ config endpoint.
 BEHAVIOR: Implement, and show me the SPA loading from app.* and reading the gateway URL at runtime.
 ```
 
-### 1B.4 OpenIddict, and the three registered clients ⚑
+### 1B.4 OpenIddict, and the three registered clients ⚑ - done
 ```
 SCOPE: Add OpenIddict to the API: core + EF Core stores against AegisScribeDbContext (UseOpenIddict()
 on the context), the server with authorization/token/revocation/logout endpoints, authorization code +
@@ -251,7 +250,7 @@ BEHAVIOR: Plan the registration, the three client descriptors and the key strate
 implement, and show me the discovery document at /.well-known/openid-configuration.
 ```
 
-### 1B.4b Hardening the API's public edge
+### 1B.4b Hardening the API's public edge - done
 ```
 SCOPE: On the API: rate limiting partitioned per sub (authenticated), per client_id (fleet budget) and
 per IP (anonymous only), returning 429 with Retry-After; OpenAPI gated to non-production; the generated
@@ -265,7 +264,7 @@ BEHAVIOR: Implement, and test: a browser cross-origin fetch to the API is blocke
 Retry-After; OpenAPI 404s when the environment is Production.
 ```
 
-### 1B.4c API versioning ⚑
+### 1B.4c API versioning ⚑ - Done
 ```
 SCOPE: Add Asp.Versioning.Http with URL-segment versioning. Every route becomes /api/v1/...; tenant
 routes will be /api/v1/t/{tenantSlug}/... in Phase 2. Add the api-supported-versions and
@@ -278,7 +277,7 @@ BEHAVIOR: Explain in one line why this is worth doing before the first real endp
 implement and show me a versioned route responding.
 ```
 
-### 1B.5 The API becomes a token resource server
+### 1B.5 The API becomes a token resource server - done
 ```
 SCOPE: Add OpenIddict validation to the API with UseLocalServer() and UseAspNetCore(). Remove any
 cookie authentication from the API.
@@ -291,7 +290,7 @@ no session and no antiforgery. Tokens carry sub and PlatformAdmin only; NOTHING 
 BEHAVIOR: Implement, then test a valid token, an expired one, a wrong-audience one and a tampered one.
 ```
 
-### 1B.6 The gateway as a confidential OAuth client ⚑
+### 1B.6 The gateway as a confidential OAuth client ⚑ - done
 ```
 SCOPE: In the gateway: cookie authentication backed by a Redis ITicketStore; /auth/login running the
 authorization code + PKCE flow against the API as client aegisscribe-bff; both tokens stored in the
@@ -308,7 +307,7 @@ BEHAVIOR: Plan the session shape and the flow, wait for approval, implement, and
 header carries every attribute above.
 ```
 
-### 1B.7 Header sanitisation ⚑
+### 1B.7 Header sanitisation ⚑ - done
 ```
 SCOPE: In the YARP transform, strip client-supplied Authorization and X-Forwarded-* headers before
 setting our own. Configure ForwardedHeaders on the API to trust only the gateway's network.
@@ -320,7 +319,7 @@ BEHAVIOR: Implement, then write THE strip test: a request carrying a forged Auth
 reaches the API carrying the gateway's token, not the forged one. Show me it passing.
 ```
 
-### 1B.8 CORS, and the SPA auth client
+### 1B.8 CORS, and the SPA auth client - done
 ```
 SCOPE: CORS on the gateway naming the SPA origin from config with AllowCredentials. In Angular: the
 functional interceptor setting withCredentials and X-Requested-With, plus login/logout calls.
@@ -332,7 +331,7 @@ the API still has none.
 BEHAVIOR: Implement, and test that a preflight from an unlisted origin is rejected.
 ```
 
-### 1B.9 Edge verification
+### 1B.9 Edge verification - done
 ```
 SCOPE: Prove the boundary end to end.
 UTILIZATION: @code-reviewer.

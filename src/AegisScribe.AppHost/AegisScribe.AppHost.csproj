@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.5.3" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
   </ItemGroup>
@@ -18,6 +17,8 @@
     <ProjectReference Include="..\AegisScribe.MigrationService\AegisScribe.MigrationService.csproj" />
     <ProjectReference Include="..\AegisScribe.ApiService\AegisScribe.ApiService.csproj" />
     <ProjectReference Include="..\AegisScribe.SyncWorker\AegisScribe.SyncWorker.csproj" />
+    <ProjectReference Include="..\AegisScribe.Gateway\AegisScribe.Gateway.csproj" />
+    <ProjectReference Include="..\AegisScribe.Web\AegisScribe.Web.csproj" />
   </ItemGroup>
 
 </Project>

@@ -12,6 +12,12 @@ description: >
 
 # Add an API endpoint
 
+**Controllers only — never minimal API route mapping** (`app.MapGet`/`MapPost`/`MapMethods`), and
+that includes Identity glue and OpenIddict's own protocol endpoints, not just feature routes. See
+`.claude/rules/backend.md` for why: minimal API's body-inference can misjudge a service parameter as
+a request body and crash the host at startup, a failure mode controllers don't have because DI is
+unambiguous through the constructor.
+
 **First, is this endpoint tenant-scoped?** If it reads or writes anything a community owns — rosters,
 ranks, events, signups, notifications, applications — the answer is yes, and
 `.claude/rules/tenancy.md` plus the `add-tenant-entity` skill govern it. Tenant-scoped endpoints:

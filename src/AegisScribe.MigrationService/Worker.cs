@@ -6,6 +6,7 @@ namespace AegisScribe.MigrationService;
 public class Worker(
     IServiceProvider serviceProvider,
     IHostApplicationLifetime hostApplicationLifetime,
+    IConfiguration configuration,
     ILogger<Worker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -17,6 +18,8 @@ public class Worker(
 
         var strategy = db.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () => await db.Database.MigrateAsync(stoppingToken));
+
+        await OpenIddictClientSeeder.SeedClientsAsync(scope.ServiceProvider, configuration);
 
         logger.LogInformation("Migration service finished.");
         hostApplicationLifetime.StopApplication();
