@@ -21,13 +21,13 @@ failure mode is silent.
 | `settings.json` | Shared project settings (incl. hook wiring). Committed. | Read at session start. |
 | `rules/tenancy.md` | **Read this first.** The global vs tenant-scoped zones, tenant resolution, query filters, cache keying, per-tenant budgets. | Loads across the API, worker, tests and web app. |
 | `rules/aspire.md` | AppHost/orchestration conventions, incl. the 2025 SQL image pin. | Loads when Claude touches AppHost/ServiceDefaults. |
-| `rules/backend.md` | ASP.NET Core + EF Core conventions. Path-scoped to the API, worker and migrator. | Loads when Claude touches the backend. |
+| `rules/backend.md` | ASP.NET Core + EF Core conventions, and the API/Domain project split. Path-scoped to the API, Domain, worker and migrator. | Loads when Claude touches the backend. |
 | `rules/gateway.md` | The YARP BFF: three hostnames, the gateway as an OAuth confidential client, header stripping, CORS and cookie attributes across subdomains. | Loads when Claude touches the gateway or web host. |
 | `rules/auth.md` | Identity for *who*, tenant membership for *what*. OpenIddict, the three registered clients, refresh rotation, tenant policies, the membership lifecycle. | Loads when Claude touches auth or tenancy code. |
 | `rules/api-contract.md` | Versioning and evolution — what breaks a shipped mobile client, cursor pagination, idempotency, `problem+json`, delta sync. | Loads when Claude touches controllers or boundary models. |
 | `rules/mobile.md` | The .NET MAUI client: PKCE in the system browser, secure token storage, offline, push. | Loads when Claude touches `src/AegisScribe.Mobile/`. |
-| `rules/external.md` | Blizzard and WarcraftLogs gateways, Discord webhooks, per-tenant sync budgets, the data-deletion path, and the Wowhead prohibition. | Loads when Claude touches `Integration/` or the sync worker. |
-| `rules/ai.md` | Microsoft.Extensions.AI / SK / Foundry conventions and AI safety invariants. | Loads when Claude touches `Ai/` or `Embeddings/`. |
+| `rules/external.md` | Blizzard and WarcraftLogs gateways, Discord webhooks, per-tenant sync budgets, the data-deletion path, and the Wowhead prohibition. | Loads when Claude touches `AegisScribe.Domain/Integration/` or the sync worker. |
+| `rules/ai.md` | Microsoft.Extensions.AI / SK / Foundry conventions and AI safety invariants. | Loads when Claude touches `AegisScribe.Domain/Ai/` or `Embeddings/`. |
 | `rules/frontend.md` | Angular conventions, the design system, Wowhead tooltips, AI labelling. | Loads when Claude touches `src/web/` or `design/`. |
 | `skills/add-endpoint/` | Playbook for adding an API endpoint through the full layer stack. | On demand, when the task matches. |
 | `skills/new-component/` | Playbook for adding an Angular component. | On demand, when the task matches. |

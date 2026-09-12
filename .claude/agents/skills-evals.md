@@ -57,11 +57,11 @@ Map the target to its skill by location:
 
 | Target | Skill |
 | --- | --- |
-| `src/AegisScribe.ApiService/` (Controllers, Facade, Business, Data) | add-endpoint |
+| `src/AegisScribe.ApiService/Controllers/`, `src/AegisScribe.Domain/` (Facade, Business, Data, Managers) | add-endpoint |
 | Any tenant-scoped entity or route | add-tenant-entity (delegate the isolation detail to `@tenant-isolation-auditor`) |
 | `Notifications/`, Discord dispatch | add-notification |
-| `src/AegisScribe.ApiService/Integration/Blizzard/`, `src/AegisScribe.SyncWorker/` | add-external-sync |
-| `src/AegisScribe.ApiService/Ai/`, `src/AegisScribe.SyncWorker/Embeddings/` | add-ai-capability |
+| `src/AegisScribe.Domain/Integration/`, `src/AegisScribe.SyncWorker/` | add-external-sync |
+| `src/AegisScribe.Domain/Ai/`, `src/AegisScribe.SyncWorker/Embeddings/` | add-ai-capability |
 | `src/web/` (Angular) — structure, data, guards | new-component |
 | `src/web/` (Angular) — anything visual, plus `design/` | aegisscribe-design-system (delegate the detail to `@design-review`) |
 | `src/AegisScribe.AppHost/`, or a service consuming a resource | add-aspire-resource |
@@ -77,7 +77,20 @@ component that renders it). Audit each side against its own skill.
    into EF is invisible if you only read the facade's own logic).
 3. For each checklist item, find the concrete evidence that it holds or fails. A file existing in the
    right folder is not evidence its responsibilities are right.
-4. Verify the layer boundaries by their `using`s and constructor dependencies, not by filename:
+4. Verify the **project boundary** before the layer boundaries — it's the cheapest check and the
+   one that drifted first in this repo:
+   - `AegisScribe.Domain.csproj` has **no** `ProjectReference` to the API; nothing under
+     `src/AegisScribe.Domain/` names `HttpContext`, `ControllerBase`, `IActionResult`,
+     `RequestDelegate` or `Microsoft.AspNetCore.Mvc`.
+   - `src/AegisScribe.ApiService/` has **no** `Facade/`, `Business/`, `Data/` or `Managers/` folder,
+     and no class implementing a facade, business, data layer or repository interface.
+   - The migration service and sync worker reference Domain, never the API.
+   - Every controller's constructor takes **facades only**. A `UserManager`, `SignInManager`,
+     `RoleManager`, `DbContext`, repository or `IValidator<T>` injected into a controller is a
+     layering violation — including in the auth, `/me` and OpenIddict `connect/*` controllers.
+     (OpenIddict's own `IOpenIddictApplicationManager` in `AuthorizationController` is protocol
+     plumbing and is fine.)
+5. Verify the layer boundaries by their `using`s and constructor dependencies, not by filename:
    - **Controller**: no validation, cache, logic, or data access; never names an entity type.
      `[Authorize(Policy = ...)]` is fine; `[Authorize(Roles = ...)]` is a finding.
    - **Facade**: validation + caching only; must not `using` EF Core or map anything.
@@ -95,8 +108,8 @@ component that renders it). Audit each side against its own skill.
    - **Repository**: EF only; no rules, cache, or validation.
    - **Gateway**: HTTP only; no EF, no cache, no rules. Returns domain entities.
    - Each layer depends on the **interface** below it, never a concrete class.
-5. Check the tests the skill demands actually exist and assert the right thing.
-6. Grep for the Restrictions in CLAUDE.md: hardcoded connection strings or keys, `localhost:<port>`,
+6. Check the tests the skill demands actually exist and assert the right thing.
+7. Grep for the Restrictions in CLAUDE.md: hardcoded connection strings or keys, `localhost:<port>`,
    `?access_token=`, logic in the AppHost, `any` in TypeScript, leaked subscriptions, a SQL Server
    image tag that isn't 2025, `FromSqlRaw`/`ExecuteSqlRaw` anywhere under `Ai/`.
 

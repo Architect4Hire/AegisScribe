@@ -75,7 +75,7 @@ The Angular models are hand-written, so they drift. The MAUI client is **generat
 
 ## The two sides
 
-- **C# (source of truth):** `src/AegisScribe.ApiService/Managers/Models/ViewModels/` and
+- **C# (source of truth):** `src/AegisScribe.Domain/Managers/Models/ViewModels/` and
   `.../ServiceModels/`, including nested records declared in the same files.
 - **TypeScript (mirror):** `src/web/src/app/models/`.
 
@@ -85,7 +85,7 @@ The C# side wins. If they disagree, the TypeScript is what's wrong — report it
 cross the API boundary, so they are *supposed* to have no TypeScript counterpart. Never report a
 missing interface for them.
 
-**Ignore `Integration/Blizzard/`'s response types.** Those model Blizzard's JSON, are internal to that
+**Ignore `src/AegisScribe.Domain/Integration/Blizzard/`'s response types.** Those model Blizzard's JSON, are internal to that
 folder by design, and have no frontend mirror. A missing interface for one is correct, not drift.
 
 ## What counts as a match

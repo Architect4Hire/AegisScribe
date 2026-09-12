@@ -127,7 +127,8 @@ written against a single tenant.
 │   ├── AegisScribe.ServiceDefaults/   # telemetry, health, resilience, discovery
 │   ├── AegisScribe.Gateway/           # YARP BFF — public at bff.*, owns the session
 │   ├── AegisScribe.Web/               # serves the Angular bundle — public at app.*
-│   ├── AegisScribe.ApiService/        # API + EF Core + Identity + OpenIddict + tenancy + AI — public at api.*
+│   ├── AegisScribe.ApiService/        # HTTP host: controllers, OpenIddict, auth policies — public at api.*
+│   ├── AegisScribe.Domain/            # facades, business, data (EF + migrations), models, integration, AI
 │   ├── AegisScribe.Mobile/            # .NET MAUI client — OAuth public client, not orchestrated
 │   ├── AegisScribe.SyncWorker/        # external sync, embedding backfill, notification dispatch
 │   ├── AegisScribe.MigrationService/  # applies migrations once, before the API starts
@@ -158,7 +159,9 @@ so they can be copied rather than remembered.
 
 ## Architecture in one paragraph
 
-Requests go `Controller → Facade → Business → DataLayer → Repository | Gateway`. ViewModels in,
+Requests go `Controller → Facade → Business → DataLayer → Repository | Gateway`. Controllers live in
+`AegisScribe.ApiService`; every layer below them lives in `AegisScribe.Domain`, which the API, sync
+worker and migration service reference and which references none of them. ViewModels in,
 ServiceModels out, domain entities between, and no EF entity crosses the API boundary. The facade
 validates and caches; business owns domain rules and resource authorization; the data layer composes
 whole data operations and owns both the transaction boundary and the cache-first staleness check

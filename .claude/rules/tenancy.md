@@ -1,6 +1,7 @@
 ---
 paths:
   - src/AegisScribe.ApiService/**
+  - src/AegisScribe.Domain/**
   - src/AegisScribe.SyncWorker/**
   - src/AegisScribe.MigrationService/**
   - src/AegisScribe.Tests/**
@@ -24,7 +25,19 @@ subagent, `tenant-isolation-auditor`, whose only job is to look for it.
 | Zone | Carries `TenantId`? | Query filter? | Entities |
 |---|---|---|---|
 | **Global reference** | **No** | **No** | `Realm`, `Character`, `CharacterEquipment`, `EquippedItem`, `Item`, `Profession`, `Recipe`, `ReagentSlot`, `Guild`, `GuildMember`, `SyncSuppression` |
-| **Tenant-scoped** | **Yes** | **Yes** | `Tenant`, `TenantMembership`, `RosterEntry`, `TenantRank`, `CalendarEvent`, `EventSignup`, `AttendanceRecord`, `Notification`, `NotificationPreference`, `DiscordWebhook`, `DeviceRegistration`, `CharacterClaim`, `AuditLog`, `RecruitmentApplication` |
+| **Tenant-scoped** | **Yes\*** | **Yes\*** | `Tenant`\*, `TenantMembership`\*, `RosterEntry`, `TenantRank`, `CalendarEvent`, `EventSignup`, `AttendanceRecord`, `Notification`, `NotificationPreference`, `DiscordWebhook`, `DeviceRegistration`, `CharacterClaim`, `AuditLog`, `RecruitmentApplication` |
+
+\* `Tenant` and `TenantMembership` are the two entities that *bootstrap* tenancy itself, and both are
+exceptions to this column: `Tenant` carries no `TenantId` at all (it **is** the tenant — nothing to
+filter against), and `TenantMembership` deliberately does **not** implement `ITenantScoped` or get the
+automatic query filter, even though it carries `TenantId`. Tenant resolution reads
+`TenantMembership` *before* any tenant is resolved for the request — that lookup is how resolution
+happens — so an ambient filter reading `ITenantContext.TenantId` would throw on it (`TenantContext`
+throws when unresolved), not just filter wrong. Every real query against `TenantMembership` already
+filters by an explicit `TenantId` parameter instead (see `TenantRepository`), which is why this is
+safe rather than a gap: the trade-off is that a future `TenantMembership` query doesn't get the
+"forgot the filter" safety net an ordinary `ITenantScoped` entity does, and must supply `tenantId`
+explicitly, the same discipline tenant resolution itself already follows.
 
 Character gear, items and recipes are **public Blizzard data**. They are not anybody's private
 information and they are identical for every tenant. Copying them per tenant would multiply Blizzard

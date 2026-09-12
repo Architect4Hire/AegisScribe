@@ -1,6 +1,7 @@
 ---
 paths:
   - src/AegisScribe.ApiService/**
+  - src/AegisScribe.Domain/**
   - src/AegisScribe.MigrationService/**
   - src/AegisScribe.SyncWorker/**
 ---
@@ -34,6 +35,21 @@ that's settled.
   Each layer depends on the **interface** of the one below it, never a concrete class. Full
   responsibilities, folder layout, and the reasoning behind each seam live in
   `.claude/skills/add-endpoint/SKILL.md` — read it before adding or changing an endpoint.
+- **Two projects, one direction.** Everything below the controller lives in **`AegisScribe.Domain`**
+  — `Facade/`, `Business/`, `Data/` (the `DbContext`, data layers, repositories, migrations),
+  `Context/`, `Integration/`, `Ai/`, and `Managers/` (models, validators, mappers).
+  **`AegisScribe.ApiService`** is the HTTP host only: `Controllers/`, `Auth/` (OpenIddict wiring,
+  policies, role seeding), `Tenancy/` (the resolution middleware), `Infrastructure/` (the global
+  exception handler) and `Program.cs`. The API references Domain; **Domain never references the API**,
+  and holds no controller, `HttpContext`, `IActionResult` or middleware. The migration service and
+  sync worker reference Domain, never the API. A `Facade/`, `Business/` or `Data/` folder appearing
+  in the API project is a defect, and so is a controller reaching past its facade to a
+  `UserManager`, `DbContext` or repository.
+- **Every endpoint goes through the stack** — feature routes, Identity glue (`/auth`, `/me`), and the
+  user lookups behind OpenIddict's `connect/*` endpoints alike. What stays in a controller is the
+  HTTP or protocol shape only (binding, `SignIn`/`Forbid`, status codes); anything that reads or
+  writes data goes through a facade. "It's only auth" and "it's only a diagnostic" are how the stack
+  got skipped once already.
 - **DbContext via Aspire.** Register through the Aspire SQL Server EF Core integration keyed to the
   AppHost database resource name (`builder.AddSqlServerDbContext<AegisScribeDbContext>("aegisscribedb")`),
   not by reading a raw connection string from `appsettings.json`. Retries and health checks come

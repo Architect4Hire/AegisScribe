@@ -104,7 +104,7 @@ flowchart TB
 |---|---|---|
 | **Web** | `app.*` | Serves the built Angular bundle and injects the gateway URL at runtime. No auth, no session, no API calls. A file server with one config endpoint. |
 | **Gateway** | `bff.*` | The BFF, and an OAuth **confidential client**. Runs the code+PKCE flow for the browser, keeps both tokens in a Redis session, strips client-supplied headers, proxies `/api/*` to the API via YARP. No database, no business logic, no tenant opinion. |
-| **ApiService** | `api.*` | Every synchronous request, **and** token issuance via OpenIddict. Layered stack, tenancy, the AI vertical. A token resource server — no cookies, no session, **no CORS policy**. Called directly by the mobile app and by ops; never by the SPA. |
+| **ApiService** | `api.*` | Every synchronous request, **and** token issuance via OpenIddict. Hosts the controllers; the layered stack, tenancy and the AI vertical come from the `AegisScribe.Domain` library it references. A token resource server — no cookies, no session, **no CORS policy**. Called directly by the mobile app and by ops; never by the SPA. |
 | **Mobile** | n/a | .NET MAUI. An OAuth **public client** — no secret, PKCE, system-browser sign-in, tokens in platform secure storage. Not an Aspire resource; it is a client, not a service. |
 | **SyncWorker** | no | Everything asynchronous: external sync, embedding backfill, recurrence materialisation, notification dispatch. Runs **outside any tenant** for global work. |
 | **MigrationService** | no | Applies EF migrations once through an execution strategy, then exits. The API `WaitForCompletion`s on it. |
@@ -329,6 +329,14 @@ Controller  →  Facade              →  Business                →  DataLayer
 Each layer depends on the **interface** of the one below. ViewModels come in, ServiceModels go out,
 domain entities live between, and no EF entity crosses the controller boundary.
 
+The stack spans two projects. Controllers live in **`AegisScribe.ApiService`**, the HTTP host.
+Everything from the facade down lives in **`AegisScribe.Domain`**: facades, business, data layers,
+repositories, the `DbContext` and its migrations, gateways, AI plugins, and the models, validators
+and mappers. The API, the sync worker and the migration service reference Domain; Domain references
+none of them and holds no HTTP types. The split makes "the controller skipped the facade" a visible
+cross-project reference instead of a quiet shortcut, and lets the worker share repositories and
+gateways without referencing a web host.
+
 Where responsibility sits, when it's ambiguous — **delete the call and ask what breaks**:
 
 - The user gets a **wrong answer or an action that should have been refused** → domain rule →
@@ -500,6 +508,7 @@ The decisions worth knowing before changing anything.
 | 4 | **Path-based tenant resolution** (`/api/v1/t/{slug}`) | No wildcard DNS or TLS; the URL always shows which community you're in | Slightly longer routes; the slug is in every client-side URL construction |
 | 5 | **One `DbContext`** for Identity, global and tenant data | Claiming a character touches Identity and domain in one transaction | Identity migrations and domain migrations share a history |
 | 6 | **Layered stack with a DataLayer seam** | Lets cache-first external reads be added without touching Business | An extra layer that is often a one-line pass-through, which looks redundant until Phase 6 |
+| 6b | **The layers live in their own `AegisScribe.Domain` project** | Controllers can only reach what Domain exposes, so skipping the stack becomes a visible reference; the sync worker and migration service share repositories, gateways and the `DbContext` without referencing the web host | One more project, and EF tooling needs `--project`/`--startup-project` because the context and the Aspire registration live in different projects |
 | 7 | **Vectors in SQL Server, not a separate store** | One database, one backup, one transaction; no second system to operate | Ties us to SQL Server 2025; the approximate index is still preview |
 | 8 | **Semantic Kernel, not Microsoft Agent Framework** | Deliberate choice at time of writing; SK is supported and GA | MAF is where new agent investment is going — revisit consciously, don't drift |
 | 9 | **Constrained objects, never model-generated SQL** | Sanitizing generated SQL is a denylist problem nobody has won | Every filterable field is an explicit switch arm — new capability needs a code change, which is the point |

@@ -1,4 +1,4 @@
-using AegisScribe.ApiService.Data;
+using AegisScribe.Domain.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.MigrationService;

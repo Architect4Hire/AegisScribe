@@ -29,7 +29,7 @@ most — do not audit from memory of which entities are tenant-scoped.
 
 ### 1. Zone placement
 
-Build the list of domain entities under `Managers/Models/Domain/`. For each, decide which zone the
+Build the list of domain entities under `src/AegisScribe.Domain/Managers/Models/Domain/`. For each, decide which zone the
 rule puts it in, then check the code agrees:
 
 - A **tenant-scoped** entity that does **not** implement `ITenantScoped` / carry `TenantId` → Blocker.
@@ -56,7 +56,7 @@ rule puts it in, then check the code agrees:
 Grep the whole solution. There are exactly two legitimate homes:
 
 1. `AegisScribe.MigrationService` and `AegisScribe.SyncWorker`, for genuinely cross-tenant work.
-2. The **erasure routine** in `Auth/DataDeletion/`.
+2. The **erasure routine** behind `ICharacterDataDeletionFacade`, in `src/AegisScribe.Domain/`.
 
 Anything else — a controller, facade, business class, or repository on the request path → **Blocker**,
 no matter how convenient it looks. Even in the two sanctioned places, a call **without a comment

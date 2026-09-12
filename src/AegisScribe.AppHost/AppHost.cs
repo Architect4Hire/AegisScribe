@@ -18,6 +18,7 @@ var cache = builder.AddRedis("cache", password: redisPassword)
 
 var api = builder.AddProject<Projects.AegisScribe_ApiService>("api")
     .WithReference(db)
+    .WithReference(cache)
     .WaitForCompletion(migrations)
     .WithExternalHttpEndpoints();
 

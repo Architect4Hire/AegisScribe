@@ -1,10 +1,10 @@
 using System.Net;
 using System.Security.Claims;
-using AegisScribe.ApiService.Managers.Models.Identity;
+using AegisScribe.Domain.Facade;
+using AegisScribe.Domain.Managers.Models.ViewModels;
 using Asp.Versioning;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
@@ -14,17 +14,19 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 namespace AegisScribe.ApiService.Controllers;
 
 // OpenIddict's own protocol surface — connect/authorize and connect/token — named and shaped after
-// OpenIddict's own samples (e.g. Velusia.Server.Controllers.AuthorizationController), not this
-// project's Controller->Facade->Business->DataLayer feature stack: there is no ViewModel/ServiceModel
-// here, just the OAuth wire format. No {version:apiVersion} segment on either route (set via
-// SetAuthorizationEndpointUris/SetTokenEndpointUris in Program.cs) — these are OpenIddict's own
-// paths, not this API's versioned business surface.
+// OpenIddict's own samples (e.g. Velusia.Server.Controllers.AuthorizationController). The protocol
+// shape stays here: the claims identity, SignIn/Forbid, the sign-in form, the OAuth wire format. Every
+// question about a USER — does this password match, can they still sign in, what roles do they hold —
+// goes through IAuthFacade like any other data access (backend.md); UserManager/SignInManager sit
+// behind the user repository in AegisScribe.Domain. IOpenIddictApplicationManager stays: it is
+// OpenIddict's own client registry, protocol plumbing rather than app data. No {version:apiVersion}
+// segment on either route (set via SetAuthorizationEndpointUris/SetTokenEndpointUris in Program.cs) —
+// these are OpenIddict's own paths, not this API's versioned business surface.
 [ApiController]
 [ApiVersionNeutral]
 public class AuthorizationController(
     IOpenIddictApplicationManager applicationManager,
-    UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager) : ControllerBase
+    IAuthFacade authFacade) : ControllerBase
 {
     // The interactive half of the OAuth code+PKCE flow (auth.md: "the connect/authorize handler
     // resolves the current Identity user and issues the OpenIddict principal"). Every registered
@@ -37,7 +39,7 @@ public class AuthorizationController(
     // own credential.
     [HttpGet("~/connect/authorize")]
     [HttpPost("~/connect/authorize")]
-    public async Task<IActionResult> Authorize()
+    public async Task<IActionResult> Authorize(CancellationToken ct)
     {
         var request = HttpContext.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("The OpenIddict server request could not be retrieved.");
@@ -46,12 +48,13 @@ public class AuthorizationController(
 
         if (HttpMethods.IsPost(Request.Method))
         {
-            var identifier = Request.Form["identifier"].ToString();
-            var credential = Request.Form["credential"].ToString();
-            var user = await userManager.FindByEmailAsync(identifier);
+            var subject = await authFacade.ValidateCredentialsAsync(new SignInViewModel
+            {
+                Email = Request.Form["identifier"].ToString(),
+                Password = Request.Form["credential"].ToString(),
+            }, ct);
 
-            if (user is not null &&
-                (await signInManager.CheckPasswordSignInAsync(user, credential, lockoutOnFailure: true)).Succeeded)
+            if (subject is not null)
             {
                 var identity = new ClaimsIdentity(
                     authenticationType: TokenValidationParameters.DefaultAuthenticationType,
@@ -59,8 +62,8 @@ public class AuthorizationController(
                     roleType: Claims.Role);
 
                 // sub and role only, nothing tenant-shaped — auth.md.
-                identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user));
-                identity.SetClaims(Claims.Role, [.. await userManager.GetRolesAsync(user)]);
+                identity.SetClaim(Claims.Subject, subject.UserId);
+                identity.SetClaims(Claims.Role, [.. subject.Roles]);
                 identity.SetScopes(request.GetScopes());
                 identity.SetResources("aegisscribe-api");
                 identity.SetDestinations(_ => [Destinations.AccessToken]);
@@ -88,7 +91,7 @@ public class AuthorizationController(
     }
 
     [HttpPost("~/connect/token")]
-    public async Task<IActionResult> Exchange()
+    public async Task<IActionResult> Exchange(CancellationToken ct)
     {
         var request = HttpContext.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("The OpenIddict server request could not be retrieved.");
@@ -100,9 +103,9 @@ public class AuthorizationController(
         if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
         {
             var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            var user = await userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
+            var subject = await authFacade.GetSignInSubjectAsync(result.Principal!.GetClaim(Claims.Subject)!, ct);
 
-            if (user is null || !await signInManager.CanSignInAsync(user))
+            if (subject is null)
             {
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
@@ -124,8 +127,8 @@ public class AuthorizationController(
                 authenticationType: TokenValidationParameters.DefaultAuthenticationType,
                 nameType: Claims.Name,
                 roleType: Claims.Role);
-            refreshedIdentity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user));
-            refreshedIdentity.SetClaims(Claims.Role, [.. await userManager.GetRolesAsync(user)]);
+            refreshedIdentity.SetClaim(Claims.Subject, subject.UserId);
+            refreshedIdentity.SetClaims(Claims.Role, [.. subject.Roles]);
             refreshedIdentity.SetDestinations(_ => [Destinations.AccessToken]);
 
             // The authorization_code exchange is the one token issuance that follows directly from

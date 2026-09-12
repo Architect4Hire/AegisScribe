@@ -26,7 +26,7 @@ It's built to showcase real-world skills with **Aspire + ASP.NET Core + Angular 
 **Stack**
 
 - **Orchestration:** Aspire 13 (AppHost + ServiceDefaults) on .NET 10
-- **Backend:** ASP.NET Core Web API · EF Core 10 (SQL Server) — `src/AegisScribe.ApiService/`
+- **Backend:** ASP.NET Core Web API · EF Core 10 (SQL Server) — the HTTP host in `src/AegisScribe.ApiService/`, every layer below the controller in `src/AegisScribe.Domain/`
 - **Tenancy:** community-as-tenant, shared database, `TenantId` discriminator + global query filter
 - **Auth:** **OpenIddict** on the API issues tokens (authorization code + PKCE, rotating refresh). The browser holds a cookie against the gateway; the **mobile app holds tokens directly**. ASP.NET Core Identity for identity, **tenant membership** for authorization
 - **AI:** Microsoft.Extensions.AI abstractions (`IChatClient`, `IEmbeddingGenerator`) over **Azure AI Foundry**, with **Semantic Kernel** for plugins and orchestration
@@ -46,7 +46,10 @@ src/
 ├── AegisScribe.ServiceDefaults/   # shared telemetry, health checks, resilience, discovery
 ├── AegisScribe.Gateway/           # YARP BFF — public at bff.*, owns the session; an OAuth confidential client
 ├── AegisScribe.Web/               # thin host serving the Angular bundle — public at app.*
-├── AegisScribe.ApiService/        # API + EF Core + Identity + OpenIddict + tenancy + the AI vertical — public at api.*
+├── AegisScribe.ApiService/        # HTTP host: controllers + OpenIddict + auth policies + tenant middleware — public at api.*
+├── AegisScribe.Domain/            # Facade → Business → Data (DbContext, repositories, migrations) + Managers
+│                                  #   (models, validators, mappers) + Context + Integration + Ai — referenced
+│                                  #   by the API, sync worker and migration service; references none of them
 ├── AegisScribe.Mobile/            # .NET MAUI client — OAuth public client, not orchestrated by Aspire
 ├── AegisScribe.SyncWorker/        # Blizzard + WarcraftLogs sync, embedding backfill, notification dispatch
 ├── AegisScribe.MigrationService/  # applies EF migrations once, before the API starts
@@ -65,18 +68,18 @@ docs/
 
 - **Tenancy comes first.** Read `.claude/rules/tenancy.md` before anything else. Two zones: **global reference** data (characters, items, recipes — public Blizzard data, no `TenantId`) and **tenant-scoped** data (rosters, ranks, events, notifications — `TenantId` plus a global query filter). One global `Character` row, N tenant `RosterEntry` rows pointing at it.
 - **Aspire:** every resource is declared in the AppHost. The SQL Server image is pinned to a **2025** tag — the default 2022 image has no `VECTOR` type and the AI features silently have nowhere to live.
-- **Backend:** the layered stack is `Controller → Facade → Business → DataLayer → Repository|Gateway`. Thin controllers, ViewModels in and ServiceModels out, everything async, input validated at the edge, EF entities never crossing the boundary. Full detail in `.claude/skills/add-endpoint/SKILL.md`.
+- **Backend:** the layered stack is `Controller → Facade → Business → DataLayer → Repository|Gateway`, and it applies to **every** endpoint — auth, `/me` and the user lookups behind OpenIddict included. Controllers live in `AegisScribe.ApiService` and inject only facades; everything below them lives in `AegisScribe.Domain`, which never references the API or any HTTP type. Thin controllers, ViewModels in and ServiceModels out, everything async, input validated at the edge, EF entities never crossing the boundary. Full detail in `.claude/skills/add-endpoint/SKILL.md`.
 - **Auth:** two front doors, one resource server. **OpenIddict** on the API issues tokens; the gateway runs the code+PKCE flow as a confidential client and keeps the tokens server-side, handing the browser only an `HttpOnly` cookie, while the **mobile app is a public client holding tokens on the device**. The API validates a bearer token and nothing else — no cookies, no sessions. Identity roles are **platform-level only**; tenant authorization is membership-based (`Member` / `Officer` / `Owner`) through tenant-aware policies. Resource rules that need to read data stay in Business.
 - **AI:** every model call goes through `IChatClient` / `IEmbeddingGenerator`; Semantic Kernel plugins call the **existing facades**, never the `DbContext`, and never take a model-supplied tenant id. The model never emits SQL — see Restrictions.
-- **External data:** Blizzard and WarcraftLogs are reached only through gateways in `Integration/`, behind rate limiters, and their answers are persisted. Blizzard sync is **global**; tenant-triggered syncs draw on a per-tenant budget. Wowhead is never called from the server at all.
+- **External data:** Blizzard and WarcraftLogs are reached only through gateways in `AegisScribe.Domain/Integration/`, behind rate limiters, and their answers are persisted. Blizzard sync is **global**; tenant-triggered syncs draw on a per-tenant budget. Wowhead is never called from the server at all.
 - **Frontend:** standalone components, typed models mirroring ServiceModels, HTTP only through services, `withCredentials` for the auth cookie, `async` pipe. Everything visual comes from the design system — tokens are copied from `design/aegisscribe-armory.html`, never invented, and a literal hex under `src/web/src/app/` is a defect.
 
-**One database, one context.** Identity tables, global reference tables and tenant tables share `AegisScribeDbContext` and one migration history. A tenant-scoped write frequently touches an Identity user and a domain row together; splitting the context would make that a coordination problem for no benefit.
+**One database, one context.** Identity tables, global reference tables and tenant tables share `AegisScribeDbContext` (in `AegisScribe.Domain/Data/`) and one migration history (in `AegisScribe.Domain/Migrations/`). A tenant-scoped write frequently touches an Identity user and a domain row together; splitting the context would make that a coordination problem for no benefit.
 
 **Canonical commands** (use these verbatim)
 
 - Whole system (repo root or the AppHost folder): run everything + dashboard `aspire run` · add a resource package `aspire add <resource>`
-- Backend (`src/AegisScribe.ApiService/`): `dotnet test` · `dotnet ef migrations add <Name>` · `dotnet ef database update`
+- Backend (repo root): `dotnet test` · `dotnet ef migrations add <Name> --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService` · `dotnet ef database update --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService`
 - Frontend (`src/web/`): `npm install` · `ng test` · `ng build`
 
 ## Restrictions

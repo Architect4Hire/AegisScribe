@@ -12,7 +12,7 @@ item- and roster-shaped comes from Blizzard; WarcraftLogs answers "how did this 
 perform, and did they show up".
 
 It is a genuinely different API from Blizzard's — GraphQL, points-based limits, a different OAuth
-client — so it gets its own gateway (`IWarcraftLogsGateway`) in `Integration/WarcraftLogs/`, never a
+client — so it gets its own gateway (`IWarcraftLogsGateway`) in `AegisScribe.Domain/Integration/WarcraftLogs/`, never a
 method bolted onto the Blizzard one.
 
 ## Endpoints

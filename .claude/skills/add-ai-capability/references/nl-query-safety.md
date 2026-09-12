@@ -142,7 +142,7 @@ someone later "simplifies" the translator:
 - **Injection attempt in a value** — `Value: "'; DROP TABLE Characters--"` is treated as a literal
   string comparison and matches nothing. Assert the generated SQL parameterises it; that's the test
   that proves the whole approach.
-- **No raw SQL path exists** — a repo-wide assertion that no file under `Ai/` references
+- **No raw SQL path exists** — a repo-wide assertion that no file under `AegisScribe.Domain/Ai/` references
   `FromSqlRaw`, `ExecuteSqlRaw`, `SqlCommand`, or `FromSqlInterpolated`. Cheap, and it catches the
   regression this document is written to prevent.
 - **No model-supplied tenant** — no `[KernelFunction]` signature and no constrained object has a

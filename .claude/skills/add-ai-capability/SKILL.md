@@ -11,7 +11,10 @@ description: >
 
 # Add an AI capability
 
-Work in `src/AegisScribe.ApiService/Ai/` (and `src/AegisScribe.SyncWorker/Embeddings/` for backfill).
+Work in `src/AegisScribe.Domain/Ai/` (and `src/AegisScribe.SyncWorker/Embeddings/` for backfill).
+The facades, repositories and vector queries the AI path uses are in `AegisScribe.Domain` too; only
+the model-client registration (`Program.cs`) and the HTTP routes (controllers) are in
+`src/AegisScribe.ApiService/`.
 Read `.claude/rules/ai.md` first — it holds the invariants; this skill is the procedure.
 
 Read the reference for the flavour you're building:

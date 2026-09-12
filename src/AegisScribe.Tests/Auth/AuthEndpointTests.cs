@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using AegisScribe.ApiService.Managers.Models.ServiceModels;
+using AegisScribe.Domain.Managers.Models.ServiceModels;
 
 namespace AegisScribe.Tests.Auth;
 

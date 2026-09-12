@@ -2,9 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/AegisScribe.ApiService/AegisScribe.ApiService.csproj" />
     <Project Path="src/AegisScribe.AppHost/AegisScribe.AppHost.csproj" />
+    <Project Path="src/AegisScribe.Domain/AegisScribe.Domain.csproj" />
+    <Project Path="src/AegisScribe.Gateway/AegisScribe.Gateway.csproj" />
     <Project Path="src/AegisScribe.MigrationService/AegisScribe.MigrationService.csproj" />
     <Project Path="src/AegisScribe.ServiceDefaults/AegisScribe.ServiceDefaults.csproj" />
     <Project Path="src/AegisScribe.SyncWorker/AegisScribe.SyncWorker.csproj" />
     <Project Path="src/AegisScribe.Tests/AegisScribe.Tests.csproj" />
+    <Project Path="src/AegisScribe.Web/AegisScribe.Web.csproj" />
   </Folder>
 </Solution>

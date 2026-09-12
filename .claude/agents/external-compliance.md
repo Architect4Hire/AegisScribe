@@ -50,7 +50,7 @@ violate.
   regional `https://{region}.battle.net/oauth/token` is correct).
 - A Blizzard request built **without a `namespace` query parameter** → Blocker (it will 404 in a way
   that reads as "not found", which is worse than failing).
-- Blizzard reached from **anywhere other than `Integration/Blizzard/`** → Blocker. Grep for
+- Blizzard reached from **anywhere other than `src/AegisScribe.Domain/Integration/Blizzard/`** → Blocker. Grep for
   `api.blizzard.com` and for `HttpClient` usages outside that folder.
 
 ### 2b. Multi-tenant call amplification
@@ -103,7 +103,7 @@ once**, not once per tenant.
   file, the setting, and the value.
 - Check that the **test asserting the interval is ≤ 30 days still exists**. Its deletion is a finding
   in itself — that test is the thing standing between a performance tune-up and a breach.
-- Every entity under `Managers/Models/Domain/` that is populated from the gateway must have
+- Every entity under `src/AegisScribe.Domain/Managers/Models/Domain/` that is populated from the gateway must have
   **`LastSyncedAt`**. One without it → Blocker (it can never be found by the refresh job).
 - The sync worker must actually **query on that column**. A worker that only refreshes on demand
   leaves untouched rows to age past the deadline → Blocker.

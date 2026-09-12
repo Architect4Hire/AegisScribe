@@ -33,6 +33,9 @@ If the answer is "global", stop — you want `add-external-sync` or plain `add-e
 
 ## Steps
 
+Every folder below is in `src/AegisScribe.Domain/` except controllers and authorization policies,
+which live in `src/AegisScribe.ApiService/` — see the two-project layout in the `add-endpoint` skill.
+
 1. **Entity** → `Managers/Models/Domain/`. It implements `ITenantScoped`:
    ```csharp
    public interface ITenantScoped { Guid TenantId { get; set; } }

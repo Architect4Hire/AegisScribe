@@ -74,10 +74,13 @@ Everything before Phase 6 runs on seeded data in seeded tenants.
 ### 0.1 Solution skeleton - done
 ```
 SCOPE: Create the Aspire 13 / .NET 10 solution with empty projects only: AegisScribe.AppHost,
-.ServiceDefaults, .ApiService, .SyncWorker, .MigrationService, .Tests under src/. No resources, no
-domain, no endpoints.
-CONSTRAINT: .claude/rules/aspire.md. Verify template names and CLI syntax against https://aspire.dev.
-RESTRICTION: Do NOT add resources, packages, or code beyond what the templates generate.
+.ServiceDefaults, .ApiService, .Domain (class library), .SyncWorker, .MigrationService, .Tests under
+src/, all in the solution file. ApiService references Domain. No resources, no domain code, no
+endpoints.
+CONSTRAINT: .claude/rules/aspire.md, backend.md → "Two projects, one direction". Verify template names
+and CLI syntax against https://aspire.dev.
+RESTRICTION: Do NOT add resources, packages, or code beyond what the templates generate. Domain must
+NOT reference ApiService — the reference runs one way only, from each host to Domain.
 UTILIZATION: aspire-init skill.
 BEHAVIOR: Show me the exact commands before running them. Then confirm `dotnet build` succeeds.
 ```
@@ -97,7 +100,8 @@ bringing both containers up healthy.
 ### 0.3 Migration service - done
 ```
 SCOPE: Implement AegisScribe.MigrationService as a worker that applies EF migrations once through an
-execution strategy and exits. Wire it in the AppHost with WithReference(db) and WaitFor(db).
+execution strategy and exits. Wire it in the AppHost with WithReference(db) and WaitFor(db). It
+references AegisScribe.Domain (where the DbContext will live), never the API.
 CONSTRAINT: .claude/rules/backend.md — the execution-strategy wrapper is required, not optional.
 RESTRICTION: No DbContext exists yet — this step is the host and the loop only. Do NOT create one.
 UTILIZATION: Plan mode.
@@ -137,26 +141,33 @@ BEHAVIOR: Give me a one-line health summary per resource and tell me what you fi
 
 ### 1.1 DbContext and ApplicationUser - done
 ```
-SCOPE: Add ApplicationUser : IdentityUser (DisplayName, CreatedAt, LastTenantId) and
-AegisScribeDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>, registered via the
-Aspire SQL Server EF Core integration keyed to "aegisscribedb".
-CONSTRAINT: .claude/rules/auth.md, backend.md.
-RESTRICTION: One context for everything. Do NOT create a second. Do NOT add domain entities. Do NOT
-create the migration yet.
+SCOPE: Add ApplicationUser : IdentityUser (DisplayName, CreatedAt, LastTenantId) in
+AegisScribe.Domain/Managers/Models/Identity/ and AegisScribeDbContext : IdentityDbContext<ApplicationUser,
+IdentityRole, string> in AegisScribe.Domain/Data/, registered in the API via the Aspire SQL Server EF
+Core integration keyed to "aegisscribedb".
+CONSTRAINT: .claude/rules/auth.md, backend.md; add-endpoint skill → "Target layout".
+RESTRICTION: One context for everything. Do NOT create a second. The context lives in Domain, NOT in
+the API — the repositories, the migration service and the sync worker all need it without referencing
+a web host. Do NOT add domain entities. Do NOT create the migration yet.
 BEHAVIOR: Show me the context and user shape, wait for approval, then confirm it resolves from DI.
 ```
 
 ### 1.2 Identity as the user store - done
 ```
 SCOPE: Add Identity's user store plus the registration and password-management endpoints under
-/api/v1/auth. Identity answers WHO SOMEONE IS; it does not issue the app's tokens.
-CONSTRAINT: .claude/rules/auth.md.
-RESTRICTION: Do NOT add cookie authentication, a login form, antiforgery or a session to the API — it
-is a pure token resource server and 1B.5 would only delete them. Do NOT use MapIdentityApi's bearer
-mode: those tokens are opaque Data-Protection blobs, not JWTs, and nothing outside the issuing process
-can validate them. Sign-in arrives with OpenIddict's connect/authorize in 1B.4. No external provider,
-no Battle.net OAuth.
-BEHAVIOR: Plan the group and the logout handler, wait for approval, implement.
+/api/v1/auth, through the full layer stack: AuthController → IAuthFacade → IAuthBusiness →
+IUserDataLayer → IUserRepository (which wraps UserManager). Identity answers WHO SOMEONE IS; it does
+not issue the app's tokens.
+CONSTRAINT: .claude/rules/auth.md; add-endpoint skill.
+RESTRICTION: The controller injects ONLY IAuthFacade — no UserManager, no validator. Validation runs
+in the facade; the "never reveal whether an email has an account" rule lives in Business; UserManager
+sits behind the repository. "It's only auth" is not an exemption from the stack. Do NOT add cookie
+authentication, a login form, antiforgery or a session to the API — it is a pure token resource server
+and 1B.5 would only delete them. Do NOT use MapIdentityApi's bearer mode: those tokens are opaque
+Data-Protection blobs, not JWTs, and nothing outside the issuing process can validate them. Sign-in
+arrives with OpenIddict's connect/authorize in 1B.4. No external provider, no Battle.net OAuth.
+BEHAVIOR: Plan the layer stack and the logout handler, wait for approval, implement with per-layer
+tests.
 ```
 
 ### 1.3 PlatformAdmin role - done
@@ -173,7 +184,8 @@ BEHAVIOR: Implement, and state plainly why only one role exists here.
 ### 1.4 Initial migration - done
 ```
 SCOPE: Create the initial EF migration covering the Identity schema and apply it via the migration
-service.
+service. Migrations live in AegisScribe.Domain/Migrations/: `dotnet ef migrations add <Name> --project
+src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService`.
 CONSTRAINT: .claude/rules/backend.md.
 RESTRICTION: Review before applying. Do NOT hand-edit the generated file.
 BEHAVIOR: Show me the migration, wait for approval, apply, and confirm
@@ -238,8 +250,12 @@ on the context), the server with authorization/token/revocation/logout endpoints
 PKCE and refresh token flows, and a seeding routine in the migration service registering exactly three
 clients — aegisscribe-bff (confidential, web), aegisscribe-mobile (PUBLIC, ApplicationTypes.Native,
 redirect aegisscribe://auth/callback, no secret), aegisscribe-ops (confidential, client credentials).
-CONSTRAINT: .claude/rules/auth.md → "OpenIddict issues the tokens".
-RESTRICTION: Do NOT hand-write a token issuer — refresh rotation with replay detection, PKCE
+The connect/* controller keeps the protocol shape (claims identity, SignIn/Forbid, the sign-in form);
+the user lookups behind it — password check with lockout, can-sign-in, roles — go through IAuthFacade.
+CONSTRAINT: .claude/rules/auth.md → "OpenIddict issues the tokens"; add-endpoint skill → "Identity
+counts as data".
+RESTRICTION: The controller does NOT inject UserManager or SignInManager — they sit behind the user
+repository in AegisScribe.Domain. Do NOT hand-write a token issuer — refresh rotation with replay detection, PKCE
 verification and single-use codes are what this dependency is for. MapIdentityApi's bearer tokens are
 NOT JWTs; don't try to use them. The mobile client gets NO secret in any form. RequireProofKeyForCodeExchange
 is mandatory. Development signing/encryption certificates are selected BY ENVIRONMENT, never committed.
@@ -347,7 +363,7 @@ no browser round trip; (7) a token request for aegisscribe-mobile WITHOUT a PKCE
 > **Be fussy here.** Everything after this phase depends on these seams being right, and a missing
 > filter is silent. Read `.claude/rules/tenancy.md` before 2.1 and keep it open.
 
-### 2.1 Tenant and membership entities
+### 2.1 Tenant and membership entities - done
 ```
 SCOPE: Add Tenant (Id, Slug, Name, TimeZoneId) and TenantMembership (TenantId, UserId, Role, JoinedAt)
 with TenantRole { Member = 0, Officer = 10, Owner = 20 }. Migration included.
@@ -357,79 +373,88 @@ make it a flags enum or reorder it. Do NOT add the query filter yet; that's 2.4.
 BEHAVIOR: Plan the entities and indexes, wait for approval, migrate.
 ```
 
-### 2.2 ITenantScoped and ITenantContext
+### 2.2 ITenantScoped and ITenantContext - done
 ```
-SCOPE: Add the ITenantScoped marker interface (Guid TenantId) and a scoped ITenantContext exposing the
-resolved tenant. ITenantContext THROWS when read with no tenant resolved.
+SCOPE: Add the ITenantScoped marker interface (Guid TenantId) in
+AegisScribe.Domain/Managers/Models/Domain/ and a scoped ITenantContext exposing the resolved tenant in
+AegisScribe.Domain/Context/. ITenantContext THROWS when read with no tenant resolved.
 CONSTRAINT: .claude/rules/tenancy.md.
 RESTRICTION: It must fail closed. Do NOT return Guid.Empty, a default, or a nullable that callers can
 ignore — a silent default is how every row ends up in one tenant.
 BEHAVIOR: Show me the failure behaviour explicitly, then implement.
 ```
 
-### 2.3 Tenant resolution middleware
+### 2.3 Tenant resolution middleware - done
 ```
-SCOPE: Middleware that resolves {tenantSlug} from the route, loads the Tenant, verifies the caller has
-a TenantMembership, and populates ITenantContext. Routes: /api/v1/t/{tenantSlug}/... tenant-scoped;
-/api/v1/auth, /api/v1/platform, /api/v1/characters tenant-less.
-CONSTRAINT: .claude/rules/tenancy.md, auth.md.
+SCOPE: Middleware in the API that resolves {tenantSlug} from the route, loads the Tenant, verifies the
+caller has a TenantMembership, and populates ITenantContext. Routes: /api/v1/t/{tenantSlug}/...
+tenant-scoped; /api/v1/auth, /api/v1/platform, /api/v1/characters tenant-less. The lookups go through
+ITenantResolutionFacade → ITenantBusiness → ITenantDataLayer → ITenantRepository in AegisScribe.Domain.
+CONSTRAINT: .claude/rules/tenancy.md, auth.md; add-endpoint skill (the layer stack).
 RESTRICTION: The tenant comes ONLY from the route. Do NOT read it from a header, query string, body,
 or ApplicationUser.LastTenantId. No membership must produce 404, NOT 403 — a 403 confirms the tenant
-exists.
+exists. That "unknown and non-member look identical" rule is a domain rule and lives in Business. The
+middleware does NOT inject the DbContext or UserManager.
 BEHAVIOR: Plan the pipeline position and the 404 behaviour, wait for approval, implement, and add a
 test for each of: valid member, non-member, unknown slug, tenant-less route.
 ```
 
-### 2.4 Global query filter, by convention
+### 2.4 Global query filter, by convention - done
 ```
 SCOPE: In OnModelCreating, loop over every ITenantScoped entity type and apply
 HasQueryFilter(e => e.TenantId == _tenantContext.TenantId).
 CONSTRAINT: .claude/rules/tenancy.md.
 RESTRICTION: Apply it BY CONVENTION, not per entity. A developer adding entity number forty must not
-have to remember this step — that is the entire point.
+have to remember this step — that is the entire point. Tenant resolution (2.3) reads TenantMembership
+BEFORE any tenant is resolved, so if TenantMembership is ITenantScoped, that one lookup needs a
+deliberate answer — plan it; do NOT reach for IgnoreQueryFilters() on the request path.
 BEHAVIOR: Show me the convention loop, wait for approval, implement.
 ```
 
-### 2.5 TenantId interceptor
+### 2.5 TenantId interceptor - done
 ```
-SCOPE: A SaveChanges interceptor that stamps TenantId from ITenantContext on every added ITenantScoped
-entity, and throws if one arrives carrying a different tenant.
+SCOPE: A SaveChanges interceptor in AegisScribe.Domain/Data/ that stamps TenantId from ITenantContext
+on every added ITenantScoped entity, and throws if one arrives carrying a different tenant.
 CONSTRAINT: .claude/rules/tenancy.md.
 RESTRICTION: Business code must never assign TenantId. Add a test that a cross-tenant stamp throws.
 BEHAVIOR: Implement and show me both paths under test.
 ```
 
-### 2.6 Tenant policies
+### 2.6 Tenant policies - done
 ```
-SCOPE: TenantRoleRequirement + handler reading ITenantContext and the caller's membership, satisfying
-when membership.Role >= required. Policies: TenantMember, TenantOfficer, TenantOwner.
-CONSTRAINT: .claude/rules/auth.md.
+SCOPE: TenantRoleRequirement + handler (in the API's Auth/) reading ITenantContext and the caller's
+membership, satisfying when membership.Role >= required. Policies: TenantMember, TenantOfficer,
+TenantOwner. The membership lookup goes through the tenant facade from 2.3, not the DbContext.
+CONSTRAINT: .claude/rules/auth.md; add-endpoint skill (the layer stack).
 RESTRICTION: Fail closed — no resolved tenant or no membership is a failure, never a default to
 Member. Encode the implication once in the handler; no endpoint lists three roles.
 BEHAVIOR: Plan the handler, wait for approval, implement, test each rank against each policy.
 ```
 
-### 2.7 Me, tenants and membership endpoints
+### 2.7 Me, tenants and membership endpoints  done
 ```
 SCOPE: GET /api/v1/me (the user and their memberships with roles), POST /api/v1/tenants (create a community,
 creator becomes Owner), GET/PATCH /api/v1/t/{slug} (read and rename, Owner only).
 CONSTRAINT: add-endpoint and add-tenant-entity skills.
 RESTRICTION: A tenant must always have at least one Owner — the demote and remove paths refuse the
-last one. That is a domain rule and lives in Business.
+last one. That is a domain rule and lives in Business. /me already runs through IMeFacade — extend
+that stack with memberships; do NOT add a second path. Once GET /api/v1/t/{slug} exists, delete the
+diagnostic TenantPingController and point the 2.3 tenant-resolution tests at the real route.
 BEHAVIOR: Plan the layer stack, wait for approval, implement with per-layer tests.
 ```
 
-### 2.8 Tenant cache keys
+### 2.8 Tenant cache keys - done
 ```
-SCOPE: Establish the cache key convention in the facade base: tenant-scoped ServiceModels key as
-t:{tenantId}:..., global ServiceModels key bare. Add a helper that makes the wrong one awkward.
-CONSTRAINT: .claude/rules/tenancy.md.
+SCOPE: Establish the cache key convention in the facade base (AegisScribe.Domain/Facade/):
+tenant-scoped ServiceModels key as t:{tenantId}:..., global ServiceModels key bare. Add a helper that
+makes the wrong one awkward.
+CONSTRAINT: .claude/rules/tenancy.md; add-endpoint skill → "Facade".
 RESTRICTION: Both directions are bugs — a bare tenant key leaks across communities, a tenant-prefixed
 global key fragments the shared cache N ways.
 BEHAVIOR: Show me the helper's signature before writing it.
 ```
 
-### 2.9 The two-tenant test harness ⚑
+### 2.9 The two-tenant test harness ⚑ - done
 ```
 SCOPE: Build the reusable test fixture every later feature will use: seeds two tenants with similar
 data and two users, one in each, and exposes authenticated clients for both. Prove it works against
@@ -628,7 +653,7 @@ BEHAVIOR: Implement, run `ng test`, then @design-review and @api-contract-checke
 
 ### 6.1 Gateway and OAuth
 ```
-SCOPE: Integration/Blizzard/ — IBlizzardGateway, typed HttpClient, client-credentials OAuth against the
+SCOPE: AegisScribe.Domain/Integration/Blizzard/ — IBlizzardGateway, typed HttpClient, client-credentials OAuth against the
 REGIONAL token endpoint, token cached and refreshed once under a lock. Credentials as Aspire parameters.
 CONSTRAINT: .claude/rules/external.md; add-external-sync skill; references/blizzard-terms-and-limits.md.
 RESTRICTION: Bearer header only — ?access_token= is disallowed and the secret-guard hook blocks it.
@@ -684,7 +709,8 @@ BEHAVIOR: Plan the selection query and concurrency bound, wait for approval, imp
 ```
 SCOPE: ITenantSyncBudget, drawn on by any tenant-triggered sync, returning 429 with a retry hint when
 exhausted. Expose remaining budget to tenant Owners.
-CONSTRAINT: .claude/rules/external.md → "Sync is global; tenant-triggered work has a budget".
+CONSTRAINT: .claude/rules/external.md → "Sync is global; tenant-triggered work has a budget";
+add-endpoint skill for the Owner-facing budget route.
 RESTRICTION: One community must not be able to starve another. Budget exhaustion is a 429, not a silent
 queue.
 BEHAVIOR: Implement with a two-tenant test proving A cannot consume B's budget.
@@ -702,7 +728,7 @@ BEHAVIOR: Report all sections, fix the blockers, re-run.
 ### 7.1 TenantRank
 ```
 SCOPE: TenantRank (TenantId, Name, SortOrder, Colour) with officer-only CRUD.
-CONSTRAINT: add-tenant-entity skill.
+CONSTRAINT: add-tenant-entity and add-endpoint skills.
 RESTRICTION: Tenant-scoped — TenantId, query filter, tenant cache key, TenantOfficer policy. Colour is
 tenant config surfaced as --rank-color, not a design token.
 BEHAVIOR: Plan, approve, implement, two-tenant test.
@@ -720,7 +746,7 @@ BEHAVIOR: Implement with the two-tenant test.
 ### 7.3 Alt linking
 ```
 SCOPE: MainRosterEntryId on RosterEntry, plus endpoints to link and unlink alts.
-CONSTRAINT: add-tenant-entity skill.
+CONSTRAINT: add-tenant-entity and add-endpoint skills.
 RESTRICTION: Alt linking lives on RosterEntry, NOT on Character — who is somebody's main is a
 community's judgement, and the same player may be organised differently in two communities. Reject
 cycles and self-links in Business.
@@ -770,7 +796,7 @@ BEHAVIOR: Implement, test the namespace assertion explicitly.
 ```
 SCOPE: Let an Owner link one or more guilds to their community, and offer to import the guild roster
 into RosterEntry rows.
-CONSTRAINT: add-tenant-entity skill.
+CONSTRAINT: add-tenant-entity and add-endpoint skills.
 RESTRICTION: The link is tenant-scoped; the Guild itself is global and shared. Importing creates
 RosterEntry rows; it must NOT copy character data. Two communities may link the same guild.
 BEHAVIOR: Plan the import, wait for approval, implement, two-tenant test on the same guild.
@@ -780,7 +806,7 @@ BEHAVIOR: Plan the import, wait for approval, implement, two-tenant test on the 
 ```
 SCOPE: Invitations (single-use, expiring), join requests, role changes, removal — with the last-owner
 rule.
-CONSTRAINT: .claude/rules/auth.md → "Membership lifecycle".
+CONSTRAINT: .claude/rules/auth.md → "Membership lifecycle"; add-endpoint and add-tenant-entity skills.
 RESTRICTION: Officer may promote to Member/Officer; only Owner may create another Owner or demote an
 Officer. A tenant must always have at least one Owner — demote and remove both refuse the last one,
 as a Business rule. Every one of these writes an AuditLog row.
@@ -832,7 +858,7 @@ BEHAVIOR: Implement with a test spanning a real DST transition.
 ```
 SCOPE: Edit one occurrence (detaches it), or the rule with "this and all future". Cancel an occurrence;
 delete a rule.
-CONSTRAINT: references/time-and-recurrence.md.
+CONSTRAINT: references/time-and-recurrence.md; add-endpoint skill.
 RESTRICTION: Editing a rule must NEVER silently rewrite occurrences people have already signed up for.
 Deleting a rule does not delete past occurrences — attendance history is a record, not a projection.
 BEHAVIOR: Plan the scopes, wait for approval, implement, test that siblings and signups survive.
@@ -842,7 +868,7 @@ BEHAVIOR: Plan the scopes, wait for approval, implement, test that siblings and 
 ```
 SCOPE: EventSignup (TenantId, EventId, RosterEntryId, State) with the state machine, plus the signup
 window lock.
-CONSTRAINT: references/time-and-recurrence.md → "The signup state machine".
+CONSTRAINT: references/time-and-recurrence.md → "The signup state machine"; add-endpoint skill.
 RESTRICTION: Signup is per-CHARACTER (via RosterEntry), not per-user. Members change only their own;
 officers change anyone's, and every officer change to someone else's is audited. After lock, officers
 only.
@@ -852,7 +878,7 @@ BEHAVIOR: Implement, test member-after-lock rejected and officer-after-lock perm
 ### 9.6 Attendance
 ```
 SCOPE: AttendanceRecord (TenantId, EventId, RosterEntryId, Outcome, Source) with manual entry.
-CONSTRAINT: references/time-and-recurrence.md → "Attendance derivation".
+CONSTRAINT: references/time-and-recurrence.md → "Attendance derivation"; add-endpoint skill.
 RESTRICTION: Attendance is NOT signup — separate entity, recorded after. Source is Manual here;
 LogDerived arrives in 11.3 and must never silently overwrite a manual record.
 BEHAVIOR: Implement with the two-tenant test.
@@ -909,7 +935,7 @@ BEHAVIOR: Implement, `ng test`, two-tenant test, @design-review.
 ```
 SCOPE: DiscordWebhook entity, encrypted at rest, with officer-only settings endpoints and a "send test"
 action.
-CONSTRAINT: add-notification skill; .claude/rules/external.md → "Discord".
+CONSTRAINT: add-notification and add-endpoint skills; .claude/rules/external.md → "Discord".
 RESTRICTION: The URL is a CREDENTIAL — encrypted at rest, never logged, never returned in full. The
 settings screen shows a masked URL and a replace action.
 BEHAVIOR: Implement, and add a test asserting the URL never appears in a log or an API response.
@@ -938,7 +964,7 @@ BEHAVIOR: Implement, `ng test`, @design-review.
 
 ### 11.1 Gateway and points budget
 ```
-SCOPE: Integration/WarcraftLogs/ — IWarcraftLogsGateway, client-credentials OAuth, GraphQL POST to
+SCOPE: AegisScribe.Domain/Integration/WarcraftLogs/ — IWarcraftLogsGateway, client-credentials OAuth, GraphQL POST to
 /api/v2/client, query documents in files.
 CONSTRAINT: add-external-sync skill → references/warcraftlogs.md.
 RESTRICTION: Rate limiting is POINTS-based, not request-based — track spend via rateLimitData
@@ -1036,7 +1062,7 @@ BEHAVIOR: Show me the migration before applying. Implement, report backfill time
 ```
 SCOPE: The vector index migration, a repository query ordering by VECTOR_DISTANCE, the search endpoint,
 and the item-search screen.
-CONSTRAINT: references/vector-search.md; screen S2.
+CONSTRAINT: references/vector-search.md; add-endpoint skill; screen S2.
 RESTRICTION: The vector index needs PREVIEW_FEATURES, a clustered PK and 100+ non-null vectors — add it
 AFTER the backfill, in its own migration. Start with exact search. Tests use CHECKED-IN FIXED VECTORS
 against real SQL Server, never a live model call.
@@ -1049,7 +1075,7 @@ BEHAVIOR: Implement, then let me search "fire resistance cloak for a tank".
 ```
 SCOPE: Streaming RAG chat over a character's gear and the recipe catalogue, with citations, grounding
 disclosure, stop control and the AI badge.
-CONSTRAINT: add-ai-capability skill; screen S4.
+CONSTRAINT: add-ai-capability and add-endpoint skills; screen S4.
 RESTRICTION: Empty retrieval produces "I don't know", NOT a model call — this domain has a decade of
 outdated content in every model's training set. Blizzard-sourced text is untrusted: fence it. Cache
 generated prose against LastSyncedAt.
@@ -1060,7 +1086,7 @@ BEHAVIOR: Implement, test the empty-retrieval path and the cache, then @ai-guard
 ```
 SCOPE: The constrained filter object, the LINQ translator, the endpoint, and nl-query-bar with the
 interpreted-filter chips.
-CONSTRAINT: references/nl-query-safety.md; screen S3.
+CONSTRAINT: references/nl-query-safety.md; add-endpoint skill; screen S3.
 RESTRICTION: Enums, not strings. Throwing default arm. Per-FIELD authorization against the caller.
 Server-side limit clamp. No model output reaches raw SQL anywhere.
 BEHAVIOR: Implement, then write EVERY test in the reference's required list — they are security tests,
@@ -1071,7 +1097,7 @@ and a missing one is a blocker.
 ```
 SCOPE: The constrained CALENDAR COMMAND object, preview expansion, explicit confirmation, and the
 idempotent write. Reuses the 9.8 preview.
-CONSTRAINT: references/nl-query-safety.md → "The write variant".
+CONSTRAINT: references/nl-query-safety.md → "The write variant"; add-endpoint skill.
 RESTRICTION: This is the riskiest AI feature in the app — a wrong command creates or destroys real
 events. The model emits a RULE; server code expands it in the tenant's timezone. Preview concrete rows,
 require explicit confirmation, make the write idempotent. Destructive verbs name the exact events and
@@ -1093,7 +1119,7 @@ BEHAVIOR: Implement with a stubbed IChatClient, assert the prompt contains the s
 ### 13.5 Attendance insight
 ```
 SCOPE: Generated per-member and per-guild attendance summaries.
-CONSTRAINT: .claude/rules/ai.md → "Judgement-shaped output".
+CONSTRAINT: .claude/rules/ai.md → "Judgement-shaped output"; add-ai-capability and add-endpoint skills.
 RESTRICTION: Describes BEHAVIOUR, not character — "signed up for 4 of the last 12" is a fact,
 "unreliable" is a verdict the tool doesn't get to render. Cites the rows. States what it doesn't know.
 Is VISIBLE to the person it's about, or it isn't built.
@@ -1105,7 +1131,7 @@ and the wording is the feature.
 ```
 SCOPE: RecruitmentApplication entity and endpoints; score an applicant against roster gaps; suggest who
 benefits most from a drop.
-CONSTRAINT: add-tenant-entity and add-ai-capability skills.
+CONSTRAINT: add-tenant-entity, add-endpoint and add-ai-capability skills.
 RESTRICTION: Both are opinions. Each cites its data and presents a ranking as a suggestion, never a
 fact. Applications are tenant-scoped and officer-visible.
 BEHAVIOR: Implement, two-tenant test, @ai-guardrails.
@@ -1187,7 +1213,8 @@ BEHAVIOR: Implement, and test that a deletion on the server disappears from the 
 ```
 SCOPE: Raid signup from the app with an Idempotency-Key; device registration for push (user + tenant +
 platform token) and the push delivery channel in the sync worker.
-CONSTRAINT: .claude/skills/add-notification/SKILL.md, .claude/rules/mobile.md → "Push notifications".
+CONSTRAINT: .claude/skills/add-notification/SKILL.md, .claude/rules/mobile.md → "Push notifications";
+add-endpoint skill for the server-side device-registration route.
 RESTRICTION: Generate the Idempotency-Key ONCE per user intent and reuse it across retries —
 regenerating per attempt is the same as not sending it. Push payloads carry NO private content: a lock
 screen is public, so send "New event in Emberfall" plus an id, never an officer note. Device
@@ -1214,9 +1241,10 @@ community B cannot reach community A's roster from the app.
 
 ### 14.1 Erasure and tombstones
 ```
-SCOPE: Auth/DataDeletion/ — the erasure path with both trigger routes, the cross-tenant delete, the
+SCOPE: ICharacterDataDeletionFacade and its Business/DataLayer in AegisScribe.Domain, plus both
+trigger routes as API controllers — the erasure path with the cross-tenant delete, the
 SyncSuppression tombstone and cache invalidation.
-CONSTRAINT: .claude/rules/external.md → "The deletion path, concretely".
+CONSTRAINT: .claude/rules/external.md → "The deletion path, concretely"; add-endpoint skill.
 RESTRICTION: This is ONE OF THE TWO sanctioned IgnoreQueryFilters uses — comment it as such. A plain
 DELETE without a tombstone is undone by the next sync. Enumerate tables explicitly; reflection gives
 false assurance.
@@ -1226,7 +1254,7 @@ BEHAVIOR: Implement, and write the test that every entity with a source id appea
 ### 14.2 Audit log surfacing
 ```
 SCOPE: An officer-visible audit log screen for the tenant.
-CONSTRAINT: add-tenant-entity and aegisscribe-design-system skills.
+CONSTRAINT: add-tenant-entity, add-endpoint and aegisscribe-design-system skills.
 RESTRICTION: Tenant-scoped, TenantOfficer. Read-only — audit rows are never editable or deletable from
 the app.
 BEHAVIOR: Implement, two-tenant test, @design-review.
@@ -1337,7 +1365,7 @@ writing. Plan, approve, implement, test, report all compliance sections.
 ## Template F — New tenant-scoped feature
 ```
 SCOPE: Add <feature> as tenant-scoped data: <entities>, endpoints, UI.
-CONSTRAINT: add-tenant-entity skill; .claude/rules/tenancy.md.
+CONSTRAINT: add-tenant-entity and add-endpoint skills; .claude/rules/tenancy.md.
 RESTRICTION: Justify the zone with the "would two communities disagree about it?" test before writing.
 TenantId + filter by convention + TenantId-leading indexes + tenant-prefixed cache keys + membership
 policy. No global entity may hold an FK to it. Officer actions on others' data are audited.
@@ -1363,6 +1391,10 @@ external-compliance blockers first. Then wait.
 ## Pro tips
 
 - **Approve the plan, not the code.** Catching a wrong approach before it exists is the whole point.
+- **Any prompt that adds a route owes the add-endpoint skill**, whether or not its CONSTRAINT line
+  names it — auth, `/me` and diagnostics included. A controller in `AegisScribe.ApiService`, every
+  layer below it in `AegisScribe.Domain`. The CONSTRAINT line is what gets loaded; a prompt that cites
+  only a rules file is how the stack got skipped the first time.
 - **Phase 2 and prompt 9.1 deserve extra scrutiny.** Tenancy and the time helper are both foundations
   whose mistakes surface much later, somewhere else, looking like something different.
 - **One prompt, one clean context.** `/clear` between phases.

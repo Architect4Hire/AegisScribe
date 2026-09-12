@@ -1,29 +1,61 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.RateLimiting;
 using AegisScribe.ApiService.Auth;
-using AegisScribe.ApiService.Data;
-using AegisScribe.ApiService.Managers.Models.Identity;
+using AegisScribe.ApiService.Infrastructure;
+using AegisScribe.ApiService.Infrastructure.Idempotency;
+using AegisScribe.ApiService.Tenancy;
+using AegisScribe.Domain;
+using AegisScribe.Domain.Context;
+using AegisScribe.Domain.Data;
+using AegisScribe.Domain.Managers.Models.Domain;
+using AegisScribe.Domain.Managers.Models.Identity;
 using Asp.Versioning;
-using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.AddSqlServerDbContext<AegisScribeDbContext>("aegisscribedb",
-    configureDbContextOptions: options => options.UseOpenIddict());
+// Backs IIdempotencyStore (Idempotency-Key replay for POSTs that create something — api-contract.md).
+// Same integration Gateway already uses for its session store; api.csproj/AppHost now reference it too.
+builder.AddRedisDistributedCache("cache");
+
+// ITenantContext is a scoped, per-request dependency now that OnModelCreating reads it for the
+// tenant-scoped query filter (2.4) — AddSqlServerDbContext always pools in this Aspire version (its
+// settings type has no pooling toggle, confirmed against the installed package), and pooling would
+// freeze the FIRST request's instance into the pooled context and silently reuse it for every later
+// request. That is tenancy.md's worst failure mode, via a completely different mechanism than a
+// missing filter. Plain AddDbContext + EnrichSqlServerDbContext is Aspire's documented unpooled
+// alternative — same retries/health checks/telemetry, without AddDbContextPool underneath.
+builder.Services.AddDbContext<AegisScribeDbContext>((sp, options) =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("aegisscribedb"));
+    options.UseOpenIddict();
+    options.AddInterceptors(sp.GetRequiredService<TenantStampingInterceptor>());
+});
+builder.EnrichSqlServerDbContext<AegisScribeDbContext>();
 
 // Add services to the container.
 
 // Controller → Facade → Business → DataLayer is the whole HTTP surface (backend.md, the
 // add-endpoint skill) — no minimal-API route mapping for anything beyond framework-provided
 // endpoints like health checks.
-builder.Services.AddControllers();
+// api-contract.md: "Enums cross the wire as strings, never as integers." TenantRole
+// (TenantMembershipServiceModel.Role) is the first enum any response has carried — global so every
+// future one gets this for free. Two registrations, because MVC's wire serialization
+// (Mvc.JsonOptions, via AddJsonOptions) and the native OpenAPI document's schema generation
+// (Http.Json.JsonOptions, via ConfigureHttpJsonOptions) read from two separate JsonSerializerOptions
+// instances — setting only one leaves the actual response and its documented schema disagreeing.
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
 // URL segment only (api-contract.md forbids header/query-string versioning) — AddApiVersioning()'s
 // own default reader reads BOTH query string and URL segment unless overridden here. AddMvc() wires
@@ -53,12 +85,18 @@ builder.Services.AddDataProtection();
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
+
+        // The API's principals come from OpenIddict tokens, which identify the user by "sub" — not
+        // by Identity's default NameIdentifier claim, which those tokens never carry. Without this,
+        // UserManager.GetUserId and ICurrentUser.UserId both come back null for every signed-in
+        // caller: /me 401s and tenant resolution 404s every member.
+        options.ClaimsIdentity.UserIdClaimType = OpenIddictConstants.Claims.Subject;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AegisScribeDbContext>()
     .AddDefaultTokenProviders()
-    // AddIdentityCore (unlike AddIdentity) does not register SignInManager on its own —
-    // AuthorizationController.cs needs CheckPasswordSignInAsync for the interactive sign-in leg.
+    // AddIdentityCore (unlike AddIdentity) does not register SignInManager on its own — the user
+    // repository (AegisScribe.Domain) needs CheckPasswordSignInAsync for the interactive sign-in leg.
     .AddSignInManager();
 
 // OpenIddict is both the token issuer (server) and, as of this phase, the API's own validator —
@@ -136,10 +174,25 @@ builder.Services.AddOpenIddict()
 builder.Services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AuthPolicies.PlatformAdmin, policy => policy.RequireRole(AuthPolicies.PlatformAdmin));
+    .AddPolicy(AuthPolicies.PlatformAdmin, policy => policy.RequireRole(AuthPolicies.PlatformAdmin))
+    .AddPolicy(AuthPolicies.TenantMember, policy => policy.AddRequirements(new TenantRoleRequirement(TenantRole.Member)))
+    .AddPolicy(AuthPolicies.TenantOfficer, policy => policy.AddRequirements(new TenantRoleRequirement(TenantRole.Officer)))
+    .AddPolicy(AuthPolicies.TenantOwner, policy => policy.AddRequirements(new TenantRoleRequirement(TenantRole.Owner)));
 
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+// Every layer below the controllers — facades, business, data layers, repositories, validators, and
+// the ambient TenantContext — lives in AegisScribe.Domain and registers itself (backend.md -> "Two
+// projects, one direction"). The host supplies what is host-shaped: the DbContext and Identity above,
+// and the caller, read from the validated token.
+builder.Services.AddAegisScribeDomain();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler>();
+builder.Services.AddScoped<IIdempotencyStore, RedisIdempotencyStore>();
+
+// Facades throw ValidationException and Business throws domain exceptions; this is where they
+// become problem+json (or a bare 401). Controllers never catch them.
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 
 // Partitioned by who's calling, in order: authenticated sub, then OAuth client_id (a fleet-wide
 // budget — many devices share one client_id), then IP only for genuinely anonymous requests. Never
@@ -230,12 +283,19 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
 });
 
+// Early, so it wraps everything that can throw a domain exception — the tenant-resolution middleware
+// as well as the controllers. DomainExceptionHandler decides what it handles; the rest are 500s.
+app.UseExceptionHandler();
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 // After authentication so HttpContext.User carries whatever claims a token has — even one that
 // will later fail authorization — for the rate limiter's sub/client_id partitioning above.
 app.UseRateLimiter();
+// After authentication (needs HttpContext.User to check membership) and before authorization (a
+// tenant-aware policy, added later, will read the ITenantContext this populates) — tenancy.md.
+app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

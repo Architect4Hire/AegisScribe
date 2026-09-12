@@ -10,7 +10,7 @@ tools: Read, Grep, Glob
 model: sonnet
 ---
 
-You audit the **AegisScribe** repo's AI vertical (`src/AegisScribe.ApiService/Ai/`,
+You audit the **AegisScribe** repo's AI vertical (`src/AegisScribe.Domain/Ai/`,
 `src/AegisScribe.SyncWorker/Embeddings/`, and the Angular components that render model output). You
 never edit files.
 

@@ -45,40 +45,59 @@ the field. Concretely, before you write the controller:
 - response fields are ones a screen actually uses. Every field is a promise for the life of the
   version.
 
-Work in `src/AegisScribe.ApiService/`, organized **type-first**. The orchestration layers —
-`Controllers/`, `Facade/`, `Business/` — and the data-access layer, `Data/`, sit at the project root,
-alongside `Integration/` (external sources), `Auth/` (Identity wiring) and `Ai/`. The rest of what
-they lean on lives under the `Managers/` umbrella: validators, models, mappers, and infrastructure.
-Stop for review before running migrations.
+The work spans **two projects**, organized **type-first** inside each:
+
+- **`src/AegisScribe.ApiService/`** — the HTTP host. Only the controller action lands here.
+- **`src/AegisScribe.Domain/`** — everything below the controller: `Facade/`, `Business/`, `Data/`,
+  and the `Managers/` umbrella (models, validators, mappers), alongside `Context/` (the ambient
+  tenant and caller), `Integration/` (external sources) and `Ai/`.
+
+The API references Domain; **Domain never references the API** and holds no controller,
+`HttpContext`, `IActionResult` or middleware. If a layer below the controller seems to need one of
+those, the seam is in the wrong place — pass the value down, or put an interface in `Context/` that
+the API implements (that is what `ICurrentUser` and `ITenantContext` are). Stop for review before
+running migrations.
 
 ## Target layout
 
 ```
-AegisScribe.ApiService/
-├── Controllers/            # <Feature>Controller.cs — HTTP surface (ViewModel in, ServiceModel out)
-├── Facade/                 # I<Feature>Facade  + <Feature>Facade   (validate VM + cache + return SM)
-├── Business/               # I<Feature>Business + <Feature>Business (VM→domain, domain rules, domain→SM)
-├── Data/                   # AegisScribeDbContext
-│                           #   I<Feature>DataLayer  + <Feature>DataLayer  (compose data operations)
-│                           #   I<Feature>Repository + <Feature>Repository (EF queries)
-├── Integration/Blizzard/   # IBlizzardGateway — the only door to the Blizzard API
-├── Auth/                   # Identity endpoints, policies, role seeding, the data-deletion path
+AegisScribe.ApiService/         # HTTP host — references AegisScribe.Domain
+├── Controllers/                # <Feature>Controller.cs — HTTP surface (ViewModel in, ServiceModel out)
+├── Auth/                       # OpenIddict wiring, authorization policies + handlers, role seeding,
+│                               #   HttpCurrentUser (the ICurrentUser implementation)
+├── Tenancy/                    # TenantResolutionMiddleware — calls a facade, never the DbContext
+├── Infrastructure/             # the global exception handler (domain exceptions → problem+json)
+└── Program.cs                  # hosts, auth, pipeline; calls AddAegisScribeDomain()
+
+AegisScribe.Domain/             # class library — references nothing else in the solution
+├── Facade/                     # I<Feature>Facade  + <Feature>Facade   (validate VM + cache + return SM)
+├── Business/                   # I<Feature>Business + <Feature>Business (VM→domain, domain rules, domain→SM)
+├── Data/                       # AegisScribeDbContext
+│                               #   I<Feature>DataLayer  + <Feature>DataLayer  (compose data operations)
+│                               #   I<Feature>Repository + <Feature>Repository (EF queries, Identity stores)
+├── Context/                    # ITenantContext, TenantContext, ICurrentUser — ambient request context
+├── Integration/Blizzard/       # IBlizzardGateway — the only door to the Blizzard API
 ├── Ai/
-│   ├── Plugins/            # [KernelFunction] classes — each wraps a facade
-│   ├── Prompts/            # system prompts, one file per capability
-│   └── Filters/            # the constrained-filter schema + LINQ translator
+│   ├── Plugins/                # [KernelFunction] classes — each wraps a facade
+│   ├── Prompts/                # system prompts, one file per capability
+│   └── Filters/                # the constrained-filter schema + LINQ translator
 ├── Managers/
-│   ├── Validators/         # FluentValidation validators for the view models
+│   ├── Validators/             # FluentValidation validators for the view models
 │   ├── Models/
-│   │   ├── ViewModels/     # inbound request types — the ONLY thing the controller binds
-│   │   ├── ServiceModels/  # outbound response types — the ONLY thing the API returns
-│   │   ├── Domain/         # EF entities + domain exceptions
-│   │   └── Identity/       # ApplicationUser
-│   ├── Mappers/            # VM→domain, domain→ServiceModel (extension methods)
-│   └── Infrastructure/     # cross-cutting (e.g. the global exception handler, rate limiter)
+│   │   ├── ViewModels/         # inbound request types — the ONLY thing the controller binds
+│   │   ├── ServiceModels/      # outbound response types — the ONLY thing the API returns
+│   │   ├── Domain/             # EF entities + domain exceptions
+│   │   └── Identity/           # ApplicationUser
+│   └── Mappers/                # VM→domain, domain→ServiceModel (extension methods)
 ├── Migrations/
-└── Program.cs
+└── DomainServiceCollectionExtensions.cs   # AddAegisScribeDomain() — registers every layer + validators
 ```
+
+**Identity counts as data.** `UserManager`, `RoleManager` and `SignInManager` are Identity's store
+APIs, so they sit behind a repository exactly like a `DbContext` does. A controller or facade holding
+one has skipped the stack. The same goes for the OpenIddict `connect/*` endpoints: the protocol shape
+(`SignIn`, `Forbid`, the claims identity) stays in the controller, but "does this password match",
+"can this user sign in" and "what roles do they hold" go through a facade.
 
 ## The three model types (this is the core idea)
 
@@ -289,8 +308,10 @@ is only untidy.
    to solve Blizzard staleness here; a five-minute Redis entry over a three-week-old row is still a
    three-week-old answer.
 
-9. **Controller** → `Controllers/<Feature>Controller.cs`. Add a thin action that binds the ViewModel,
-   calls the facade, and returns `ActionResult<ServiceModel>`.
+9. **Controller** → `AegisScribe.ApiService/Controllers/<Feature>Controller.cs` — the only file in
+   this list that lives in the API project. Add a thin action that binds the ViewModel, calls the
+   facade, and returns `ActionResult<ServiceModel>`. It injects **only** facades — never a
+   repository, `DbContext`, `UserManager` or validator.
 
    Route and policy follow the zone:
    ```csharp
@@ -304,16 +325,18 @@ is only untidy.
    an action that hands a tenant identifier to a lower layer has re-opened the hole the middleware
    closed.
 
-10. **DI wiring.** Register the layers in `Program.cs` (scoped), and register validators:
+10. **DI wiring.** Register the layers (scoped) in `AegisScribe.Domain/DomainServiceCollectionExtensions.cs`,
+    inside `AddAegisScribeDomain()` — not in `Program.cs`, so every host that references Domain gets
+    the same registrations:
     ```csharp
-    builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
-    builder.Services.AddScoped<ICharacterDataLayer, CharacterDataLayer>();
-    builder.Services.AddScoped<ICharacterBusiness, CharacterBusiness>();
-    builder.Services.AddScoped<ICharacterFacade, CharacterFacade>();
+    services.AddScoped<ICharacterRepository, CharacterRepository>();
+    services.AddScoped<ICharacterDataLayer, CharacterDataLayer>();
+    services.AddScoped<ICharacterBusiness, CharacterBusiness>();
+    services.AddScoped<ICharacterFacade, CharacterFacade>();
     ```
-    Validators need no registration of their own: `Program.cs` already calls
-    `AddValidatorsFromAssemblyContaining<Program>()`, which picks up every validator in the assembly.
-    Don't add a second `AddValidatorsFromAssemblyContaining` line per feature.
+    Validators need no registration of their own: `AddAegisScribeDomain()` already calls
+    `AddValidatorsFromAssemblyContaining<...>()` against the Domain assembly, which picks up every
+    validator in it. Don't add a second `AddValidatorsFromAssemblyContaining` line per feature.
 
 11. **Cache backing.** Use the Aspire Redis client integration for the distributed cache (keyed to
     the AppHost `cache` resource) — no hardcoded connection details. Read-through + invalidate lives
@@ -341,10 +364,16 @@ is only untidy.
       tenant returns **404 not 403**, and a write cannot set another tenant's `TenantId`.
       Run `dotnet test`.
 
-13. **Migration (only if the model changed).** `dotnet ef migrations add <Name>`, review, then
-    `dotnet ef database update`. Commit the migration, and confirm
-    `dotnet ef migrations has-pending-model-changes` is clean. (If you move a namespace that appears
-    in the migration snapshot — a Domain entity or the DbContext — update those strings too.)
+13. **Migration (only if the model changed).** The `DbContext` and its migrations live in Domain;
+    the API is the startup project (it holds the Design package and the Aspire registration). From
+    the repo root:
+    ```
+    dotnet ef migrations add <Name> --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService
+    ```
+    Review, then `dotnet ef database update` with the same two flags. Commit the migration, and
+    confirm `dotnet ef migrations has-pending-model-changes` (same flags) is clean. (If you move a
+    namespace that appears in the migration snapshot — a Domain entity or the DbContext — update
+    those strings too.)
 
 ## Armory domain notes
 
@@ -363,8 +392,14 @@ synced entity without both is incomplete.
 - [ ] Route is **versioned** (`/api/v{n}/...`); collections cursor-paginated with a max `limit`;
       creates accept `Idempotency-Key`; errors are `problem+json` with a stable `type`
 - [ ] `contract/openapi.v1.json` regenerated and reviewed in the same change
-- [ ] Files live in the type-first folders above — controller/facade/business/data at the project
-      root; validators, models, mappers, infrastructure under `Managers/`
+- [ ] Files live in the right **project**: only the controller in `AegisScribe.ApiService`;
+      facade/business/data, models, validators and mappers in `AegisScribe.Domain` — and Domain
+      still has no reference to the API, no `HttpContext`, no `IActionResult`
+- [ ] Files live in the type-first folders above — facade/business/data at the Domain project
+      root; validators, models, mappers under `Managers/`
+- [ ] The controller injects only facades — no repository, `DbContext`, `UserManager`,
+      `SignInManager` or validator
+- [ ] Layers registered in `AddAegisScribeDomain()`, not in `Program.cs`
 - [ ] Only ViewModels enter and only ServiceModels leave the API — no EF entity crosses the
       controller boundary
 - [ ] Zone decided: tenant-scoped route + membership policy + tenant-prefixed cache key, **or**

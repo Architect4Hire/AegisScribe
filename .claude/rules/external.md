@@ -1,6 +1,6 @@
 ---
 paths:
-  - src/AegisScribe.ApiService/Integration/**
+  - src/AegisScribe.Domain/Integration/**
   - src/AegisScribe.SyncWorker/**
 ---
 # External source rules — Blizzard, WarcraftLogs, Discord & Wowhead
@@ -14,8 +14,10 @@ Four external systems, four different postures:
 | **Discord** | **Outbound only** — we post to per-tenant webhooks. We never read from Discord. |
 | **Wowhead** | A **link target**. Never called from the server, at all, for any reason. |
 
-Everything server-side lives under `Integration/`, one folder per system, and nothing outside those
-folders knows the systems exist.
+Everything server-side lives under `AegisScribe.Domain/Integration/`, one folder per system, and
+nothing outside those folders knows the systems exist. It sits in the Domain project because the
+DataLayer composes gateway calls, and because the sync worker needs gateways and repositories
+without ever referencing the web API.
 
 ## Blizzard — everything goes through the gateway
 
@@ -67,8 +69,9 @@ architectural, and CLAUDE.md → Restrictions treats them as binding:
 Several documents here treat "the deletion path" as a thing new tables must be added to. This is what
 it is, so nobody has to invent it twice:
 
-- **Where it lives:** `Auth/DataDeletion/` — a `ICharacterDataDeletionFacade` over the normal layer
-  stack, not a script. It is a domain operation with rules and an audit trail, so it goes through
+- **Where it lives:** `AegisScribe.Domain` — an `ICharacterDataDeletionFacade` in `Facade/` over
+  the normal layer stack (`Business/`, `Data/`), not a script, with its trigger routes in an API
+  controller. It is a domain operation with rules and an audit trail, so it goes through
   Facade → Business → DataLayer like everything else.
 - **Who triggers it:** two routes, one implementation.
   - `POST /api/v1/platform/characters/{realm}/{name}/erasure` behind the **`PlatformAdmin`** policy —

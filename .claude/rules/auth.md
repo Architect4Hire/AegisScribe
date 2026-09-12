@@ -2,7 +2,8 @@
 paths:
   - src/AegisScribe.ApiService/Auth/**
   - src/AegisScribe.ApiService/Tenancy/**
-  - src/AegisScribe.ApiService/Managers/Models/Identity/**
+  - src/AegisScribe.Domain/Context/**
+  - src/AegisScribe.Domain/Managers/Models/Identity/**
   - src/AegisScribe.Gateway/**
   - src/web/src/app/auth/**
   - src/web/src/app/core/**

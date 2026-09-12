@@ -34,6 +34,11 @@ Guessing at WarcraftLogs costs you rate-limit points for a query that returns no
 `Integration/<Source>/` is the only place in the solution that knows the source exists. Everything
 below either lives there or consumes it.
 
+**Every folder in the steps below is in `src/AegisScribe.Domain/`** — `Integration/`, `Data/`,
+`Managers/`, `Facade/` alike — except the sync job itself, which lives in
+`src/AegisScribe.SyncWorker/` and reaches gateways and repositories through its reference to Domain.
+The worker never references the API.
+
 ## The shape of a sync
 
 ```
@@ -116,7 +121,8 @@ both; neither alone is sufficient.
    The job must be **idempotent and resumable** — it will be interrupted, and it re-runs from the
    store, not from in-memory state.
 
-7. **Deletion path.** Add the new table to the erasure routine in `Auth/DataDeletion/` — by source id,
+7. **Deletion path.** Add the new table to the erasure routine behind `ICharacterDataDeletionFacade`
+   (its Business and DataLayer in `AegisScribe.Domain`; see `.claude/rules/external.md`) — by source id,
    in the same transaction as the rest — and extend the test asserting that every entity with a
    Blizzard source id appears there. The routine enumerates tables explicitly rather than reflecting
    over the model, so this is a real edit, not something that happens for free. Its full shape (the

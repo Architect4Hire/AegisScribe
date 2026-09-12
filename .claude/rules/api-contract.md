@@ -1,8 +1,9 @@
 ---
 paths:
   - src/AegisScribe.ApiService/Controllers/**
-  - src/AegisScribe.ApiService/Managers/Models/**
-  - src/AegisScribe.ApiService/Contract/**
+  - src/AegisScribe.Domain/Managers/Models/ViewModels/**
+  - src/AegisScribe.Domain/Managers/Models/ServiceModels/**
+  - contract/**
 ---
 # API contract rules — versioning and evolution
 
@@ -31,6 +32,12 @@ report, a log line, a curl, and a cache key. Header-based versioning is more RES
 to debug at 2am, which is the trade this repo does not want to make.
 
 **An unversioned route is a defect**, including a health check people will script against.
+
+The one exception is the OAuth protocol surface — `connect/authorize`, `connect/token`,
+`connect/revoke`, `connect/logout` and `/.well-known/openid-configuration`. Those paths are the
+OpenID/OAuth contract, advertised by the discovery document and fixed by the specs, so they version
+with the protocol rather than with this API; `AuthorizationController` is `[ApiVersionNeutral]` for
+that reason. Nothing else qualifies.
 
 ## Additive-only within a version
 

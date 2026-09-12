@@ -10,10 +10,12 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.5.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.7.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AegisScribe.ApiService\AegisScribe.ApiService.csproj" />
+    <!-- Domain, never the API: the DbContext and migrations live there (backend.md). -->
+    <ProjectReference Include="..\AegisScribe.Domain\AegisScribe.Domain.csproj" />
     <ProjectReference Include="..\AegisScribe.ServiceDefaults\AegisScribe.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

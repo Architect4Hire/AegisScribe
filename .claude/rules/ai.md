@@ -1,11 +1,12 @@
 ---
 paths:
-  - src/AegisScribe.ApiService/Ai/**
+  - src/AegisScribe.Domain/Ai/**
   - src/AegisScribe.SyncWorker/Embeddings/**
 ---
 # AI rules — Microsoft.Extensions.AI + Semantic Kernel + Azure AI Foundry
 
-The AI vertical lives in `src/AegisScribe.ApiService/Ai/`. It is a *consumer* of the layered stack, not
+The AI vertical lives in `src/AegisScribe.Domain/Ai/`, alongside the facades its plugins wrap; its
+HTTP routes are controllers in the API like any other. It is a *consumer* of the layered stack, not
 a second way into the database.
 
 ## The layering, stated once
