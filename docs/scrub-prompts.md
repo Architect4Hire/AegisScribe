@@ -52,13 +52,16 @@ Everything before Phase 6 runs on seeded data in seeded tenants.
 | After | You can |
 |---|---|
 | **0.6** | `aspire run` and see every resource healthy |
+| **1B.4d** | See the sign-in form in the app's own colours, not the OpenIddict default |
 | **1B.9** | Prove the edge: forged tokens stripped, no JWT in the browser |
 | **2.9** | Prove isolation: two tenants, and B cannot see A |
 | **4.6** | `curl` a character and get a ServiceModel |
+| **5.6b** | Register a new account from the landing page and sign in |
 | **5.7** | Open the browser and use the armory |
 | **6.4** | Watch a never-synced character arrive from Blizzard |
 | **7.5** | Run a real roster with your own ranks |
-| **9.7** | Sign up for a raid |
+| **7.5b** | Claim a character and see it marked yours, on the roster and the profile |
+| **9.7** | Sign up for a raid, as the character that's actually yours |
 | **10.5** | Get a Discord message |
 | **13.3** | Schedule six weeks of raids by typing a sentence |
 | **13B.3** | Sign in on a real phone |
@@ -292,6 +295,28 @@ use header or query-string versioning — a URL segment survives a bug report, a
 The version segment comes BEFORE the tenant segment.
 BEHAVIOR: Explain in one line why this is worth doing before the first real endpoint exists, then
 implement and show me a versioned route responding.
+```
+
+### 1B.4d Styling the sign-in page
+```
+SCOPE: Restyle the connect/* controller's sign-in form (1B.4) — the page OpenIddict's authorization
+endpoint renders when the caller isn't authenticated — to match the AegisScribe design system: colour,
+type and spacing tokens, the wordmark, and the error and lockout states.
+CONSTRAINT: aegisscribe-design-system skill; design/aegisscribe-armory.html §01 (colour), §03
+(typography), §04 (space & form) and §05 (primitives — buttons, fields). There is no S-numbered mockup
+for this screen; build it from those sections directly, and keep it deliberately plain — this is a
+security-sensitive, low-frequency page, not a place for cleverness.
+RESTRICTION: This page is server-rendered by AegisScribe.ApiService (plain Razor/HTML + CSS) — it
+cannot import Angular, the scribe-* components, or src/web's SCSS pipeline. Transcribe the SAME token
+VALUES into a small static stylesheet under the API's own wwwroot, exactly the way 5.2 transcribes
+them for Angular: a copy, not a reinterpretation, and a literal hex here is the same defect it would be
+in the SPA. No client-side framework, no build step — this is the one screen in the app that has to
+render correctly with JavaScript off, since it sits in the middle of an OAuth redirect chain. The
+interactive cookie this page uses to hold form state (1B.4) is scoped to the connect/* flow only — do
+not confuse it with, or let it widen into, the API's bearer-only resource-server validation (1B.5).
+BEHAVIOR: Plan the stylesheet's scope and where it lives, wait for approval, implement, and show me the
+sign-in form, an invalid-credentials error, and a locked-out account — reached through the actual
+redirect from bff.*'s /auth/login, not a standalone preview.
 ```
 
 ### 1B.5 The API becomes a token resource server - done
@@ -639,6 +664,25 @@ never mutates hidden state.
 BEHAVIOR: Plan the routing and the URL construction, wait for approval, implement, run @design-review.
 ```
 
+### 5.6b Landing page ⚑
+```
+SCOPE: The app's FIRST route, at '/' — a signed-out hero with "Register" and "Log in" calls to action,
+plus the registration form itself (display name, email, password → POST /api/v1/auth/register through
+the gateway, per 1.2). Root routing: '/' resolves to this page when signed out, to the tenant-picker
+(5.6) when signed in.
+CONSTRAINT: aegisscribe-design-system skill; .claude/rules/auth.md → "Angular side"; the 5.3/5.4
+primitives.
+RESTRICTION: It renders before any API call can succeed or fail, so it must not depend on a resolved
+tenant or an authenticated /me call. "Log in" is a full-page navigation to bff.*'s /auth/login (1B.6),
+NOT an HttpClient call — the OAuth code+PKCE flow is a browser redirect and an XHR cannot follow it
+anywhere useful. Registration IS a normal JSON POST — Identity account creation (1.2) is not part of
+the token flow — and on success navigates the SAME way to /auth/login; creating an account does not
+sign you in, the interactive sign-in step (styled in 1B.4d) still has to happen. Never fabricate a
+session or store a token from the register response — the SPA holds no tokens, full stop.
+BEHAVIOR: Plan the routing (where Angular hands off to a full navigation) and the register form's
+validation, wait for approval, implement, run `ng test`, @design-review.
+```
+
 ### 5.7 Character profile screen
 ```
 SCOPE: character-profile with character-banner, two equipment-rails, the weapons row, tabs, and the
@@ -744,23 +788,47 @@ must never hold an FK to a tenant-scoped one. Indexes start with TenantId.
 BEHAVIOR: Implement with the two-tenant test.
 ```
 
+### 7.2b Claiming a character ⚑
+```
+SCOPE: CharacterClaim (TenantId, CharacterId → global Character, UserId, ClaimedAt), through the full
+layer stack — this is the add-endpoint skill's own worked example (ClaimCharacterViewModel,
+CharacterClaim, the one-claim-per-character rule, resource authorization in Business). Self-service
+claim and unclaim; an officer may CLEAR (not reassign) another member's mistaken claim.
+CONSTRAINT: add-tenant-entity and add-endpoint skills; .claude/rules/tenancy.md (CharacterClaim is
+already listed there as tenant-scoped) and external.md (already names it in the erasure enumeration).
+RESTRICTION: Tenant-scoped — TenantId, query filter, tenant cache key, TenantMember policy. At most one
+UserId per (TenantId, CharacterId) — read the existing claim before inserting; a second claim on an
+already-claimed character in this tenant is refused (409), not silently overwritten, and that check is
+Business's, per the skill's own worked table. A member may only claim or unclaim FOR THEMSELVES, never
+name another user in the request — an officer's clear is a separate, audited endpoint that frees the
+claim, it does not hand it to someone else. Claiming is NOT Battle.net verification (out of scope, see
+CLAUDE.md Scope) and asserts nothing to Blizzard — it grants no extra permission; RosterEntry rank and
+OfficerNote stay TenantOfficer-gated exactly as before. A claim does not require the character to
+already be on this tenant's roster (7.4's add is a separate act from claiming).
+BEHAVIOR: Plan the endpoints and the conflict response, wait for approval, implement, test: self-claim,
+double-claim 409, self-unclaim, officer clear with an audit row, and the two-tenant test — claiming in
+tenant A must leave the same Character's standing in tenant B untouched.
+```
+
 ### 7.3 Alt linking
 ```
 SCOPE: MainRosterEntryId on RosterEntry, plus endpoints to link and unlink alts.
 CONSTRAINT: add-tenant-entity and add-endpoint skills.
 RESTRICTION: Alt linking lives on RosterEntry, NOT on Character — who is somebody's main is a
-community's judgement, and the same player may be organised differently in two communities. Reject
-cycles and self-links in Business.
+community's judgement, and the same player may be organised differently in two communities. A member
+may link/unlink alts only among entries THEY claim (7.2b); an officer may link any. Reject cycles and
+self-links in Business.
 BEHAVIOR: Implement with tests for the cycle and self-link rejections.
 ```
 
 ### 7.4 Roster endpoints
 ```
-SCOPE: GET /api/v1/t/{slug}/roster (paged, sortable, alt-grouped), POST to add a character, PATCH rank and
-note, DELETE to remove.
+SCOPE: GET /api/v1/t/{slug}/roster (paged, sortable, alt-grouped, claim state included), POST to add a
+character, PATCH rank and note, DELETE to remove.
 CONSTRAINT: add-endpoint and add-tenant-entity skills.
-RESTRICTION: Reads TenantMember, writes TenantOfficer. Every officer write to someone else's entry
-writes an AuditLog row.
+RESTRICTION: Reads TenantMember, writes TenantOfficer. Claim/unclaim/clear are 7.2b's endpoints, not
+these — adding a character to the roster and claiming one are different acts with different actors.
+Every officer write to someone else's entry writes an AuditLog row.
 BEHAVIOR: Implement with per-layer tests plus 401, 403, and the three tenancy assertions.
 ```
 
@@ -771,6 +839,21 @@ rank-manager for officers.
 CONSTRAINT: aegisscribe-design-system skill; screen S3 and §08.
 RESTRICTION: Show BOTH ranks — the community's and the game's — and never imply one derives from the
 other. All four states.
+BEHAVIOR: Implement, `ng test`, @design-review.
+```
+
+### 7.5b Claim UI
+```
+SCOPE: A claimed-by indicator and claim/unclaim action on roster-table (7.5) rows; the "Claimed by
+you" pill and claim/unclaim button on character-profile (5.7, screen S1).
+CONSTRAINT: aegisscribe-design-system skill; screen S1's "Claimed by you" pill and the "Claim
+character" button in §05.
+RESTRICTION: character-profile's route is the tenant-less front door (5.7) — it must keep working with
+no active tenant, showing neither the pill nor the button. When reached with an active tenant (e.g.
+navigated to from roster-table, or the SPA otherwise has one selected), the same component takes the
+tenant as an optional input and shows claim state for it; don't fork a second route or duplicate the
+component to get there. An unclaimed row shows "Claim" to everyone with TenantMember; a row claimed by
+someone else shows who, with no action for a non-officer.
 BEHAVIOR: Implement, `ng test`, @design-review.
 ```
 
@@ -799,7 +882,9 @@ SCOPE: Let an Owner link one or more guilds to their community, and offer to imp
 into RosterEntry rows.
 CONSTRAINT: add-tenant-entity and add-endpoint skills.
 RESTRICTION: The link is tenant-scoped; the Guild itself is global and shared. Importing creates
-RosterEntry rows; it must NOT copy character data. Two communities may link the same guild.
+RosterEntry rows; it must NOT copy character data. Import does NOT create CharacterClaim rows —
+Blizzard has no notion of which of your members plays which character; every imported row starts
+unclaimed and each member claims their own via 7.2b. Two communities may link the same guild.
 BEHAVIOR: Plan the import, wait for approval, implement, two-tenant test on the same guild.
 ```
 
@@ -816,7 +901,8 @@ BEHAVIOR: Plan the state transitions, wait for approval, implement, test every r
 
 ### 8.4 Member management UI
 ```
-SCOPE: member-management screen — invite, review requests, change roles, remove.
+SCOPE: member-management screen — invite, review requests, change roles, remove; each member's claimed
+character(s) from 7.2b, so officers can see who hasn't claimed one yet.
 CONSTRAINT: aegisscribe-design-system skill.
 RESTRICTION: Role-conditional UI hides; it never enforces. Destructive actions are outlined, not filled.
 BEHAVIOR: Implement, `ng test`, @design-review.
@@ -870,9 +956,10 @@ BEHAVIOR: Plan the scopes, wait for approval, implement, test that siblings and 
 SCOPE: EventSignup (TenantId, EventId, RosterEntryId, State) with the state machine, plus the signup
 window lock.
 CONSTRAINT: references/time-and-recurrence.md → "The signup state machine"; add-endpoint skill.
-RESTRICTION: Signup is per-CHARACTER (via RosterEntry), not per-user. Members change only their own;
-officers change anyone's, and every officer change to someone else's is audited. After lock, officers
-only.
+RESTRICTION: Signup is per-CHARACTER (via RosterEntry), not per-user. "Their own" means a RosterEntry
+with a CharacterClaim (7.2b) naming the caller — a member cannot sign up an unclaimed entry, even one
+that's plausibly theirs; claim it first. Officers change anyone's, claimed or not, and every officer
+change to someone else's is audited. After lock, officers only.
 BEHAVIOR: Implement, test member-after-lock rejected and officer-after-lock permitted with an audit row.
 ```
 
@@ -920,7 +1007,9 @@ SCOPE: An INotificationRaiser called by facades after commit; resolves recipient
 raise time and writes Notification rows.
 CONSTRAINT: add-notification skill.
 RESTRICTION: Raise AFTER the transaction commits — a notification for a rolled-back write is worse than
-none. Fan out at raise time, not delivery time; the roster may change in between.
+none. Fan out at raise time, not delivery time; the roster may change in between. A per-character
+recipient (an unfilled-signup reminder) resolves through the CharacterClaim (7.2b) on that RosterEntry;
+an unclaimed entry has no recipient and is silently skipped, never guessed at.
 BEHAVIOR: Implement, test that a rolled-back write produces no notification.
 ```
 
@@ -1123,7 +1212,8 @@ SCOPE: Generated per-member and per-guild attendance summaries.
 CONSTRAINT: .claude/rules/ai.md → "Judgement-shaped output"; add-ai-capability and add-endpoint skills.
 RESTRICTION: Describes BEHAVIOUR, not character — "signed up for 4 of the last 12" is a fact,
 "unreliable" is a verdict the tool doesn't get to render. Cites the rows. States what it doesn't know.
-Is VISIBLE to the person it's about, or it isn't built.
+Is VISIBLE to the person it's about — resolved through their CharacterClaim (7.2b) — or it isn't
+built. An unclaimed character's summary is guild-visible only; there is no "the person" to show it to.
 BEHAVIOR: Plan the framing carefully and show it to me before implementing — this one is about people,
 and the wording is the feature.
 ```
@@ -1166,6 +1256,20 @@ RESTRICTION: Do NOT add it to the AppHost. It is a client, not an orchestrated s
 `aspire run` does not launch it. No literal API URL. No secrets of any kind.
 BEHAVIOR: Plan the project and navigation, wait for approval, implement, and show it building for both
 targets.
+```
+
+### 13B.2b Landing and registration screen
+```
+SCOPE: The app's FIRST screen — "Register" and "Log in" entry points, and a native registration form
+(display name, email, password → POST /api/v1/auth/register, straight to api.*, per 1.2 and
+mobile.md's "talks to api.* directly"). "Log in" launches 13B.3's WebAuthenticator flow.
+CONSTRAINT: .claude/rules/mobile.md.
+RESTRICTION: Registration is a plain HTTPS POST straight to api.* — no gateway, no cookie, same as
+every other mobile call. It does NOT sign the user in; on success, launch the SAME WebAuthenticator
+flow as "Log in" (13B.3) rather than fabricating a session from the register response. Do NOT embed a
+WebView for either action — sign-in is system-browser only (RFC 8252), same restriction as 13B.3.
+BEHAVIOR: Plan the screen and the handoff into 13B.3, wait for approval, implement, and show both
+register-then-sign-in and log-in-directly working on one platform.
 ```
 
 ### 13B.3 Authentication ⚑
@@ -1274,8 +1378,9 @@ tenant-isolation and external-compliance blockers first. Then wait — I'll say 
 ### 14.4 End-to-end tests
 ```
 SCOPE: Playwright coverage for the critical journeys: look up a character; register, create a community
-and invite a member; build a roster with ranks; schedule a raid and sign up; receive the Discord
-notification; ask the advisor a question; run a natural-language roster query.
+and invite a member; build a roster with ranks and claim a character; schedule a raid and sign up as
+your claimed character; receive the Discord notification; ask the advisor a question; run a
+natural-language roster query.
 CONSTRAINT: playwright-cli skill.
 RESTRICTION: Include a TWO-TENANT journey — sign in as a member of community B and confirm community
 A's roster and calendar are unreachable. That is the one that matters most.

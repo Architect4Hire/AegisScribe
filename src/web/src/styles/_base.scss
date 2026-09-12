@@ -1,0 +1,47 @@
+// Reset & base — copied from design/aegisscribe-armory.html's "RESET & BASE" block.
+// This is what actually paints --ground/--ink onto the page; the token layer alone only
+// declares custom properties, it doesn't apply them to anything.
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  font-feature-settings: "kern" 1;
+}
+
+img { max-width: 100%; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  margin: 0;
+  text-wrap: balance;
+  line-height: 1.2;
+}
+
+p { margin: 0; }
+
+a { color: var(--brass); text-underline-offset: 2px; }
+a:hover { color: var(--brass-bright); }
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+code, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
