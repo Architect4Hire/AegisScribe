@@ -1,0 +1,21 @@
+<div class="tenant-switcher" (document:click)="onDocumentClick($event)" (keydown.escape)="onEscape()">
+  <button class="tenant-switch" type="button" [attr.aria-expanded]="isOpen()" (click)="toggle()">
+    <span class="tenant-crest">{{ crestInitial() }}</span>
+    <span style="text-align: left">
+      <span class="tenant-name">{{ active()?.tenantName }}</span><br />
+      <span class="tenant-role">{{ active()?.role }}</span>
+    </span>
+    <span class="tenant-caret" aria-hidden="true">▼</span>
+  </button>
+
+  @if (isOpen() && otherMemberships().length > 0) {
+    <div class="tenant-switch-menu">
+      @for (membership of otherMemberships(); track membership.tenantSlug) {
+        <button type="button" class="tenant-switch-item" (click)="pick(membership.tenantSlug)">
+          <span class="tenant-name">{{ membership.tenantName }}</span>
+          <span class="tenant-role">{{ membership.role }}</span>
+        </button>
+      }
+    </div>
+  }
+</div>

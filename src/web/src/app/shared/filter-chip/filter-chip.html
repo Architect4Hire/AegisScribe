@@ -1,0 +1,9 @@
+<span class="chip">
+  <span class="chip-key">{{ key() }}</span> {{ value() }}
+  <button
+    class="chip-x"
+    type="button"
+    [attr.aria-label]="'Remove ' + key() + ' filter'"
+    (click)="removed.emit()"
+  >×</button>
+</span>

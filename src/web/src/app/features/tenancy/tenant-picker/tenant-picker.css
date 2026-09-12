@@ -1,0 +1,49 @@
+/* No mockup exists for this screen in design/aegisscribe-armory.html -- built fresh from existing
+   tokens only. .tenant-name/.tenant-role reuse the same typography as the switcher (§07) so a
+   community reads the same way here as it does in the header. */
+.tenant-picker {
+  max-width: 480px;
+  margin: var(--s-7) auto;
+  padding: 0 var(--s-4);
+}
+.tenant-picker-heading {
+  font-family: var(--font-ui);
+  font-size: var(--t-h1);
+  color: var(--ink);
+  margin-bottom: var(--s-5);
+}
+
+.tenant-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tenant-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  padding: var(--s-3) var(--s-4);
+  text-decoration: none;
+}
+.tenant-card:hover { background: var(--surface-2); border-color: var(--line-strong); }
+
+.tenant-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+.tenant-role {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--brass);
+}

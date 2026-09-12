@@ -1,0 +1,37 @@
+<div class="tenant-picker">
+  <h1 class="tenant-picker-heading">Your communities</h1>
+
+  @switch (state()) {
+    @case ('loading') {
+      <scribe-skeleton [height]="56" [count]="3" />
+    }
+    @case ('error') {
+      <scribe-empty-state
+        heading="Couldn't load your communities"
+        body="Something went wrong reaching AegisScribe. Check your connection and try again."
+        actionLabel="Try again"
+        variant="error"
+        (action)="retry()"
+      />
+    }
+    @case ('loaded') {
+      @if (memberships().length > 0) {
+        <ul class="tenant-list">
+          @for (membership of memberships(); track membership.tenantSlug) {
+            <li>
+              <a class="tenant-card" [routerLink]="['/t', membership.tenantSlug]">
+                <span class="tenant-name">{{ membership.tenantName }}</span>
+                <span class="tenant-role">{{ membership.role }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <scribe-empty-state
+          heading="You're not in any communities yet"
+          body="Ask an officer for an invite, or create one of your own."
+        />
+      }
+    }
+  }
+</div>

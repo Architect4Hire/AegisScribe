@@ -1,0 +1,3 @@
+// Global styles. The token layer is transcribed once, here, and every component references
+// var(--…) only — see .claude/rules/frontend.md and the aegisscribe-design-system skill.
+@use 'styles/tokens';

@@ -1,0 +1,21 @@
+<div class="panel">
+  <div class="panel-head">
+    <h3>Data provenance</h3>
+  </div>
+  <div class="panel-body">
+    <dl class="kv">
+      <dt>Last synced</dt>
+      <dd>{{ lastSyncedAt() }}</dd>
+      <dt>Refresh due</dt>
+      <dd>{{ refreshDue() }}</dd>
+      <dt>Source</dt>
+      <dd>{{ source() }}</dd>
+      <dt>Character ID</dt>
+      <dd>{{ characterId() }}</dd>
+    </dl>
+    <p class="provenance-note">
+      Shown because staleness is user-visible information, not an implementation detail — a player
+      looking at yesterday's gear should be able to tell.
+    </p>
+  </div>
+</div>

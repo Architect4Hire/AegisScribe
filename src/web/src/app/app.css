@@ -1,0 +1,14 @@
+/* Copied from design/aegisscribe-armory.html §S1/§10. Blizzard Terms of Use attribution — every
+   screen carries it, not just the character page, so it lives once at the app root. */
+.app-footer {
+  margin-top: var(--s-5);
+  padding-top: var(--s-3);
+  padding-inline: var(--s-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+}
+.app-footer-tooltip-credit { margin-left: auto; }

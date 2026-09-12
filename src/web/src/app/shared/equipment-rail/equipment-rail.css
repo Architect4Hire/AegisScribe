@@ -1,0 +1,2 @@
+/* Copied from design/aegisscribe-armory.html §S1 "Character profile". */
+.slot-rail { display: flex; flex-direction: column; gap: 6px; }

@@ -1,0 +1,5 @@
+<div class="skeleton-stack">
+  @for (opacity of opacities(); track $index) {
+    <div class="sk" [style.height.px]="height()" [style.opacity]="opacity"></div>
+  }
+</div>

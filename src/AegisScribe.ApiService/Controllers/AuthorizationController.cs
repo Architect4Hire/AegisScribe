@@ -216,7 +216,7 @@ public class AuthorizationController(
             <html>
             <head><title>Sign in — AegisScribe</title></head>
             <body>
-                <form method="post" action="connect/authorize">
+                <form method="post" action="/connect/authorize">
                     {hiddenInputs}
                     {errorHtml}
                     <label>Email <input type="email" name="identifier" required /></label>

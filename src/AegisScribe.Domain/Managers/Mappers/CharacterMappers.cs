@@ -5,6 +5,11 @@ namespace AegisScribe.Domain.Managers.Mappers;
 
 public static class CharacterMappers
 {
+    // Blizzard's media CDN, never Wowhead's zamimg.com. 56px is the smallest raster size Blizzard
+    // exposes for an item icon — see .claude/skills/add-external-sync/references/blizzard-endpoints.md
+    // -> "Images and media".
+    private const string ItemIconBaseUrl = "https://render.worldofwarcraft.com/icons/56";
+
     public static CharacterDetailServiceModel ToServiceModel(this Character character) => new()
     {
         Id = character.Id,
@@ -21,6 +26,28 @@ public static class CharacterMappers
             .Select(i => i.ToServiceModel())
             .ToList()
             ?? [],
+        ClassColor = ClassColorHex(character.Class),
+        IsDegraded = false,
+    };
+
+    // Exact hex match to src/web/src/styles/_tokens.scss's --c-* tokens -- one mapping, kept in
+    // sync deliberately, so the frontend never re-derives it.
+    private static string ClassColorHex(CharacterClass characterClass) => characterClass switch
+    {
+        CharacterClass.DeathKnight => "#C41E3A",
+        CharacterClass.DemonHunter => "#A330C9",
+        CharacterClass.Druid => "#FF7C0A",
+        CharacterClass.Evoker => "#33937F",
+        CharacterClass.Hunter => "#AAD372",
+        CharacterClass.Mage => "#3FC7EB",
+        CharacterClass.Monk => "#00FF98",
+        CharacterClass.Paladin => "#F48CBA",
+        CharacterClass.Priest => "#FFFFFF",
+        CharacterClass.Rogue => "#FFF468",
+        CharacterClass.Shaman => "#0070DD",
+        CharacterClass.Warlock => "#8788EE",
+        CharacterClass.Warrior => "#C69B6D",
+        _ => throw new ArgumentOutOfRangeException(nameof(characterClass), characterClass, null),
     };
 
     public static EquippedItemServiceModel ToServiceModel(this EquippedItem item) => new()
@@ -30,6 +57,6 @@ public static class CharacterMappers
         ItemName = item.ItemName,
         Quality = item.Quality,
         ItemLevel = item.ItemLevel,
-        IconName = item.IconName,
+        IconUrl = item.IconName is { } iconName ? $"{ItemIconBaseUrl}/{iconName}.jpg" : null,
     };
 }

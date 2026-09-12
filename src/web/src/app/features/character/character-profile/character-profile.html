@@ -1,0 +1,89 @@
+@switch (state()) {
+  @case ('loading') {
+    <scribe-skeleton [height]="112" [count]="1" />
+    <div class="armory">
+      <scribe-skeleton [height]="34" [count]="8" />
+      <div></div>
+      <scribe-skeleton [height]="34" [count]="6" />
+    </div>
+    <div class="weapon-row">
+      <scribe-skeleton [height]="34" [count]="1" />
+      <scribe-skeleton [height]="34" [count]="1" />
+    </div>
+  }
+  @case ('empty') {
+    <scribe-empty-state
+      [heading]="emptyHeading()"
+      body="Names are per-realm, and a character that transferred keeps its name on the new realm only."
+    />
+  }
+  @case ('error') {
+    <scribe-empty-state
+      heading="Couldn't load this character"
+      body="Something went wrong reaching AegisScribe. Check your connection and try again."
+      actionLabel="Try again"
+      variant="error"
+      (action)="retry()"
+    />
+  }
+  @case ('loaded') {
+    @if (character(); as char) {
+      <div class="character-profile" [style.--class-color]="char.classColor">
+        <scribe-character-banner [character]="char" [region]="region()" />
+
+        <div class="tabs">
+          @for (tab of tabs; track tab.id) {
+            <button
+              class="tab"
+              type="button"
+              [class.is-active]="activeTab() === tab.id"
+              (click)="selectTab(tab.id)"
+            >{{ tab.label }}</button>
+          }
+        </div>
+
+        @switch (activeTab()) {
+          @case ('overview') {
+            <div class="armory">
+              <scribe-equipment-rail [slots]="leftSlots" [equipment]="char.equipment" side="left" />
+              <div class="armory-centre">
+                <div class="render">
+                  <p class="render-note">Character render<br />coming with the Blizzard media sync</p>
+                </div>
+              </div>
+              <scribe-equipment-rail [slots]="rightSlots" [equipment]="char.equipment" side="right" />
+            </div>
+            <div class="weapon-row">
+              <scribe-item-cell slot="MainHand" [item]="mainHand()" />
+              <scribe-item-cell slot="OffHand" [item]="offHand()" />
+            </div>
+          }
+          @case ('progression') {
+            <scribe-progression-panel [rows]="[]" />
+          }
+          @case ('professions') {
+            <scribe-profession-panel [rows]="[]" />
+          }
+          @case ('specialisations') {
+            <scribe-empty-state
+              heading="Specialisations aren't built yet"
+              body="Talent builds and loadouts aren't synced from Blizzard yet."
+            />
+          }
+          @case ('collections') {
+            <scribe-empty-state
+              heading="Collections aren't built yet"
+              body="Mounts, pets and toys aren't synced from Blizzard yet."
+            />
+          }
+        }
+
+        <scribe-provenance-panel
+          [lastSyncedAt]="char.lastSyncedAt"
+          [region]="region()"
+          [characterId]="char.id"
+        />
+      </div>
+    }
+  }
+}

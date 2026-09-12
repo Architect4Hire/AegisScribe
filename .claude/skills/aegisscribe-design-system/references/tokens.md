@@ -31,15 +31,24 @@
   --brass-bright:  #E3C48D;
   --brass-dim:     rgba(203, 167, 106, 0.14);
   --brass-line:    rgba(203, 167, 106, 0.38);
+  --brass-ink:     #1A1206; /* text on a brass surface, e.g. .btn-primary */
 
   /* ── semantic state ───────────────────────────────────────────────────
-     Pills and tints only. Never on an item name or an item border. */
-  --ok:            #3E9C77;
-  --ok-bg:         rgba(62, 156, 119, 0.14);
-  --attention:     #D08A2C;
-  --attention-bg:  rgba(208, 138, 44, 0.14);
-  --critical:      #C25A50;
-  --critical-bg:   rgba(194, 90, 80, 0.14);
+     Pills and tints only. Never on an item name or an item border.
+     The two "attention" outliers (-border-strong, -hover-bg) exist for the item cell's
+     flagged state, which needs a stronger border and a distinct hover than a status pill does. */
+  --ok:                      #3E9C77;
+  --ok-bg:                   rgba(62, 156, 119, 0.14);
+  --ok-border:               rgba(62, 156, 119, 0.3);
+  --attention:               #D08A2C;
+  --attention-bg:            rgba(208, 138, 44, 0.14);
+  --attention-border:        rgba(208, 138, 44, 0.3);
+  --attention-border-strong: rgba(208, 138, 44, 0.34);
+  --attention-hover-bg:      rgba(208, 138, 44, 0.2);
+  --critical:                #C25A50;
+  --critical-bg:             rgba(194, 90, 80, 0.14);
+  --critical-border:         rgba(194, 90, 80, 0.3);
+  --critical-border-strong:  rgba(194, 90, 80, 0.4);
 
   /* ── item quality ─────────────────────────────────────────────────────
      The game's values. Borders, dots and swatches use these. */

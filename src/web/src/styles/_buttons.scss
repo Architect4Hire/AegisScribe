@@ -1,0 +1,23 @@
+// Copied from design/aegisscribe-armory.html §05 "Buttons". Shared via @use rather than copied
+// per-component -- character-banner and scribe-empty-state both needed this subset, and a third
+// copy is exactly how a design system dies in week three. No scribe-button component exists yet
+// (not in the component map), so this stays a plain stylesheet partial until one does.
+.btn {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 7px 14px;
+  border-radius: var(--r-1);
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.btn-primary { background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
+.btn-primary:hover { background: var(--brass-bright); border-color: var(--brass-bright); }
+.btn-secondary { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
+.btn-secondary:hover { background: var(--surface-3); border-color: var(--brass-line); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-sm { font-size: var(--t-xs); padding: 4px 10px; }

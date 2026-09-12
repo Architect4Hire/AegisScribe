@@ -1,0 +1,3 @@
+/* Digits align wherever they sit in a column — see .claude/skills/aegisscribe-design-system/
+   references/tokens.md -> "Tabular figures wherever numbers align". */
+.local-time { font-variant-numeric: tabular-nums; }

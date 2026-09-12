@@ -1,0 +1,16 @@
+<div class="appbar">
+  <span class="brand">AEGISSCRIBE</span>
+  <nav class="appnav">
+    @for (link of navLinks(); track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="is-active">{{ link.label }}</a>
+    }
+  </nav>
+  <span class="spacer"></span>
+  <scribe-tenant-switcher
+    [activeTenantSlug]="tenantSlug()"
+    [memberships]="memberships()"
+    (switched)="onSwitched($event)"
+  />
+</div>
+
+<router-outlet />

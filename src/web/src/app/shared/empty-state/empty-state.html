@@ -1,0 +1,7 @@
+<div class="state-box" [class.is-error]="variant() === 'error'">
+  <h4>{{ heading() }}</h4>
+  <p>{{ body() }}</p>
+  @if (actionLabel(); as label) {
+    <button class="btn btn-secondary btn-sm" type="button" (click)="action.emit()">{{ label }}</button>
+  }
+</div>

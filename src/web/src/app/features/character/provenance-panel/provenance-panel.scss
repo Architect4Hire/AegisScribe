@@ -1,0 +1,30 @@
+@use '../../../../styles/panel';
+
+/* .kv copied verbatim from design/aegisscribe-armory.html §04. */
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--s-4);
+  font-size: var(--t-sm);
+  margin: 0;
+}
+.kv dt {
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  font-size: var(--t-xs);
+  letter-spacing: 0.09em;
+  align-self: center;
+}
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.provenance-note {
+  margin-top: var(--s-3);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}

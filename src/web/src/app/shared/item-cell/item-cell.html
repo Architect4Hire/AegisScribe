@@ -1,0 +1,37 @@
+@if (item(); as it) {
+  <a
+    class="item"
+    [class]="itemClasses()"
+    [href]="wowheadUrl()"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <span class="item-icon">
+      @if (iconUrl(); as src) {
+        <img [src]="src" alt="" width="34" height="34" (error)="onIconError()" />
+      }
+    </span>
+    <span class="item-body">
+      <span class="item-name">{{ it.itemName }}</span>
+      <span class="item-meta">
+        @if (showSlot()) {
+          {{ slotLabel() }} ·
+        }
+        {{ it.quality }}
+      </span>
+    </span>
+    @if (flagged()) {
+      <span class="item-flag">Weakest</span>
+    }
+    <span class="item-ilvl">{{ it.itemLevel }}</span>
+  </a>
+} @else {
+  <div class="item is-empty">
+    <span class="item-icon"></span>
+    <span class="item-body">
+      <span class="item-name">Empty — {{ slotLabel() }}</span>
+      <span class="item-meta">No item equipped</span>
+    </span>
+    <span class="item-ilvl">—</span>
+  </div>
+}

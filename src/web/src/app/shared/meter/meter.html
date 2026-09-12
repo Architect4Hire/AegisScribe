@@ -1,0 +1,10 @@
+<span
+  class="meter"
+  role="progressbar"
+  [attr.aria-label]="label()"
+  [attr.aria-valuemin]="0"
+  [attr.aria-valuemax]="max()"
+  [attr.aria-valuenow]="value()"
+>
+  <i [class.is-partial]="variant() === 'partial'" [style.width.%]="percent()"></i>
+</span>

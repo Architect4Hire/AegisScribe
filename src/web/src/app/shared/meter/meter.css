@@ -1,0 +1,11 @@
+/* Copied from design/aegisscribe-armory.html §... "Raid and profession rows". */
+.meter {
+  display: block;
+  height: 7px;
+  background: var(--surface-3);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.meter i { display: block; height: 100%; background: var(--brass); }
+.meter i.is-partial { background: var(--ink-3); }

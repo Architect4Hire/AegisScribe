@@ -1,0 +1,18 @@
+<div class="panel">
+  <div class="panel-head">
+    <h3>Raid progression</h3>
+  </div>
+  <div class="panel-body">
+    @if (rows().length > 0) {
+      @for (row of rows(); track row.difficulty) {
+        <div class="prog-row">
+          <span class="prog-name">{{ row.difficulty }}</span>
+          <scribe-meter [value]="row.killed" [max]="row.total" [label]="row.difficulty" />
+          <span class="prog-count">{{ row.killed }}/{{ row.total }}</span>
+        </div>
+      }
+    } @else {
+      <scribe-empty-state heading="No progression data yet" body="Raid progress hasn't synced for this character yet." />
+    }
+  </div>
+</div>

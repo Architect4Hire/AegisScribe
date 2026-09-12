@@ -1,0 +1,76 @@
+/* .tenant-switch/.tenant-crest/.tenant-name/.tenant-role/.tenant-caret copied verbatim from
+   design/aegisscribe-armory.html §07. The crest here is always the initial-letter fallback tile
+   -- the reference explicitly calls that a designed fallback, used until a linked guild crest is
+   wired up (frontend.md -> "A guild crest is composed, not fetched"). */
+.tenant-switcher { position: relative; }
+
+.tenant-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: var(--surface-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.tenant-switch:hover { border-color: var(--brass-line); }
+
+.tenant-crest {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--ink-2);
+  flex: none;
+}
+.tenant-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.2;
+}
+.tenant-role {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--brass);
+}
+.tenant-caret { color: var(--ink-3); font-size: 10px; }
+
+/* No reference markup for the open dropdown -- built fresh from existing tokens only. */
+.tenant-switch-menu {
+  position: absolute;
+  top: calc(100% + var(--s-1));
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-raise);
+  overflow: hidden;
+}
+.tenant-switch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  text-align: left;
+}
+.tenant-switch-item:last-child { border-bottom: 0; }
+.tenant-switch-item:hover { background: var(--surface-3); }

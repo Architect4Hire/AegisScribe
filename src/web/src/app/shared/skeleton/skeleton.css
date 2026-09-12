@@ -1,0 +1,21 @@
+/* Copied from design/aegisscribe-armory.html §05 "Loading". Skeletons are shape-matched to the
+   content that will load — a gear rail's skeleton is item-cell-shaped, never a spinner. */
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+.sk {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--r-1);
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation-duration: 0.001ms; animation-iteration-count: 1; }
+}

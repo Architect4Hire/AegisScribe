@@ -1,0 +1,89 @@
+/* Copied from design/aegisscribe-armory.html §06 "The item cell". Quality sets the left border
+   and the name colour — nothing else in the cell changes colour. A flagged cell tints its
+   background and adds a word; it never repaints the quality border. */
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 7px 9px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--r-1);
+  text-decoration: none;
+  min-width: 0;
+}
+.item:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.item:hover .item-name { text-decoration: underline; }
+
+.item-icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+}
+.item-icon img { border-radius: 2px; }
+
+.item-body { min-width: 0; flex: 1; }
+.item-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.item-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-ilvl {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.item.is-empty { border-left-color: var(--line); opacity: 0.55; }
+.item.is-empty .item-name { color: var(--ink-3); font-weight: 400; font-style: italic; }
+
+.item.is-flagged { background: var(--attention-bg); border-color: var(--attention-border-strong); }
+.item.is-flagged:hover { background: var(--attention-hover-bg); }
+.item-flag {
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--attention);
+  flex: none;
+}
+
+.q-poor { border-left-color: var(--q-poor); }
+.q-poor .item-name { color: var(--q-poor); }
+.q-common { border-left-color: var(--q-common); }
+.q-common .item-name { color: var(--q-common); }
+.q-uncommon { border-left-color: var(--q-uncommon); }
+.q-uncommon .item-name { color: var(--q-uncommon); }
+.q-rare { border-left-color: var(--q-rare); }
+.q-rare .item-name { color: var(--q-rare-text); }
+.q-epic { border-left-color: var(--q-epic); }
+.q-epic .item-name { color: var(--q-epic-text); }
+.q-legendary { border-left-color: var(--q-legendary); }
+.q-legendary .item-name { color: var(--q-legendary); }
+.q-artifact { border-left-color: var(--q-artifact); }
+.q-artifact .item-name { color: var(--q-artifact); }
+.q-heirloom { border-left-color: var(--q-heirloom); }
+.q-heirloom .item-name { color: var(--q-heirloom); }

@@ -1,0 +1,5 @@
+<div class="slot-rail" [attr.aria-label]="ariaLabel()">
+  @for (slot of slots(); track slot) {
+    <scribe-item-cell [slot]="slot" [item]="itemFor(slot)" />
+  }
+</div>

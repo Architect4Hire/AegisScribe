@@ -551,6 +551,12 @@
             "items": {
               "$ref": "#/components/schemas/EquippedItemServiceModel"
             }
+          },
+          "classColor": {
+            "type": "string"
+          },
+          "isDegraded": {
+            "type": "boolean"
           }
         }
       },
@@ -689,7 +695,7 @@
             ],
             "format": "int32"
           },
-          "iconName": {
+          "iconUrl": {
             "type": [
               "null",
               "string"

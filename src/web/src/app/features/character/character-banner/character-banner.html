@@ -1,0 +1,23 @@
+<div class="char-banner">
+  <div class="portrait"><span>{{ portraitInitial() }}</span></div>
+  <div class="char-id">
+    <div class="char-name">{{ character().name }}</div>
+    <div class="char-sub">
+      Level {{ character().level }} {{ character().class }}
+      @if (character().spec) {
+        <span class="sep">·</span> {{ character().spec }}
+      }
+    </div>
+    <div class="char-sub">{{ realmLabel() }} ({{ region().toUpperCase() }})</div>
+    <div class="char-pills">
+      <scribe-status-pill [state]="syncPillState()" [label]="syncLabel()" />
+    </div>
+  </div>
+  <div class="char-stats">
+    <scribe-stat-tile label="Item level" [value]="character().itemLevel" sub="equipped" />
+  </div>
+  <div class="char-actions">
+    <button class="btn btn-secondary btn-sm" type="button" disabled title="Coming with Blizzard sync">Re-sync</button>
+    <button class="btn btn-primary btn-sm" type="button" disabled title="Coming with the crafting advisor">Ask the advisor</button>
+  </div>
+</div>

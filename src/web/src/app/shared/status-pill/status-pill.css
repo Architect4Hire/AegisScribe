@@ -1,0 +1,19 @@
+/* Copied from design/aegisscribe-armory.html §05 "Status pills". */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+}
+.pill-ok { color: var(--ok); background: var(--ok-bg); border-color: var(--ok-border); }
+.pill-attention { color: var(--attention); background: var(--attention-bg); border-color: var(--attention-border); }
+.pill-critical { color: var(--critical); background: var(--critical-bg); border-color: var(--critical-border); }
+.pill-neutral { color: var(--ink-2); background: var(--surface-2); border-color: var(--line-strong); }
+.pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: block; }

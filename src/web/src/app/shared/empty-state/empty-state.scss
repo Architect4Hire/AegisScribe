@@ -1,0 +1,28 @@
+@use '../../../styles/buttons';
+
+/* Copied from design/aegisscribe-armory.html §04/S2 "state-box". Degraded/error is a designed
+   state, not a failure to render — never a blank error page over data we still hold. */
+.state-box {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  padding: var(--s-6) var(--s-5);
+  text-align: center;
+}
+.state-box h4 {
+  font-family: var(--font-ui);
+  font-size: var(--t-h3);
+  color: var(--ink);
+  margin-bottom: var(--s-2);
+}
+.state-box p {
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  max-width: 52ch;
+  margin: 0 auto var(--s-4);
+}
+.state-box.is-error {
+  border-style: solid;
+  border-color: var(--critical-border-strong);
+  background: var(--critical-bg);
+}

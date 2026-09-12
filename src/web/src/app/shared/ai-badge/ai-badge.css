@@ -1,0 +1,17 @@
+/* Copied from design/aegisscribe-armory.html §05/§10. Brass is otherwise almost never used in the
+   interface, which is exactly why it works as the "this is model output" marker. */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--brass);
+  border: 1px solid var(--brass-line);
+  background: var(--brass-dim);
+  border-radius: var(--r-1);
+  padding: 2px 7px;
+}

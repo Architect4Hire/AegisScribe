@@ -1,0 +1,50 @@
+/* .panel/.panel-head/.panel-body/.kv copied verbatim from design/aegisscribe-armory.html §S1/§04. */
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  margin-top: var(--s-4);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+.panel-head h3 {
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.panel-body { padding: var(--s-4); }
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--s-4);
+  font-size: var(--t-sm);
+  margin: 0;
+}
+.kv dt {
+  color: var(--ink-3);
+  font-family: var(--font-ui);
+  text-transform: uppercase;
+  font-size: var(--t-xs);
+  letter-spacing: 0.09em;
+  align-self: center;
+}
+.kv dd {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.provenance-note {
+  margin-top: var(--s-3);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}

@@ -9,5 +9,9 @@ public class EquippedItemServiceModel
     public string ItemName { get; set; } = string.Empty;
     public ItemQuality Quality { get; set; }
     public int ItemLevel { get; set; }
-    public string? IconName { get; set; }
+
+    // Absolute render.worldofwarcraft.com URL, composed server-side from the stored icon name so
+    // the client references it directly rather than reconstructing Blizzard's CDN path itself.
+    // See .claude/rules/frontend.md -> "Images come from Blizzard, referenced directly".
+    public string? IconUrl { get; set; }
 }

@@ -1,0 +1,41 @@
+/* .panel/.panel-head/.panel-body/.prof/.prog-name/.prog-count copied verbatim from
+   design/aegisscribe-armory.html §S1. */
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  margin-top: var(--s-4);
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+}
+.panel-head h3 {
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.panel-body { padding: var(--s-4); }
+
+.prof {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 70px;
+  gap: var(--s-3);
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.prof:last-child { border-bottom: 0; }
+.prog-name { font-family: var(--font-ui); font-size: var(--t-sm); color: var(--ink-2); }
+.prog-count {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

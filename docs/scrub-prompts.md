@@ -233,7 +233,8 @@ RESTRICTION: No literal addresses or ports anywhere in the YARP config. Do NOT a
 BEHAVIOR: Implement, then show me an anonymous request reaching the API through the gateway.
 ```
 
-### 1B.3 The web host serves the SPA - done```
+### 1B.3 The web host serves the SPA - done
+```
 SCOPE: AegisScribe.Web serves the built Angular bundle with UseStaticFiles + MapFallbackToFile, and
 exposes a runtime config endpoint returning the gateway's base URL.
 CONSTRAINT: .claude/rules/gateway.md → "The web host".

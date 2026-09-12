@@ -1,0 +1,31 @@
+/* Copied from design/aegisscribe-armory.html §05 "Filter chips". Every chip is removable — this
+   is how a natural-language query result shows its work. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  padding: 3px 4px 3px 9px;
+}
+.chip .chip-key {
+  color: var(--ink-3);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.chip .chip-x {
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  font-size: 13px;
+}
+.chip .chip-x:hover { color: var(--critical); }

@@ -1,0 +1,18 @@
+<div class="panel">
+  <div class="panel-head">
+    <h3>Professions</h3>
+  </div>
+  <div class="panel-body">
+    @if (rows().length > 0) {
+      @for (row of rows(); track row.name) {
+        <div class="prof">
+          <span class="prog-name">{{ row.name }}</span>
+          <scribe-meter [value]="row.skillLevel" [max]="row.maxSkillLevel" [label]="row.name" />
+          <span class="prog-count">{{ row.skillLevel }}/{{ row.maxSkillLevel }}</span>
+        </div>
+      }
+    } @else {
+      <scribe-empty-state heading="No profession data yet" body="This character's professions haven't synced yet." />
+    }
+  </div>
+</div>

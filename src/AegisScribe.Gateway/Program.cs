@@ -69,7 +69,20 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax; // not Strict — see gateway.md
-        options.Cookie.Domain = ".aegisscribe.com"; // NOT __Host- eligible; see the name prefix above
+
+        // Domain=.aegisscribe.com is what lets app.* hand this cookie to bff.* in every real
+        // environment — but it's also a Domain attribute the browser can only accept when the
+        // current host is that domain or a subdomain of it. Under `aspire run` the browser is
+        // talking to bare "localhost", which doesn't match, so the browser silently discards the
+        // cookie outright (RFC 6265) rather than merely scoping it oddly — sign-in "succeeds" and
+        // every request afterwards is still anonymous. A host-only cookie (no Domain attribute)
+        // is exactly what a same-host local setup needs instead, so this is the one place that
+        // attribute is environment-conditional; every other cookie attribute above is not.
+        if (!builder.Environment.IsDevelopment())
+        {
+            options.Cookie.Domain = ".aegisscribe.com"; // NOT __Host- eligible; see the name prefix above
+        }
+
         options.SlidingExpiration = true;
     })
     .AddOpenIdConnect(options =>
@@ -132,9 +145,20 @@ app.UseAuthentication();
 // Handled by the gateway itself, not proxied — login and logout are the gateway's own concerns
 // (gateway.md).
 app.MapGet("/auth/login", (string? returnUrl) =>
-    Results.Challenge(
-        new AuthenticationProperties { RedirectUri = returnUrl ?? "/" },
-        [OpenIdConnectDefaults.AuthenticationScheme]));
+{
+    // returnUrl is SPA-relative (window.location.pathname + search) and only ever meant to be
+    // resolved against the SPA's own origin. Left bare it resolves against whatever host serves
+    // the OIDC callback — the gateway itself, not the SPA — which 404s once the browser lands
+    // back here after sign-in. Requiring a single leading '/' (never '//', never a scheme) also
+    // keeps this from becoming an open redirect: it's an untrusted query parameter.
+    var isLocalPath = returnUrl is { Length: > 0 } path
+        && path[0] == '/'
+        && (path.Length == 1 || path[1] != '/');
+
+    return Results.Challenge(
+        new AuthenticationProperties { RedirectUri = spaOrigin + (isLocalPath ? returnUrl : "/") },
+        [OpenIdConnectDefaults.AuthenticationScheme]);
+});
 
 app.MapPost("/auth/logout", async (HttpContext httpContext, IHttpClientFactory httpClientFactory) =>
 {

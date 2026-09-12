@@ -39,16 +39,26 @@
   --brass-bright:  #E3C48D;
   --brass-dim:     rgba(203,167,106,.14);
   --brass-line:    rgba(203,167,106,.38);
+  --brass-ink:     #1A1206;
 
   /* --- semantic state. Kept cool and desaturated so a status pill is never
          mistaken for an item quality. Status colour appears ONLY on pills and
-         stripes; quality colour appears ONLY on item names, borders and dots. --- */
-  --ok:            #3E9C77;
-  --ok-bg:         rgba(62,156,119,.14);
-  --attention:     #D08A2C;
-  --attention-bg:  rgba(208,138,44,.14);
-  --critical:      #C25A50;
-  --critical-bg:   rgba(194,90,80,.14);
+         stripes; quality colour appears ONLY on item names, borders and dots.
+         The two "attention" outliers (-border-strong, -hover-bg) exist for the
+         item cell's flagged state, which needs a stronger border and a
+         distinct hover than a status pill does. --- */
+  --ok:              #3E9C77;
+  --ok-bg:           rgba(62,156,119,.14);
+  --ok-border:       rgba(62,156,119,.3);
+  --attention:       #D08A2C;
+  --attention-bg:    rgba(208,138,44,.14);
+  --attention-border: rgba(208,138,44,.3);
+  --attention-border-strong: rgba(208,138,44,.34);
+  --attention-hover-bg: rgba(208,138,44,.2);
+  --critical:        #C25A50;
+  --critical-bg:     rgba(194,90,80,.14);
+  --critical-border: rgba(194,90,80,.3);
+  --critical-border-strong: rgba(194,90,80,.4);
 
   /* --- item quality: canonical values, used for borders, dots and swatches --- */
   --q-poor:        #9D9D9D;
@@ -190,7 +200,7 @@ section.doc-section{ margin-top:var(--s-8); scroll-margin-top:var(--s-4); }
 
 /* buttons */
 .btn{ font-family:var(--font-ui); font-size:var(--t-sm); font-weight:600; letter-spacing:.02em; padding:7px 14px; border-radius:var(--r-1); border:1px solid transparent; cursor:pointer; background:transparent; color:var(--ink); line-height:1.3; }
-.btn-primary{ background:var(--brass); color:#1A1206; border-color:var(--brass); }
+.btn-primary{ background:var(--brass); color:var(--brass-ink); border-color:var(--brass); }
 .btn-primary:hover{ background:var(--brass-bright); border-color:var(--brass-bright); }
 .btn-secondary{ background:var(--surface-2); border-color:var(--line-strong); color:var(--ink); }
 .btn-secondary:hover{ background:var(--surface-3); border-color:var(--brass-line); }
@@ -211,9 +221,9 @@ section.doc-section{ margin-top:var(--s-8); scroll-margin-top:var(--s-4); }
 
 /* pills, chips, badges */
 .pill{ display:inline-flex; align-items:center; gap:5px; font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:var(--r-pill); border:1px solid transparent; }
-.pill-ok{ color:var(--ok); background:var(--ok-bg); border-color:rgba(62,156,119,.3); }
-.pill-attention{ color:var(--attention); background:var(--attention-bg); border-color:rgba(208,138,44,.3); }
-.pill-critical{ color:var(--critical); background:var(--critical-bg); border-color:rgba(194,90,80,.3); }
+.pill-ok{ color:var(--ok); background:var(--ok-bg); border-color:var(--ok-border); }
+.pill-attention{ color:var(--attention); background:var(--attention-bg); border-color:var(--attention-border); }
+.pill-critical{ color:var(--critical); background:var(--critical-bg); border-color:var(--critical-border); }
 .pill-neutral{ color:var(--ink-2); background:var(--surface-2); border-color:var(--line-strong); }
 .pill i{ width:6px; height:6px; border-radius:50%; background:currentColor; display:block; }
 
@@ -245,8 +255,8 @@ section.doc-section{ margin-top:var(--s-8); scroll-margin-top:var(--s-4); }
 /* Flagged = "this slot is your weakest". It tints the cell and adds a word to the
    meta line; it does NOT repaint the left border, because that border belongs to
    item quality. Semantic state and quality state never share a surface. */
-.item.is-flagged{ background:var(--attention-bg); border-color:rgba(208,138,44,.34); }
-.item.is-flagged:hover{ background:rgba(208,138,44,.2); }
+.item.is-flagged{ background:var(--attention-bg); border-color:var(--attention-border-strong); }
+.item.is-flagged:hover{ background:var(--attention-hover-bg); }
 .item-flag{ font-family:var(--font-ui); font-size:var(--t-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--attention); flex:none; }
 
 .q-poor{ border-left-color:var(--q-poor); }        .q-poor .item-name{ color:var(--q-poor); }
@@ -346,7 +356,7 @@ th.sorted::after{ content:" ▾"; color:var(--brass); }
 .state-box{ border:1px dashed var(--line-strong); border-radius:var(--r-2); background:var(--surface-1); padding:var(--s-6) var(--s-5); text-align:center; }
 .state-box h4{ font-family:var(--font-ui); font-size:var(--t-h3); color:var(--ink); margin-bottom:var(--s-2); }
 .state-box p{ color:var(--ink-2); font-size:var(--t-sm); max-width:52ch; margin:0 auto var(--s-4); }
-.state-box.is-error{ border-style:solid; border-color:rgba(194,90,80,.4); background:var(--critical-bg); }
+.state-box.is-error{ border-style:solid; border-color:var(--critical-border-strong); background:var(--critical-bg); }
 
 /* ============================================================================
    SCREEN: ROSTER + NL QUERY
