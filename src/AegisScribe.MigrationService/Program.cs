@@ -1,6 +1,8 @@
 using AegisScribe.Domain.Context;
 using AegisScribe.Domain.Data;
+using AegisScribe.Domain.Managers.Models.Identity;
 using AegisScribe.MigrationService;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -26,6 +28,13 @@ builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantCon
 // IOpenIddictApplicationManager for client seeding. Core only — no server/validation here.
 builder.Services.AddOpenIddict()
     .AddCore(options => options.UseEntityFrameworkCore().UseDbContext<AegisScribeDbContext>());
+
+// For DemoDataSeeder's UserManager<ApplicationUser> only (3.4) — no SignInManager, no OpenIddict
+// claim-type tweak, no token providers: those are auth-flow concerns this one-shot process never
+// exercises. ApiService owns the real registration; this is just enough to create seed accounts.
+builder.Services.AddIdentityCore<ApplicationUser>(options => options.User.RequireUniqueEmail = true)
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<AegisScribeDbContext>();
 
 builder.Services.AddHostedService<Worker>();
 

@@ -20,6 +20,7 @@ public class Worker(
         await strategy.ExecuteAsync(async () => await db.Database.MigrateAsync(stoppingToken));
 
         await OpenIddictClientSeeder.SeedClientsAsync(scope.ServiceProvider, configuration);
+        await DemoDataSeeder.SeedAsync(scope.ServiceProvider, logger);
 
         logger.LogInformation("Migration service finished.");
         hostApplicationLifetime.StopApplication();

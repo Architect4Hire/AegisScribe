@@ -470,7 +470,7 @@ findings section by section.
 
 ## Phase 3 — Global reference domain
 
-### 3.1 Realm and Character
+### 3.1 Realm and Character - done
 ```
 SCOPE: Add Realm and Character (realm, name, level, class, spec, item level, faction, LastSyncedAt,
 Blizzard source id) plus CharacterEquipment / EquippedItem. Migration included.
@@ -480,7 +480,7 @@ RESTRICTION: These are GLOBAL. No TenantId, no query filter, ever. Character nat
 BEHAVIOR: State plainly why these are global before writing, then implement.
 ```
 
-### 3.2 Items, professions, recipes
+### 3.2 Items, professions, recipes - done
 ```
 SCOPE: Add Item (Blizzard id, quality, slot, item level, SearchText), Profession, Recipe, ReagentSlot.
 Migration included.
@@ -490,7 +490,7 @@ with its own migration. Compose SearchText deliberately — it's what gets embed
 BEHAVIOR: Show me the SearchText composition and the entity shapes, wait for approval.
 ```
 
-### 3.3 Guild and GuildMember
+### 3.3 Guild and GuildMember - done
 ```
 SCOPE: Add Guild and GuildMember, the latter carrying BlizzardRank (0–9, from the game).
 CONSTRAINT: .claude/rules/tenancy.md.
@@ -499,7 +499,7 @@ that's TenantRank in Phase 7 and neither derives from the other. Do not conflate
 BEHAVIOR: Implement and state the distinction in a comment on the entity.
 ```
 
-### 3.4 Seed data
+### 3.4 Seed data - done
 ```
 SCOPE: Seed two tenants ("Ashes of Dawn", "Emberwatch"), users in each, two realms, ~12 characters
 with full gear, a guild with a roster, and enough items and recipes to demo crafting.

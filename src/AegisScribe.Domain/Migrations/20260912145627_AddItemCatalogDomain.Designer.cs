@@ -4,6 +4,7 @@ using AegisScribe.Domain.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AegisScribe.Domain.Migrations
 {
     [DbContext(typeof(AegisScribeDbContext))]
-    partial class AegisScribeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260912145627_AddItemCatalogDomain")]
+    partial class AddItemCatalogDomain
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,67 +130,6 @@ namespace AegisScribe.Domain.Migrations
                         .IsUnique();
 
                     b.ToTable("EquippedItems");
-                });
-
-            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Guild", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("BlizzardGuildId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Faction")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("LastSyncedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("NameLower")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<Guid>("RealmId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RealmId", "NameLower")
-                        .IsUnique();
-
-                    b.ToTable("Guilds");
-                });
-
-            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.GuildMember", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("BlizzardRank")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("CharacterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("GuildId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CharacterId");
-
-                    b.HasIndex("GuildId", "CharacterId")
-                        .IsUnique();
-
-                    b.ToTable("GuildMembers");
                 });
 
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Item", b =>
@@ -848,36 +790,6 @@ namespace AegisScribe.Domain.Migrations
                         .IsRequired();
 
                     b.Navigation("CharacterEquipment");
-                });
-
-            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Guild", b =>
-                {
-                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Realm", "Realm")
-                        .WithMany()
-                        .HasForeignKey("RealmId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Realm");
-                });
-
-            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.GuildMember", b =>
-                {
-                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Character", "Character")
-                        .WithMany()
-                        .HasForeignKey("CharacterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Guild", "Guild")
-                        .WithMany()
-                        .HasForeignKey("GuildId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Character");
-
-                    b.Navigation("Guild");
                 });
 
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.ReagentSlot", b =>
