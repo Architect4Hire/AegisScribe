@@ -12,6 +12,12 @@ public class Character
     public string? Spec { get; set; }
     public int ItemLevel { get; set; }
     public CharacterFaction Faction { get; set; }
-    public long? BlizzardCharacterId { get; set; }
+    // Never optional on a synced global entity (backend.md) — the erasure routine targets rows by
+    // this id, matching Realm.BlizzardConnectedRealmId/Item.BlizzardItemId/EquippedItem.BlizzardItemId.
+    public long BlizzardCharacterId { get; set; }
     public DateTimeOffset LastSyncedAt { get; set; }
+
+    // One equipment snapshot per character (unique index on CharacterEquipment.CharacterId) —
+    // the inverse side of the 1:1 relationship, so a character detail read can Include it.
+    public CharacterEquipment? Equipment { get; set; }
 }

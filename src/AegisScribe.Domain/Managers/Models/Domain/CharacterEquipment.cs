@@ -9,4 +9,6 @@ public class CharacterEquipment
     // Fetched via a separate Blizzard endpoint from the character summary,
     // so it tracks its own staleness independently.
     public DateTimeOffset LastSyncedAt { get; set; }
+
+    public ICollection<EquippedItem> EquippedItems { get; set; } = new List<EquippedItem>();
 }

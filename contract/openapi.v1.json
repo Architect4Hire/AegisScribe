@@ -167,6 +167,132 @@
         }
       }
     },
+    "/api/v1/characters/{realm}/{name}": {
+      "get": {
+        "tags": [
+          "Characters"
+        ],
+        "parameters": [
+          {
+            "name": "realm",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterDetailServiceModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterDetailServiceModel"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CharacterDetailServiceModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/characters": {
+      "get": {
+        "tags": [
+          "Characters"
+        ],
+        "parameters": [
+          {
+            "name": "region",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "realm",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32",
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageServiceModelOfCharacterSummaryServiceModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageServiceModelOfCharacterSummaryServiceModel"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CursorPageServiceModelOfCharacterSummaryServiceModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me": {
       "get": {
         "tags": [
@@ -358,6 +484,129 @@
           }
         }
       },
+      "CharacterClass": {
+        "enum": [
+          "Warrior",
+          "Paladin",
+          "Hunter",
+          "Rogue",
+          "Priest",
+          "DeathKnight",
+          "Shaman",
+          "Mage",
+          "Warlock",
+          "Monk",
+          "Druid",
+          "DemonHunter",
+          "Evoker"
+        ]
+      },
+      "CharacterDetailServiceModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "realmSlug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "class": {
+            "$ref": "#/components/schemas/CharacterClass"
+          },
+          "spec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itemLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "faction": {
+            "$ref": "#/components/schemas/CharacterFaction"
+          },
+          "lastSyncedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "equipment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EquippedItemServiceModel"
+            }
+          }
+        }
+      },
+      "CharacterFaction": {
+        "enum": [
+          "Alliance",
+          "Horde"
+        ]
+      },
+      "CharacterSummaryServiceModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "realmSlug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "class": {
+            "$ref": "#/components/schemas/CharacterClass"
+          },
+          "spec": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "itemLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "faction": {
+            "$ref": "#/components/schemas/CharacterFaction"
+          },
+          "lastSyncedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "CreateTenantViewModel": {
         "type": "object",
         "properties": {
@@ -371,6 +620,93 @@
             "type": "string"
           }
         }
+      },
+      "CursorPageServiceModelOfCharacterSummaryServiceModel": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CharacterSummaryServiceModel"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EquipmentSlot": {
+        "enum": [
+          "Head",
+          "Neck",
+          "Shoulder",
+          "Back",
+          "Chest",
+          "Wrist",
+          "Hands",
+          "Waist",
+          "Legs",
+          "Feet",
+          "Finger1",
+          "Finger2",
+          "Trinket1",
+          "Trinket2",
+          "MainHand",
+          "OffHand"
+        ]
+      },
+      "EquippedItemServiceModel": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "$ref": "#/components/schemas/EquipmentSlot"
+          },
+          "blizzardItemId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/ItemQuality"
+          },
+          "itemLevel": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "iconName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ItemQuality": {
+        "enum": [
+          "Poor",
+          "Common",
+          "Uncommon",
+          "Rare",
+          "Epic",
+          "Legendary",
+          "Artifact"
+        ]
       },
       "RegisterViewModel": {
         "type": "object",
@@ -493,6 +829,9 @@
     },
     {
       "name": "Authorization"
+    },
+    {
+      "name": "Characters"
     },
     {
       "name": "Me"

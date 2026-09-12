@@ -43,6 +43,11 @@ public static class DomainServiceCollectionExtensions
         services.AddScoped<ITenantResolutionFacade, TenantResolutionFacade>();
         services.AddScoped<ITenantFacade, TenantFacade>();
 
+        services.AddScoped<ICharacterRepository, CharacterRepository>();
+        services.AddScoped<ICharacterDataLayer, CharacterDataLayer>();
+        services.AddScoped<ICharacterBusiness, CharacterBusiness>();
+        services.AddScoped<ICharacterFacade, CharacterFacade>();
+
         services.AddValidatorsFromAssembly(typeof(DomainServiceCollectionExtensions).Assembly);
 
         return services;

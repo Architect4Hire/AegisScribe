@@ -84,13 +84,17 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
 
             // The natural key (RESTRICTION, 3.1): Blizzard character ids don't survive renames/transfers.
             entity.HasIndex(c => new { c.RealmId, c.NameLower }).IsUnique();
+
+            // The erasure target (backend.md), unique the same way Realm.BlizzardConnectedRealmId and
+            // Item.BlizzardItemId are — not the lookup key (see above), but still one id per row.
+            entity.HasIndex(c => c.BlizzardCharacterId).IsUnique();
         });
 
         modelBuilder.Entity<CharacterEquipment>(entity =>
         {
             entity.HasOne(e => e.Character)
-                .WithMany()
-                .HasForeignKey(e => e.CharacterId)
+                .WithOne(c => c.Equipment)
+                .HasForeignKey<CharacterEquipment>(e => e.CharacterId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // One equipment snapshot per character.
@@ -103,7 +107,7 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
             entity.Property(i => i.IconName).HasMaxLength(200);
 
             entity.HasOne(i => i.CharacterEquipment)
-                .WithMany()
+                .WithMany(e => e.EquippedItems)
                 .HasForeignKey(i => i.CharacterEquipmentId)
                 .OnDelete(DeleteBehavior.Restrict);
 

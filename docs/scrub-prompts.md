@@ -509,7 +509,7 @@ fictional but use real identifier formats.
 BEHAVIOR: Implement, then confirm both tenants' data is queryable and distinct.
 ```
 
-### 3.5 Apply and verify
+### 3.5 Apply and verify - done
 ```
 SCOPE: Apply all pending migrations, confirm the schema, and confirm has-pending-model-changes is clean.
 RESTRICTION: Review each migration before applying.
@@ -519,7 +519,7 @@ the two-zone table in .claude/rules/tenancy.md.
 
 ## Phase 4 — The first vertical (global, no Blizzard)
 
-### 4.1 Character repository
+### 4.1 Character repository - done
 ```
 SCOPE: ICharacterRepository / CharacterRepository — find by realm+name with Includes, a paged list
 projecting to a summary ServiceModel in SQL, and ExecuteInTransactionAsync.
@@ -530,7 +530,7 @@ BEHAVIOR: Plan the method signatures, wait for approval, implement with integrat
 SQL Server.
 ```
 
-### 4.2 Character data layer
+### 4.2 Character data layer - done
 ```
 SCOPE: ICharacterDataLayer / CharacterDataLayer — for now a pass-through to the repository.
 CONSTRAINT: add-endpoint skill, "DataLayer".
@@ -539,7 +539,7 @@ lets Phase 6 add cache-first Blizzard reads without touching Business. Do not "s
 BEHAVIOR: Implement with unit tests proving delegation.
 ```
 
-### 4.3 Character business
+### 4.3 Character business - done
 ```
 SCOPE: ICharacterBusiness / CharacterBusiness — entity → ServiceModel mapping on detail reads, list
 pass-through.
@@ -548,7 +548,7 @@ RESTRICTION: Depends on ICharacterDataLayer only. No validator, no cache, no DbC
 BEHAVIOR: Implement with unit tests over a mocked data layer.
 ```
 
-### 4.4 Character facade
+### 4.4 Character facade - done
 ```
 SCOPE: ICharacterFacade / CharacterFacade — validation via FluentValidation, read-through Redis cache
 of ServiceModels.
@@ -558,7 +558,7 @@ cache hit, cache miss and validation failure; that trio is the most-skipped set 
 BEHAVIOR: Implement, run the trio green, report.
 ```
 
-### 4.5 Character controller
+### 4.5 Character controller - done
 ```
 SCOPE: GET /api/v1/characters/{realm}/{name} and GET /api/v1/characters (paged, filterable by realm).
 CONSTRAINT: add-endpoint skill.
@@ -567,7 +567,7 @@ route. This is the app's front door. Do NOT put it under /api/v1/t/.
 BEHAVIOR: Implement and show me a curl returning a ServiceModel.
 ```
 
-### 4.6 Vertical review
+### 4.6 Vertical review - done
 ```
 SCOPE: Review the whole character vertical before anything copies it.
 UTILIZATION: Run @skills-evals, then @code-reviewer, then @tenant-isolation-auditor.
