@@ -1,12 +1,10 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// A community's own rank ladder — "Raider", "Trial", "Social", "Officer" (7.1).
+// A community's own rank ladder — "Raider", "Trial", "Social", "Officer".
 //
-// Tenant-scoped, and the distinction it carries is the one tenancy.md spends a section on:
-// GuildMember.BlizzardRank is what the GAME says (0-9, straight from the Blizzard roster endpoint),
-// and this is what the COMMUNITY says. Neither derives from the other, and neither writes to the
-// other — two communities following the same guild will disagree about who is a Raider, and both are
-// right. That disagreement is exactly the test that puts this in the tenant-scoped zone.
+// GuildMember.BlizzardRank is what the GAME says; this is what the COMMUNITY says, and neither derives
+// from the other. Two communities following the same guild will disagree about who is a Raider and
+// both be right, which is the test that puts this in the tenant-scoped zone (tenancy.md).
 public class TenantRank : ITenantScoped
 {
     public Guid Id { get; set; }
@@ -20,9 +18,8 @@ public class TenantRank : ITenantScoped
     // display tie, not a data error, and the list read breaks it by name.
     public int SortOrder { get; set; }
 
-    // #rrggbb, validated at the edge. It is tenant CONFIG, not a design token: the Angular rank pill
-    // surfaces it as the --rank-color custom property (design/aegisscribe-armory.html), so a value
-    // that is not exactly six hex digits behind a # would be CSS injected through a settings form.
-    // The format rule in RankValidationRules is that guard, not a tidiness preference.
+    // #rrggbb, validated at the edge. Tenant CONFIG, not a design token: the rank pill surfaces it as
+    // the --rank-color custom property, so anything but six hex digits behind a # would be CSS
+    // injected through a settings form. RankValidationRules is that guard.
     public string Colour { get; set; } = string.Empty;
 }

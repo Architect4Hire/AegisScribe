@@ -12,12 +12,10 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Roster;
 
-// Facade: real validator, mocked business, a real in-memory IDistributedCache.
-//
-// The trio (hit / miss / validation failure) plus invalidation, and one assertion this facade owes
-// that the rank facade does not: the cached payload must be USER-INDEPENDENT. This cache is keyed by
-// tenant, so anything user-specific in it is computed for the first caller and then served to every
-// other member of the community.
+// Facade: real validator, mocked business, a real in-memory IDistributedCache. Hit, miss, validation
+// failure and invalidation, plus one assertion this facade owes that the rank facade does not — the
+// cached payload must be USER-INDEPENDENT, because a tenant-keyed cache computes it for the first
+// caller and serves it to everyone.
 public class CharacterClaimFacadeTests
 {
     private static readonly Guid TenantId = Guid.Parse("3f1c9d2e-7b45-4a86-9e13-5c8a2d4f6b70");

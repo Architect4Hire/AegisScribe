@@ -113,7 +113,7 @@ public class CharacterBusinessTests
     public async Task GetCharacter_CarriesTheDataLayersDegradedFlagToTheServiceModel(bool isDegraded)
     {
         // The flag exists so the character screen can say "this is what we have, and it is old"
-        // instead of rendering stale gear as current (5.7). Business is where it crosses from a
+        // instead of rendering stale gear as current. Business is where it crosses from a
         // persistence fact into the outbound shape, so this is the only place it can be dropped.
         var character = new Domain.Managers.Models.Domain.Character
         {

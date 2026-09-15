@@ -31,7 +31,7 @@ public class UserRepositoryTests(AegisScribeAppFixture fixture) : IAsyncLifetime
         services.AddHttpContextAccessor();
         services.AddAuthentication();
         services.AddDbContext<AegisScribeDbContext>(options => options.UseSqlServer(connectionString));
-        // AegisScribeDbContext now requires ITenantContext (2.4); Identity/User tables aren't
+        // AegisScribeDbContext now requires ITenantContext; Identity/User tables aren't
         // tenant-scoped, so an always-unresolved TenantContext is correct here.
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());

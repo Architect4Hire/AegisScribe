@@ -56,7 +56,7 @@ public class TenantRankBusiness(ITenantRankDataLayer dataLayer) : ITenantRankBus
 
     public async Task DeleteAsync(Guid rankId, CancellationToken ct)
     {
-        // A rule, not bookkeeping (7.2): delete this check and an officer tidying up a ladder silently
+        // A rule, not bookkeeping: delete this check and an officer tidying up a ladder silently
         // un-ranks everyone who held it — an action that should have been refused instead happens, and
         // nothing in the 204 says so.
         var holders = await dataLayer.CountRankHoldersAsync(rankId, ct);

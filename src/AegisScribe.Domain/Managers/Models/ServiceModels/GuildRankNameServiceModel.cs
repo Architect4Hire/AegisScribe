@@ -1,6 +1,6 @@
 namespace AegisScribe.Domain.Managers.Models.ServiceModels;
 
-// One in-game rank of one followed guild, as this community names it (7.5).
+// One in-game rank of one followed guild, as this community names it.
 public class GuildRankNameServiceModel
 {
     public Guid GuildId { get; set; }

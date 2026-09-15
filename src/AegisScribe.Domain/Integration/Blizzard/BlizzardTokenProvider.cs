@@ -52,8 +52,8 @@ public sealed class BlizzardTokenProvider(
             var now = timeProvider.GetUtcNow();
 
             // Re-check under the lock. Fifty callers can arrive together on a cold cache; the first
-            // mints and the other forty-nine must use that result rather than mint their own. This
-            // re-check is what makes "refresh once, under a lock" true rather than approximately true.
+            // mints and the rest must use that result. This is what makes "refresh once, under a lock"
+            // true rather than approximately true.
             cached = _cached;
             if (cached is not null && now < cached.RefreshAt)
             {
@@ -73,9 +73,8 @@ public sealed class BlizzardTokenProvider(
             {
                 _nextAttemptAt = now + settings.TokenFailureCooldown;
 
-                // A failed refresh must never evict a token that still works. Anything we are holding
-                // is at most TokenRefreshSkew from its stated expiry, so it is very likely still good
-                // at Blizzard — and a stale token beats no token.
+                // A failed refresh must never evict a token that still works: anything we hold is at
+                // most TokenRefreshSkew from its stated expiry, so it is likely still good.
                 return cached?.AccessToken;
             }
 
@@ -140,16 +139,14 @@ public sealed class BlizzardTokenProvider(
 
     private DateTimeOffset CalculateRefreshAt(int expiresInSeconds, BlizzardOptions settings)
     {
-        // Read the lifetime Blizzard actually sent rather than assuming the usual ~24h
-        // (references/blizzard-endpoints.md says read the value). A response with no usable lifetime is
-        // treated as a short one rather than an eternal one.
+        // The lifetime Blizzard actually sent, rather than assuming the usual ~24h. A response with no
+        // usable lifetime is treated as a short one rather than an eternal one.
         var lifetime = expiresInSeconds > 0
             ? TimeSpan.FromSeconds(expiresInSeconds)
             : settings.TokenRefreshSkew;
 
-        // Renew ahead of expiry, but never land on or before now: a lifetime shorter than the skew would
-        // otherwise mark the token stale the instant we stored it, and every single request would mint a
-        // new one. Half the lifetime is the floor.
+        // Renew ahead of expiry, but never land on or before now: a lifetime shorter than the skew
+        // would mark the token stale the instant we stored it, and every request would mint a new one.
         var refreshAfter = lifetime > settings.TokenRefreshSkew
             ? lifetime - settings.TokenRefreshSkew
             : lifetime / 2;
@@ -165,12 +162,10 @@ public sealed class BlizzardTokenProvider(
 
     private void LogMissingCredentialsOnce()
     {
-        // Once per process. Every cache-first read asks for a token, so this must not become one warning
-        // per request.
-        //
-        // BlizzardStartupLogger is what normally reports missing credentials, because BlizzardGateway
-        // returns on IsConfigured before reaching here. This stays as the backstop for a caller that holds
-        // the token provider directly — a tool or a test host with no hosted services.
+        // Once per process: every cache-first read asks for a token, so this must not become one warning
+        // per request. BlizzardStartupLogger normally reports this first, since BlizzardGateway returns
+        // on IsConfigured before reaching here; this is the backstop for a caller holding the token
+        // provider directly, such as a test host with no hosted services.
         if (Interlocked.Exchange(ref _missingCredentialsLogged, 1) == 0)
         {
             logger.LogWarning(
@@ -182,7 +177,7 @@ public sealed class BlizzardTokenProvider(
 
     private sealed record CachedToken(string AccessToken, DateTimeOffset RefreshAt);
 
-    // Blizzard's wire shape for a token response, and it never leaves this folder (external.md).
+    // Blizzard's wire shape for a token response; it never leaves this folder.
     private sealed record TokenResponse(
         [property: JsonPropertyName("access_token")] string? AccessToken,
         [property: JsonPropertyName("expires_in")] int ExpiresInSeconds);

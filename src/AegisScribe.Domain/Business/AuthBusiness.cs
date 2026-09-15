@@ -41,12 +41,9 @@ public class AuthBusiness(IUserDataLayer dataLayer, TimeProvider timeProvider) :
         }
     }
 
-    // Unknown email and wrong password both come back as a bare failed attempt — the sign-in form
-    // shows one generic message for either, so neither confirms an email is registered. LockedOut is
-    // the one exception: it can only ever be reported for an account that exists (Identity has
-    // nothing to lock otherwise), so it is a narrow, deliberate leak of "this account exists",
-    // accepted so a locked-out member sees why they can't get in instead of re-guessing their
-    // password into a longer lockout.
+    // Unknown email and wrong password both come back as a bare failed attempt, so neither confirms an
+    // email is registered. LockedOut is the one exception — a narrow, deliberate leak of "this account
+    // exists", accepted so a locked-out member sees why rather than re-guessing into a longer lockout.
     public async Task<SignInAttemptServiceModel> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct)
     {
         var user = await dataLayer.FindByEmailAsync(viewModel.Email, ct);

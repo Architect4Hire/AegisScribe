@@ -12,10 +12,9 @@ public interface IRosterEntryRepository
     /// (<paramref name="afterKey"/>, <paramref name="afterId"/>).
     /// </summary>
     /// <remarks>
-    /// The page is over mains rather than rows so that a main and its alts are never split across a
-    /// page boundary — an alt whose main is on the previous page renders as an orphaned ↳ row that no
-    /// client can group (7.4). Never offset: a roster sorted by rank and paged by offset duplicates
-    /// and skips rows while somebody scrolls, which is exactly mobile infinite scroll
+    /// Paged over mains rather than rows so a main and its alts are never split across a page boundary
+    /// — an alt whose main is on the previous page renders as an orphaned ↳ row no client can group.
+    /// Never offset: a roster paged by offset duplicates and skips rows while somebody scrolls
     /// (api-contract.md).
     /// </remarks>
     Task<IReadOnlyList<Guid>> ListMainIdsAsync(
@@ -26,34 +25,33 @@ public interface IRosterEntryRepository
     /// the wire.
     /// </summary>
     /// <param name="includeOfficerNote">
-    /// False blanks the note in the projection rather than filtering rows. Officer-private, and the
-    /// caller's rank is Business's to know, not this layer's.
+    /// False blanks the note in the projection rather than filtering rows. The caller's rank is
+    /// Business's to know, not this layer's.
     /// </param>
     Task<IReadOnlyList<RosterEntryServiceModel>> ListGroupsAsync(
         IReadOnlyList<Guid> mainIds, RosterSort sort, bool includeOfficerNote, CancellationToken ct);
 
-    // How many of THIS community's entries hold a rank. Backs the refusal to delete a rank in use
-    // (7.2); query-filtered, so another community's holders neither count towards nor protect it.
+    // Backs the refusal to delete a rank in use. Query-filtered, so another community's holders neither
+    // count towards nor protect it.
     Task<int> CountByRankAsync(Guid rankId, CancellationToken ct);
 
-    // The domain entity, for the paths that decide something about the entry. Null for an id belonging
-    // to another community, which is what makes every cross-tenant roster write a 404.
+    // Null for an id belonging to another community, which is what makes every cross-tenant roster
+    // write a 404.
     Task<RosterEntry?> FindEntityAsync(Guid rosterEntryId, CancellationToken ct);
 
     Task<bool> HasAltsAsync(Guid rosterEntryId, CancellationToken ct);
 
-    // How many entries call this one their main — the number the has-alts refusal reports so an
-    // officer knows what they would have orphaned.
+    // The number the has-alts refusal reports, so an officer knows what they would have orphaned.
     Task<int> CountAltsAsync(Guid rosterEntryId, CancellationToken ct);
 
-    // Whether a rank id is one of THIS community's. Query-filtered, so a rank belonging to another
-    // community reads as nonexistent rather than being quietly accepted onto a row here.
+    // Query-filtered, so a rank belonging to another community reads as nonexistent rather than being
+    // quietly accepted onto a row here.
     Task<bool> RankExistsAsync(Guid rankId, CancellationToken ct);
 
     Task<bool> IsOnRosterAsync(Guid characterId, CancellationToken ct);
 
-    // TenantId is stamped by the SaveChanges interceptor, never assigned here (tenancy.md). Stages
-    // only — every roster write is paired with an audit row inside one transaction.
+    // Stages only — every roster write is paired with an audit row inside one transaction. TenantId is
+    // stamped by the SaveChanges interceptor, never assigned here (tenancy.md).
     Task AddAsync(RosterEntry entry, CancellationToken ct);
 
     Task SetRankAsync(Guid rosterEntryId, Guid? tenantRankId, CancellationToken ct);
@@ -67,11 +65,11 @@ public interface IRosterEntryRepository
     /// Returns false when it would not.
     /// </summary>
     /// <remarks>
-    /// The depth rules live in the statement's WHERE rather than in a SELECT before it, and that is
+    /// The depth rules live in the statement's WHERE rather than a SELECT before it, and that is
     /// load-bearing: checked separately they are a read-then-write, and two concurrent
-    /// opposite-direction links each pass their own check against pre-commit state and then write
-    /// DIFFERENT rows, so nothing conflicts and a cycle commits. Same reasoning, and the same fix, as
-    /// <see cref="SyncBudgetRepository"/>'s conditional consume.
+    /// opposite-direction links each pass against pre-commit state and then write DIFFERENT rows, so
+    /// nothing conflicts and a cycle commits. Same fix as <see cref="SyncBudgetRepository"/>'s
+    /// conditional consume.
     /// </remarks>
     Task<bool> TryLinkAltAsync(Guid rosterEntryId, Guid mainRosterEntryId, CancellationToken ct);
 

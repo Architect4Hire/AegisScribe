@@ -13,30 +13,28 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// OpenIddict's own protocol surface — connect/authorize and connect/token — named and shaped after
-// OpenIddict's own samples (e.g. Velusia.Server.Controllers.AuthorizationController). The protocol
-// shape stays here: the claims identity, SignIn/Forbid, the sign-in form, the OAuth wire format. Every
-// question about a USER — does this password match, can they still sign in, what roles do they hold —
-// goes through IAuthFacade like any other data access (backend.md); UserManager/SignInManager sit
-// behind the user repository in AegisScribe.Domain. IOpenIddictApplicationManager stays: it is
-// OpenIddict's own client registry, protocol plumbing rather than app data. No {version:apiVersion}
-// segment on either route (set via SetAuthorizationEndpointUris/SetTokenEndpointUris in Program.cs) —
-// these are OpenIddict's own paths, not this API's versioned business surface.
+// OpenIddict's own protocol surface — connect/authorize and connect/token, shaped after OpenIddict's
+// samples. Only the protocol shape stays here: the claims identity, SignIn/Forbid, the sign-in form,
+// the OAuth wire format. Every question about a USER goes through IAuthFacade like any other data
+// access (backend.md). IOpenIddictApplicationManager stays because it is OpenIddict's own client
+// registry, protocol plumbing rather than app data.
+//
+// [ApiVersionNeutral] and no version segment: these are OpenIddict's paths, fixed by the specs, not
+// this API's versioned business surface (api-contract.md).
 [ApiController]
 [ApiVersionNeutral]
 public class AuthorizationController(
     IOpenIddictApplicationManager applicationManager,
     IAuthFacade authFacade) : ControllerBase
 {
-    // The interactive half of the OAuth code+PKCE flow (auth.md: "the connect/authorize handler
-    // resolves the current Identity user and issues the OpenIddict principal"). Every registered
-    // client is first-party with ConsentType.Implicit, so the whole exchange fits in one request
-    // round trip: GET renders a bare sign-in form carrying the original OAuth parameters as hidden
-    // fields; POST re-submits them alongside a credential, checks it, and immediately signs the
-    // OpenIddict principal in. Nothing is stored between the GET and the POST — no cookie, no
-    // session, no antiforgery token anywhere in this project (auth.md's absolute restriction on the
-    // API). A forged cross-site POST can't complete this anyway, since it can't supply the victim's
-    // own credential.
+    // The interactive half of the OAuth code+PKCE flow. Every registered client is first-party with
+    // ConsentType.Implicit, so the exchange fits in one round trip: GET renders a sign-in form
+    // carrying the original OAuth parameters as hidden fields, POST re-submits them with a credential
+    // and signs the OpenIddict principal in.
+    //
+    // Nothing is stored between the GET and the POST — no cookie, no session, no antiforgery token
+    // anywhere in this project (auth.md). A forged cross-site POST cannot complete this anyway,
+    // since it cannot supply the victim's own credential.
     [HttpGet("~/connect/authorize")]
     [HttpPost("~/connect/authorize")]
     public async Task<IActionResult> Authorize(CancellationToken ct)
@@ -68,13 +66,11 @@ public class AuthorizationController(
                 identity.SetResources("aegisscribe-api");
                 identity.SetDestinations(_ => [Destinations.AccessToken]);
 
-                // A caller may request a shorter-than-configured lifetime (clamped, never longer)
-                // — the same test-only knob the client_credentials exchange below exposes, needed
-                // here to exercise the gateway's single-flight refresh without waiting out the
-                // real default (1B.6). This override rides along as a private claim on the
-                // authorization code's stored principal; Exchange() below deliberately carries it
-                // forward only for the code redemption that follows this sign-in, not for any
-                // later refresh.
+                // A caller may request a shorter-than-configured lifetime, clamped and never longer —
+                // what makes the gateway's single-flight refresh testable without waiting out the
+                // real default. It rides along as a private claim on the authorization code's stored
+                // principal, and Exchange() below carries it forward only for the code redemption
+                // that follows this sign-in, never for a later refresh.
                 if (Request.Form["token_lifetime_seconds"].ToString() is { Length: > 0 } raw
                     && int.TryParse(raw, out var seconds) && seconds is > 0 and <= 900)
                 {
@@ -98,10 +94,8 @@ public class AuthorizationController(
         var request = HttpContext.GetOpenIddictServerRequest()
             ?? throw new InvalidOperationException("The OpenIddict server request could not be retrieved.");
 
-        // The interactive human flow: the code/refresh token already carries the principal the
-        // Authorize() action issued. AuthenticateAsync both validates the code/refresh token itself
-        // (expiry, single-use consumption, rotation — OpenIddict's own validation handler) and
-        // returns that stored principal.
+        // The interactive human flow. AuthenticateAsync both validates the code or refresh token
+        // (expiry, single-use consumption, rotation) and returns the principal Authorize() stored.
         if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
         {
             var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -117,14 +111,11 @@ public class AuthorizationController(
                     }));
             }
 
-            // A clean identity, not the stored principal's claims copied wholesale: OpenIddict's
-            // SetAccessTokenLifetime (used by the token_lifetime_seconds test override above) is
-            // itself stored as a private claim, so copying every claim forward would re-apply that
-            // override — and whatever creation-timestamp claim rode along with it — to every future
-            // refresh forever, producing an access token that's already expired the moment it's
-            // minted. Re-populating from the current database state also means a revoked
-            // PlatformAdmin takes effect on the next refresh, not just the next full login
-            // (auth.md's "resolved per request" philosophy).
+            // A clean identity, not the stored principal's claims copied wholesale. SetAccessTokenLifetime
+            // is itself a private claim, so copying every claim forward would re-apply the lifetime
+            // override to every future refresh, minting access tokens already expired on arrival.
+            // Re-populating from current database state also means a revoked PlatformAdmin takes
+            // effect on the next refresh rather than the next full login (auth.md).
             var refreshedIdentity = new ClaimsIdentity(
                 authenticationType: TokenValidationParameters.DefaultAuthenticationType,
                 nameType: Claims.Name,
@@ -133,12 +124,10 @@ public class AuthorizationController(
             refreshedIdentity.SetClaims(Claims.Role, [.. subject.Roles]);
             refreshedIdentity.SetDestinations(_ => [Destinations.AccessToken]);
 
-            // The authorization_code exchange is the one token issuance that follows directly from
-            // Authorize()'s own SignIn — carry its test-only lifetime override forward here, since
-            // it wouldn't otherwise survive onto a freshly built identity. Deliberately NOT done
-            // for a refresh_token grant: this same branch handles every future refresh on the same
-            // token chain, and re-applying a short-lived override there would mint an access token
-            // that's already expired by the time it arrives.
+            // Carried forward only here, because the authorization_code exchange is the one issuance
+            // that follows directly from Authorize()'s SignIn. Deliberately NOT for a refresh_token
+            // grant: this branch handles every future refresh on the same chain, and re-applying a
+            // short-lived override there would mint tokens already expired on arrival.
             if (request.IsAuthorizationCodeGrantType() && result.Principal!.GetAccessTokenLifetime() is { } lifetime)
             {
                 refreshedIdentity.SetAccessTokenLifetime(lifetime);
@@ -147,8 +136,7 @@ public class AuthorizationController(
             return SignIn(new ClaimsPrincipal(refreshedIdentity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        // client_credentials only: aegisscribe-ops (service-to-service) is the only client using
-        // this grant. The interactive flow above serves the bff/mobile clients.
+        // aegisscribe-ops (service-to-service) is the only client using this grant.
         if (!request.IsClientCredentialsGrantType())
         {
             return Forbid(
@@ -162,8 +150,8 @@ public class AuthorizationController(
         var application = await applicationManager.FindByClientIdAsync(request.ClientId!)
             ?? throw new InvalidOperationException("The calling client could not be found.");
 
-        // Tokens carry sub and (for a human sign-in) PlatformAdmin only, nothing tenant-shaped —
-        // auth.md. A machine client has no PlatformAdmin concept, so only sub/name go on here.
+        // Nothing tenant-shaped (auth.md). A machine client has no PlatformAdmin concept either, so
+        // only sub and name go on here.
         var identity = new ClaimsIdentity(
             authenticationType: TokenValidationParameters.DefaultAuthenticationType,
             nameType: Claims.Name,
@@ -177,8 +165,7 @@ public class AuthorizationController(
         var resources = request.GetResources();
         identity.SetResources(resources.Length > 0 ? resources : ["aegisscribe-api"]);
 
-        // A caller may request a shorter-than-configured lifetime (clamped, never longer) — this is
-        // what makes testing token expiry practical without waiting out the real default.
+        // Clamped, never longer — what makes testing token expiry practical.
         if (request.GetParameter("token_lifetime_seconds")?.ToString() is { } lifetimeRaw
             && int.TryParse(lifetimeRaw, out var lifetimeSeconds) && lifetimeSeconds is > 0 and <= 900)
         {
@@ -191,8 +178,8 @@ public class AuthorizationController(
     }
 
     // Every present OAuth parameter round-trips as a hidden field so the POST reconstructs the
-    // identical authorization request (OpenIddict parses a POST from the form body only, not the
-    // query string — OpenIddictServerAspNetCoreHandlers.ExtractGetOrPostRequest).
+    // identical authorization request — OpenIddict parses a POST from the form body only, never the
+    // query string.
     private static string RenderLoginForm(OpenIddictRequest request, string? error)
     {
         var hidden = new Dictionary<string, string?>
@@ -213,10 +200,10 @@ public class AuthorizationController(
 
         var errorHtml = error is null ? "" : $"""<p class="form-error">{Encode(error)}</p>""";
 
-        // Plain server-rendered HTML/CSS, no client-side framework or build step — this page sits in
-        // the middle of an OAuth redirect chain and has to work with JavaScript off (1B.4d). The two
-        // stylesheets are a transcription of design/aegisscribe-armory.html's tokens and primitives,
-        // living under this project's own wwwroot since it can't reach into src/web's SCSS pipeline.
+        // Plain server-rendered HTML, no framework and no build step: this page sits in the middle of
+        // an OAuth redirect chain and has to work with JavaScript off. The two stylesheets transcribe
+        // design/aegisscribe-armory.html's tokens into this project's own wwwroot, since it cannot
+        // reach into src/web's SCSS pipeline.
         return $"""
             <!doctype html>
             <html lang="en">

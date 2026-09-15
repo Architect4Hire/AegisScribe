@@ -10,12 +10,9 @@ public interface ISyncBusiness
         Guid tenantId, string region, string realmSlug, string name, CancellationToken ct);
 }
 
-// The first tenant-TRIGGERED sync, and therefore the first caller of the budget.
-//
-// Everything before this refreshes on the app's own schedule: the cache-first read when someone looks at
-// a stale character (6.4), and the worker when nobody has (6.5). Both are global. This one happens
-// because a named officer in a named community asked for it, which is exactly the work external.md says
-// must be charged to that community.
+// Tenant-TRIGGERED sync, and therefore a caller of the budget. Every other refresh path runs on the
+// app's own schedule and is global; this one happens because a named officer in a named community asked
+// for it, which is exactly the work external.md says must be charged to that community.
 public class SyncBusiness(
     ITenantSyncBudget budget,
     ICharacterDataLayer characters) : ISyncBusiness

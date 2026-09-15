@@ -10,11 +10,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.Tests.Roster;
 
-// Through the endpoint: CharacterClaimsController -> ICharacterClaimFacade -> ICharacterClaimBusiness
-// -> ICharacterClaimDataLayer -> repositories -> SQL, plus both tenant policies and the global
-// exception handler. Cross-tenant behaviour is CharacterClaimIsolationTests' subject.
+// The whole stack through the endpoint, plus both tenant policies and the global exception handler.
+// Cross-tenant behaviour is CharacterClaimIsolationTests' subject.
 //
-// Most cases need TWO people in ONE community, which is a different axis from the two-tenant fixture —
+// Most cases need TWO people in ONE community — a different axis from the two-tenant fixture, because
 // "you may not release somebody else's claim" needs a somebody else.
 [Collection("AegisScribe API")]
 public class CharacterClaimEndpointTests(AegisScribeAppFixture fixture)

@@ -7,7 +7,7 @@ public class CreateTenantViewModelValidator : AbstractValidator<CreateTenantView
 {
     public CreateTenantViewModelValidator()
     {
-        // Slug is optional (2.7b): omit it and Business derives one from Name via TenantSlugRules, so a
+        // Slug is optional: omit it and Business derives one from Name via TenantSlugRules, so a
         // client — the MAUI app included — never has to reimplement the derivation. Relaxing a rule is
         // additive (api-contract.md); the shape rules below still apply to any slug that IS supplied.
         RuleFor(x => x.Slug).SlugFormat().When(x => x.Slug is not null);

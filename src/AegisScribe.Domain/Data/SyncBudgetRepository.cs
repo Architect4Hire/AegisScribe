@@ -50,13 +50,10 @@ public class SyncBudgetRepository(AegisScribeDbContext db) : ISyncBudgetReposito
         // Either the tenant has no row yet, or it has one and the budget is genuinely spent.
         if (await db.TenantSyncBudgetWindows.AnyAsync(w => w.TenantId == tenantId, ct))
         {
-            // A row exists NOW — but it may not have existed a moment ago when the UPDATE above ran and
-            // matched nothing. Concluding "exhausted" from that would refuse a caller who raced the very
-            // first spend and had a full budget available, which is a 429 nobody can explain and which
-            // only appears under concurrency.
-            //
-            // So try the UPDATE once more against the row that now exists. If it still matches nothing,
-            // the budget genuinely is spent.
+            // A row exists NOW, but may not have when the UPDATE above matched nothing. Concluding
+            // "exhausted" from that would refuse a caller who raced the very first spend with a full
+            // budget available — a 429 nobody can explain, appearing only under concurrency. Try the
+            // UPDATE once more; if it still matches nothing, the budget genuinely is spent.
             return allowRetry
                 && await TryConsumeAsync(tenantId, calls, limit, windowStart, now, allowRetry: false, ct);
         }
@@ -83,15 +80,12 @@ public class SyncBudgetRepository(AegisScribeDbContext db) : ISyncBudgetReposito
         catch (DbUpdateException) when (allowRetry)
         {
             // Another request created the row between the check and the insert — the unique index on
-            // TenantId is what makes that detectable rather than silently producing two windows. Undo
-            // the failed insert and let the UPDATE path decide, which is now the correct question to be
-            // asking anyway since a row exists.
+            // TenantId is what makes that detectable rather than silently producing two windows.
             //
-            // Exactly ONE retry, and the guard is load-bearing rather than defensive. A DbUpdateException
-            // from any other cause — a missing tenant row, a stamping failure — leaves the row still
-            // absent, so an unguarded retry would find nothing, insert again, fail again, and spin
-            // forever. That is a livelock rather than a crash: no error, no progress, and a request
-            // that simply never returns.
+            // Exactly ONE retry, and the guard is load-bearing rather than defensive: a
+            // DbUpdateException from any other cause leaves the row still absent, so an unguarded retry
+            // would find nothing, insert again, fail again, and spin forever. That is a livelock rather
+            // than a crash — no error, no progress, and a request that never returns.
             db.ChangeTracker.Clear();
 
             return await TryConsumeAsync(tenantId, calls, limit, windowStart, now, allowRetry: false, ct);

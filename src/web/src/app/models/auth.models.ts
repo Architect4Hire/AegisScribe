@@ -37,7 +37,7 @@ export interface TenantServiceModel {
   timeZoneId: string;
 }
 
-// Mirrors `CreateTenantViewModel`, the body of POST /api/v1/tenants. `slug` is optional (2.7b): omit
+// Mirrors `CreateTenantViewModel`, the body of POST /api/v1/tenants. `slug` is optional: omit
 // it and the server derives one from `name` via TenantSlugRules. The derivation is deliberately NOT
 // reimplemented here — the create screen renders whatever GET /tenants/slug-check answers.
 export interface CreateTenantViewModel {

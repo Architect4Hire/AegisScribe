@@ -6,12 +6,11 @@ using AegisScribe.Tests.Gateway;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// The reusable two-tenant harness every isolation test builds on (tenancy.md -> "Testing"). Built
-// fresh per test via CreateAsync, on top of whatever AegisScribeAppFixture the calling collection
-// already has — this is deliberately NOT an xUnit ICollectionFixture, because sharing seeded tenants
-// across tests would make a write in one test (a rename, a role change) leak into the next test's
-// assertions. The expensive, read-only part (the AppHost/SQL Server/Redis) stays shared via the
-// AegisScribeAppFixture passed in; only the cheap, mutable part (two tenants, two users) is fresh.
+// The reusable two-tenant harness every isolation test builds on (tenancy.md → "Testing").
+//
+// Deliberately NOT an xUnit ICollectionFixture: sharing seeded tenants would let a write in one test
+// leak into the next test's assertions. The expensive, read-only part — the AppHost, SQL Server, Redis
+// — stays shared through the AegisScribeAppFixture passed in; only the two tenants are fresh.
 public sealed class TwoTenantFixture
 {
     public TenantSide TenantA { get; }
@@ -22,10 +21,9 @@ public sealed class TwoTenantFixture
         TenantRole roleA = TenantRole.Owner,
         TenantRole roleB = TenantRole.Owner)
     {
-        // Both sides get the SAME tenant name on purpose. A broken filter that returns "a" tenant
-        // instead of "the caller's" tenant would otherwise still look plausible if the two tenants'
-        // data merely differed — only Slug/Id can distinguish them, which is exactly what a real
-        // isolation bug has to be caught by.
+        // Both sides get the SAME tenant name on purpose: a broken filter returning "a" tenant rather
+        // than "the caller's" would still look plausible if their data merely differed. Only Slug and
+        // Id distinguish them, which is what a real isolation bug has to be caught by.
         var sideA = await TenantSide.CreateAsync(fixture, "Ashenvale Raiders", roleA);
         var sideB = await TenantSide.CreateAsync(fixture, "Ashenvale Raiders", roleB);
         return new TwoTenantFixture(sideA, sideB);
@@ -61,8 +59,8 @@ public sealed class TenantSide
     /// </summary>
     /// <remarks>
     /// Isolation tests need two tenants; plenty of rules need two people in ONE tenant instead — "you
-    /// may not release somebody else's claim", an officer acting on a member, 7.4's officer writes.
-    /// Those are a different axis from <see cref="TwoTenantFixture"/> and this is the door to them.
+    /// may not release somebody else's claim", an officer acting on a member. A different axis from
+    /// <see cref="TwoTenantFixture"/>, and this is the door to it.
     /// </remarks>
     internal static async Task<TenantSide> JoinAsync(
         AegisScribeAppFixture fixture, Tenant tenant, TenantRole role)

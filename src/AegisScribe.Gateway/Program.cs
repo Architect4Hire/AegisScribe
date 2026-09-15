@@ -15,38 +15,33 @@ builder.AddRedisDistributedCache("cache");
 
 builder.Services.AddSingleton<RefreshCoordinator>();
 
-// Registered as its own singleton (not just constructed inline for the cookie options below) so
-// RefreshCoordinator can read/write it directly — bypassing HttpContext.AuthenticateAsync's
-// per-request cache, which would otherwise make its post-lock re-check a no-op (see the comment on
-// RefreshCoordinator itself).
+// Its own singleton rather than constructed inline for the cookie options, so RefreshCoordinator can
+// read and write it directly — bypassing HttpContext.AuthenticateAsync's per-request cache, which
+// would otherwise make its post-lock re-check a no-op.
 builder.Services.AddSingleton<ITicketStore, DistributedCacheTicketStore>();
 
-// Server-to-server calls only (token refresh, connect/revoke on logout) — resolved through
-// service discovery like every other inter-service call in this solution (aspire.md).
+// Server-to-server only (token refresh, connect/revoke on logout), resolved through service discovery
+// like every other inter-service call (aspire.md).
 builder.Services.AddHttpClient(GatewayAuthDefaults.ApiBackchannelClient, client =>
 {
     client.BaseAddress = new Uri("http://api");
 });
 
-// Cookie options need a DI service from the container, which the inline AddCookie(...) delegate
-// below can't take — the options pattern's Configure<T> overload is the documented way around that.
+// The cookie options need a DI service, which the inline AddCookie(...) delegate below cannot take.
+// Configure<T> is the documented way around that.
 builder.Services.AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
     .Configure<ITicketStore>((options, store) =>
     {
         options.SessionStore = store;
     });
 
-// The browser is redirected here as a top-level navigation, so this has to be an address the
-// browser itself can reach — the same service-discovery-injected value already used for seeding
-// this exact client's RedirectUris (OpenIddictClientSeeder.cs), which in local dev resolves to the
-// same localhost port a browser can reach too.
+// The browser is redirected here as a top-level navigation, so it has to be an address the browser
+// itself can reach — the same service-discovery value that seeds this client's RedirectUris.
 var apiBase = builder.Configuration["services:api:https:0"] ?? builder.Configuration["services:api:http:0"]
     ?? throw new InvalidOperationException("API endpoint is not configured for the OIDC client.");
 
-// The SPA origin, from config — never a literal (gateway.md -> "CORS"). Sourced from AegisScribe.Web
-// today (the only SPA-serving resource actually wired into the AppHost); if the Angular dev-server
-// resource is added back this becomes services:web-dev-server:... instead, but the shape stays the
-// same either way.
+// The SPA origin, from config — never a literal (gateway.md → "CORS"). Sourced from AegisScribe.Web,
+// the only SPA-serving resource wired into the AppHost today.
 var spaOrigin = builder.Configuration["services:web:https:0"] ?? builder.Configuration["services:web:http:0"]
     ?? throw new InvalidOperationException("SPA endpoint is not configured for the CORS policy.");
 
@@ -70,14 +65,12 @@ builder.Services.AddAuthentication(options =>
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.Lax; // not Strict — see gateway.md
 
-        // Domain=.aegisscribe.com is what lets app.* hand this cookie to bff.* in every real
-        // environment — but it's also a Domain attribute the browser can only accept when the
-        // current host is that domain or a subdomain of it. Under `aspire run` the browser is
-        // talking to bare "localhost", which doesn't match, so the browser silently discards the
-        // cookie outright (RFC 6265) rather than merely scoping it oddly — sign-in "succeeds" and
-        // every request afterwards is still anonymous. A host-only cookie (no Domain attribute)
-        // is exactly what a same-host local setup needs instead, so this is the one place that
-        // attribute is environment-conditional; every other cookie attribute above is not.
+        // Domain=.aegisscribe.com is what lets app.* hand this cookie to bff.* in a real environment,
+        // but a browser only accepts a Domain attribute matching the current host. Under `aspire run`
+        // the host is bare "localhost", so the browser discards the cookie outright (RFC 6265) rather
+        // than scoping it oddly — sign-in "succeeds" and every later request is anonymous. A host-only
+        // cookie is what a same-host local setup needs, so this is the one environment-conditional
+        // cookie attribute; the rest above are not.
         if (!builder.Environment.IsDevelopment())
         {
             options.Cookie.Domain = ".aegisscribe.com"; // NOT __Host- eligible; see the name prefix above
@@ -108,17 +101,14 @@ builder.Services.AddReverseProxy()
     {
         transformBuilderContext.AddRequestTransform(async transformContext =>
         {
-            // Strip whatever the caller sent — the single most important control in the auth
-            // surface (gateway.md → "Header sanitisation"). Unconditional, not just "overwrite it
-            // when we have our own token": when there's no session, accessToken below is null and
-            // nothing would otherwise touch this header, letting an anonymous caller's own forged
-            // Authorization sail straight through to the API untouched.
+            // Strip whatever the caller sent — the single most important control in the auth surface
+            // (gateway.md → "Header sanitisation"). Unconditional, not "overwrite when we have our
+            // own token": with no session accessToken below is null and nothing else would touch this
+            // header, letting an anonymous caller's forged Authorization reach the API untouched.
             transformContext.ProxyRequest.Headers.Remove("Authorization");
 
-            // X-Forwarded-For/Proto/Host need no code here: YARP strips and replaces them by
-            // default on every proxied request (verified against the current YARP docs,
-            // fundamentals/servers/yarp/header-guidelines) — a framework guarantee, not something
-            // to reimplement.
+            // X-Forwarded-For/Proto/Host need no code here — YARP strips and replaces them by default
+            // on every proxied request.
 
             var refreshCoordinator = transformContext.HttpContext.RequestServices
                 .GetRequiredService<RefreshCoordinator>();
@@ -136,21 +126,18 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Ahead of both cookie auth and the proxy, so a rejected preflight never reaches either
-// (gateway.md -> "CORS").
+// Ahead of both cookie auth and the proxy, so a rejected preflight never reaches either.
 app.UseCors("spa");
 
 app.UseAuthentication();
 
-// Handled by the gateway itself, not proxied — login and logout are the gateway's own concerns
-// (gateway.md).
+// Handled by the gateway itself, not proxied — login and logout are its own concerns (gateway.md).
 app.MapGet("/auth/login", (string? returnUrl) =>
 {
-    // returnUrl is SPA-relative (window.location.pathname + search) and only ever meant to be
-    // resolved against the SPA's own origin. Left bare it resolves against whatever host serves
-    // the OIDC callback — the gateway itself, not the SPA — which 404s once the browser lands
-    // back here after sign-in. Requiring a single leading '/' (never '//', never a scheme) also
-    // keeps this from becoming an open redirect: it's an untrusted query parameter.
+    // returnUrl is SPA-relative and only ever meant to resolve against the SPA's origin; left bare it
+    // resolves against the gateway, which 404s once the browser lands back after sign-in. Requiring a
+    // single leading '/' (never '//', never a scheme) also keeps this untrusted query parameter from
+    // becoming an open redirect.
     var isLocalPath = returnUrl is { Length: > 0 } path
         && path[0] == '/'
         && (path.Length == 1 || path[1] != '/');
@@ -170,9 +157,8 @@ app.MapPost("/auth/logout", async (HttpContext httpContext, IHttpClientFactory h
         var bffSecret = builder.Configuration["Oidc:BffClientSecret"];
         var client = httpClientFactory.CreateClient(GatewayAuthDefaults.ApiBackchannelClient);
 
-        // Revoke first, then clear — a failed revoke should be a retry, not treated as done
-        // (auth.md's "Logout means revoke"). For now this best-effort call surfaces failures via
-        // the response status only; 1B.9's edge verification proves revocation actually sticks.
+        // Revoke first, then clear — a failed revoke is a retry, not a success (auth.md's "Logout
+        // means revoke"). This best-effort call surfaces failures via the response status only.
         await client.PostAsync("connect/revoke", new FormUrlEncodedContent(
         [
             new("token", refreshToken),
@@ -182,8 +168,7 @@ app.MapPost("/auth/logout", async (HttpContext httpContext, IHttpClientFactory h
         ]));
     }
 
-    // Drops the session from Redis via DistributedCacheTicketStore.RemoveAsync — logout is
-    // instant, not merely "expires eventually" (gateway.md).
+    // Drops the session from Redis — logout is instant, not "expires eventually" (gateway.md).
     await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.NoContent();
 });

@@ -9,12 +9,9 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Integration.Blizzard;
 
-// 6.1 — the client-credentials token lifecycle (.claude/rules/external.md -> "Blizzard — everything goes
-// through the gateway"; add-external-sync skill).
-//
-// The behaviours under test are the four the rule names: cache the token, refresh once under a lock, send
-// it as a bearer header and never as a query parameter, and degrade rather than throw when credentials
-// are absent.
+// The client-credentials token lifecycle, and the four behaviours external.md names: cache the token,
+// refresh once under a lock, send it as a bearer header and never as a query parameter, and degrade
+// rather than throw when credentials are absent.
 public class BlizzardTokenProviderTests
 {
     private const string ClientId = "test-client-id";

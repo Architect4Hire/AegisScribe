@@ -1,6 +1,6 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// A member tried to reorganise characters they do not claim (7.3).
+// A member tried to reorganise characters they do not claim.
 //
 // Resource authorization, so it lives in Business and not in a policy — answering it means reading the
 // caller's claims first. Policies answer "what rank are you here"; Business answers "is this yours"

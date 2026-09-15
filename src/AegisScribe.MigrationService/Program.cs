@@ -16,7 +16,7 @@ builder.Services.AddDbContext<AegisScribeDbContext>(options =>
 });
 builder.EnrichSqlServerDbContext<AegisScribeDbContext>();
 
-// AegisScribeDbContext now takes ITenantContext (2.4) — register it directly rather than via
+// AegisScribeDbContext now takes ITenantContext — register it directly rather than via
 // AddAegisScribeDomain(), which also wires the Auth/Me/Tenant business+facade stacks that need
 // UserManager<ApplicationUser> and ICurrentUser (an HTTP-request concept); neither exists in this
 // process, and this is never resolved to a real tenant here anyway (migrations and OpenIddict client
@@ -29,7 +29,7 @@ builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantCon
 builder.Services.AddOpenIddict()
     .AddCore(options => options.UseEntityFrameworkCore().UseDbContext<AegisScribeDbContext>());
 
-// For DemoDataSeeder's UserManager<ApplicationUser> only (3.4) — no SignInManager, no OpenIddict
+// For DemoDataSeeder's UserManager<ApplicationUser> only — no SignInManager, no OpenIddict
 // claim-type tweak, no token providers: those are auth-flow concerns this one-shot process never
 // exercises. ApiService owns the real registration; this is just enough to create seed accounts.
 builder.Services.AddIdentityCore<ApplicationUser>(options => options.User.RequireUniqueEmail = true)

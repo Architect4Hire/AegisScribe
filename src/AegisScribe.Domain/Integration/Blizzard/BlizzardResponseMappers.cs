@@ -2,8 +2,7 @@ using AegisScribe.Domain.Managers.Models.Domain;
 
 namespace AegisScribe.Domain.Integration.Blizzard;
 
-// Where Blizzard's wire shapes stop and this app's domain begins. Internal, so the boundary is enforced
-// rather than agreed.
+// Where Blizzard's wire shapes stop and this app's domain begins.
 //
 // One rule runs through all of it: match on the id or the `type` token, never on `name`. Names are
 // localized — Blizzard would answer "Krieger" under a de_DE locale — so a switch over them is a bug
@@ -13,8 +12,8 @@ internal static class BlizzardResponseMappers
     public static Realm ToRealm(this BlizzardRealmResponse response, string region, DateTimeOffset fetchedAt) =>
         response.ToRealm(region, ParseConnectedRealmId(response.ConnectedRealm?.Href), fetchedAt);
 
-    // Every realm in one connected-realm group. This path needs no href parsing at all: the group's id
-    // is a field on the document, and it is the same id for every realm inside it.
+    // Every realm in one connected-realm group. No href parsing needed here: the group's id is a field
+    // on the document, and it is the same id for every realm inside it.
     public static IReadOnlyList<Realm> ToRealms(
         this BlizzardConnectedRealmResponse response,
         string region,
@@ -23,8 +22,7 @@ internal static class BlizzardResponseMappers
             ? []
             : [.. response.Realms.Select(realm => realm.ToRealm(region, response.Id, fetchedAt))];
 
-    // The connected-realm index gives links and nothing else, so the ids come out of the hrefs — the
-    // same reading, not following, that ParseConnectedRealmId does.
+    // The connected-realm index gives links and nothing else, so the ids come out of the hrefs.
     public static IReadOnlyList<long> ToConnectedRealmIds(this BlizzardConnectedRealmIndexResponse response) =>
         response.ConnectedRealms is null
             ? []
@@ -48,9 +46,8 @@ internal static class BlizzardResponseMappers
             Region = region,
             Name = response.Name ?? slug,
 
-            // The stable per-row source id, and the upsert key for the catalogue (6.4b). Unlike the
-            // connected-realm id below, this one identifies exactly this realm, which is what lets a
-            // rename update in place.
+            // The stable per-row source id and the catalogue's upsert key. Unlike the connected-realm
+            // id below, this identifies exactly this realm, which is what lets a rename update in place.
             BlizzardRealmId = response.Id,
             BlizzardConnectedRealmId = connectedRealmId,
             LastSyncedAt = fetchedAt,
@@ -63,7 +60,7 @@ internal static class BlizzardResponseMappers
     //
     // An unparseable href fails the fetch rather than storing 0. A realm row is the anchor every
     // character on it hangs from, and a source id of 0 shared by every realm we could not parse is the
-    // kind of quiet corruption that is only discovered much later, by which time it is in every row.
+    // kind of quiet corruption only discovered once it is in every row.
     private static long ParseConnectedRealmId(string? href)
     {
         if (!Uri.TryCreate(href, UriKind.Absolute, out var uri))
@@ -116,9 +113,8 @@ internal static class BlizzardResponseMappers
 
         if (character is null || name is null || realmSlug is null)
         {
-            // A member row we cannot place. Dropping the one member is right where failing the whole
-            // roster would not be: a 400-member guild should not become unsyncable because one entry
-            // arrived malformed.
+            // Dropping the one member is right where failing the whole roster would not be: a
+            // 400-member guild should not become unsyncable because one entry arrived malformed.
             return null;
         }
 
@@ -129,9 +125,8 @@ internal static class BlizzardResponseMappers
         catch (BlizzardUnavailableException)
         {
             // Class and faction throw when this app cannot represent them — correct for a single
-            // character fetch, where failing is the honest answer, but wrong here. A roster is a batch:
-            // one member of an unrepresentable class must cost that member, not the other 399. The
-            // member simply does not appear until the app grows a value for whatever it was.
+            // character fetch, wrong for a batch. One member of an unrepresentable class must cost that
+            // member, not the other 399.
             return null;
         }
     }
@@ -147,9 +142,9 @@ internal static class BlizzardResponseMappers
             Faction = ToFaction(character.Faction),
             BlizzardCharacterId = character.Id,
 
-            // No spec and no item level on this endpoint, so the row is created without them. Gear
-            // arrives later from the refresh worker, which already selects characters with no
-            // equipment (6.5) — fanning out here would turn one call into eight hundred.
+            // No spec and no item level on this endpoint. Gear arrives later from the refresh worker,
+            // which already selects characters with no equipment — fanning out here would turn one call
+            // into eight hundred.
             Spec = null,
             ItemLevel = 0,
             LastSyncedAt = fetchedAt,
@@ -163,9 +158,9 @@ internal static class BlizzardResponseMappers
         return new Character
         {
             // RealmId and Realm are deliberately left unset. The caller supplied the realm slug and owns
-            // resolving it to a local Realm row (6.4); the character summary carries no connected-realm
-            // id, so a Realm built here would have to fabricate Realm.BlizzardConnectedRealmId — and a
-            // fabricated source id is the one field the erasure routine cannot afford to have wrong.
+            // resolving it; the character summary carries no connected-realm id, so a Realm built here
+            // would have to fabricate Realm.BlizzardConnectedRealmId — the one field the erasure routine
+            // cannot afford to have wrong.
             Name = name,
             NameLower = name.ToLowerInvariant(),
             Level = response.Level,
@@ -175,9 +170,9 @@ internal static class BlizzardResponseMappers
             Faction = ToFaction(response.Faction),
             BlizzardCharacterId = response.Id,
 
-            // Stamped here rather than at the point of persistence: this is the instant the data actually
-            // came from Blizzard, and the 30-day refresh obligation is measured against that, not against
-            // whenever a later transaction happened to commit.
+            // Stamped here rather than at the point of persistence: this is the instant the data came
+            // from Blizzard, and the 30-day refresh obligation is measured against that, not against
+            // whenever a later transaction committed.
             LastSyncedAt = fetchedAt,
         };
     }
@@ -197,8 +192,7 @@ internal static class BlizzardResponseMappers
     private static EquippedItem? ToEquippedItem(BlizzardEquippedItemResponse response)
     {
         // An unmapped slot is a deliberate drop, not a failure. Blizzard reports SHIRT and TABARD, which
-        // EquipmentSlot has no member for because nothing in the design reference renders them — they
-        // carry no item level and contribute nothing to a gear read.
+        // EquipmentSlot has no member for because nothing in the design reference renders them.
         if (ToSlot(response.Slot?.Type) is not { } slot)
         {
             return null;
@@ -212,19 +206,17 @@ internal static class BlizzardResponseMappers
             Quality = ToQuality(response.Quality?.Type),
             ItemLevel = response.Level?.Value ?? 0,
 
-            // No icon. The equipment response carries only a media *href*; resolving it to a filename is
-            // a separate /data/wow/media/item/{id} call per item, and doing that here would turn one
-            // character fetch into seventeen. Icon sync has its own dedupe story — the same icon name is
-            // shared by thousands of items — and belongs with the item catalogue, not here.
+            // The equipment response carries only a media *href*; resolving it to a filename is a
+            // separate call per item, which would turn one character fetch into seventeen. Icon sync has
+            // its own dedupe story and belongs with the item catalogue.
             IconName = null,
         };
     }
 
     // Class and faction identify the character itself, so an unmappable value fails the whole fetch
-    // rather than guessing. The caller treats that as "unavailable" and falls back to the stored row,
-    // which is the right answer: we would otherwise persist a character as the wrong class, and
-    // CharacterMappers.ClassColorHex would throw further downstream where the cause is invisible.
-    // A new class arrives once an expansion; the fix is one enum member.
+    // rather than guessing. The caller falls back to the stored row, which is right: persisting a
+    // character as the wrong class would make CharacterMappers.ClassColorHex throw much further
+    // downstream, where the cause is invisible. A new class arrives once an expansion.
     private static CharacterClass ToCharacterClass(BlizzardKeyedName? characterClass) => characterClass?.Id switch
     {
         1 => CharacterClass.Warrior,
@@ -245,9 +237,9 @@ internal static class BlizzardResponseMappers
             "application cannot represent."),
     };
 
-    // NEUTRAL is a real value — a Pandaren who has not yet picked a side — and it lands here rather than
-    // in CharacterFaction because a neutral character has no roster, no faction colour and nothing this
-    // app displays. It fails the fetch for the same reason an unknown class does.
+    // NEUTRAL is a real value — a Pandaren who has not yet picked a side — and lands here rather than in
+    // CharacterFaction because a neutral character has no roster, no faction colour and nothing this app
+    // displays.
     private static CharacterFaction ToFaction(BlizzardTypedName? faction) => faction?.Type switch
     {
         "ALLIANCE" => CharacterFaction.Alliance,
@@ -257,8 +249,8 @@ internal static class BlizzardResponseMappers
     };
 
     // Unlike class and faction, an unknown quality degrades instead of failing. Quality is decoration on
-    // one item; dropping the item — or the whole character — over a colour would lose the name and item
-    // level, which are the parts a gear read is actually for.
+    // one item; dropping the item over a colour would lose the name and item level, which are the parts
+    // a gear read is actually for.
     private static ItemQuality ToQuality(string? quality) => quality switch
     {
         "POOR" => ItemQuality.Poor,

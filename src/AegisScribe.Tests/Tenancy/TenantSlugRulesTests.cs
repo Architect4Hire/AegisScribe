@@ -2,7 +2,7 @@ using AegisScribe.Domain.Managers.Validators;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// The fold cases (2.7b). These are pure functions with no data dependency, so they're asserted
+// The fold cases. These are pure functions with no data dependency, so they're asserted
 // directly rather than through seven round-trips of the create endpoint.
 public class TenantSlugRulesTests
 {

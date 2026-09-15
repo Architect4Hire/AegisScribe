@@ -5,10 +5,9 @@ import { AuthService } from '../../../core/auth.service';
 
 type SubmitState = 'idle' | 'submitting';
 
-// Identity's default RequiredLength. The composition rules it also enforces (a digit, an upper and
-// lower case letter, a symbol) are deliberately NOT re-implemented here: they are server-owned
-// configuration, and a copy in TypeScript drifts the moment someone tunes IdentityOptions. The
-// hint below states them for the user; the server's own errors are what actually reject.
+// Identity's default RequiredLength. The composition rules it also enforces — a digit, both cases, a
+// symbol — are deliberately NOT re-implemented here: they are server-owned configuration, and a copy
+// in TypeScript drifts the moment someone tunes IdentityOptions.
 const MIN_PASSWORD_LENGTH = 6;
 
 // Matches RegisterViewModelValidator.DisplayName.MaximumLength(64).
@@ -39,9 +38,8 @@ export class RegisterForm {
     password: ['', [Validators.required, Validators.minLength(MIN_PASSWORD_LENGTH)]],
   });
 
-  // Field-level messages, resolved once here rather than branched over in the template. Server
-  // messages win when present: they are the authoritative rejection, and re-stating our own
-  // client-side guess next to them would read as two different problems.
+  // Resolved once here rather than branched over in the template. Server messages win when present:
+  // re-stating our own client-side guess beside one would read as two different problems.
   messagesFor(name: ControlName): string[] {
     const control = this.form.controls[name];
     if (!control.touched || control.valid) {
@@ -86,26 +84,21 @@ export class RegisterForm {
 
     const { displayName, email, password } = this.form.getRawValue();
 
-    this.auth
-      .register({ email, password, displayName: displayName.trim() || null })
-      .subscribe({
-        // The response body is a UserServiceModel and it is deliberately discarded. Registering
-        // does NOT sign you in: there is no session to record, no token to hold (the SPA never
-        // holds one), and the interactive sign-in step still has to happen. Handing off to
-        // login() is a full-page navigation to the gateway, which is the only way an OAuth
-        // code+PKCE redirect chain can run.
-        next: () => this.auth.login('/'),
-        error: (error: unknown) => {
-          this.state.set('idle');
-          this.form.enable({ emitEvent: false });
-          this.applyServerErrors(error);
-        },
-      });
+    this.auth.register({ email, password, displayName: displayName.trim() || null }).subscribe({
+      // The response body is deliberately discarded: registering does NOT sign you in, and the SPA
+      // holds no token to record. login() is a full-page navigation to the gateway, which is the only
+      // way an OAuth code+PKCE redirect chain can run.
+      next: () => this.auth.login('/'),
+      error: (error: unknown) => {
+        this.state.set('idle');
+        this.form.enable({ emitEvent: false });
+        this.applyServerErrors(error);
+      },
+    });
   }
 
-  // The API answers a rejected registration with ValidationProblemDetails: a dictionary keyed
-  // either by a FluentValidation property name ("Email") or an Identity error code
-  // ("DuplicateEmail", "PasswordRequiresDigit"). Both shapes get routed to the field they are
+  // ValidationProblemDetails keyed either by a FluentValidation property name ("Email") or an Identity
+  // error code ("DuplicateEmail", "PasswordRequiresDigit"). Both shapes route to the field they are
   // about; anything unplaceable is shown at form level rather than swallowed.
   private applyServerErrors(error: unknown): void {
     if (!(error instanceof HttpErrorResponse)) {
@@ -142,8 +135,8 @@ const GENERIC_ERROR = "We couldn't create your account. Please try again.";
 
 type ControlName = 'displayName' | 'email' | 'password';
 
-// Substring matching rather than an exhaustive code table on purpose: Identity ships a dozen
-// password codes and can gain more, and every one of them contains "Password".
+// Substring matching rather than an exhaustive code table: Identity ships a dozen password codes and
+// can gain more, and every one contains "Password".
 function controlFor(key: string): ControlName | null {
   const normalized = key.toLowerCase();
 

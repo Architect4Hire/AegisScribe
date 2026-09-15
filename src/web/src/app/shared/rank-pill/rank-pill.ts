@@ -1,15 +1,14 @@
 import { Component, input } from '@angular/core';
 
-// A tenant rank, as design/aegisscribe-armory.html draws it (§07's <scribe-rank-pill>).
+// A tenant rank, as the design reference draws it.
 //
-// The colour is TENANT CONFIG, not a design token: it arrives on the ServiceModel from whatever the
-// community chose, and is surfaced as the --rank-color custom property the stylesheet reads. That is
-// the one sanctioned way a non-token colour enters this app, and it is why the value is validated
-// server-side as exactly #rrggbb — it lands in an inline style.
+// The colour is TENANT CONFIG, not a design token — the one sanctioned way a non-token colour enters
+// this app, surfaced as the --rank-color custom property. That is why the server validates it as
+// exactly #rrggbb: it lands in an inline style.
 //
-// Deliberately NOT used for the in-game rank. The game's rank and the community's are different
-// facts and neither derives from the other (tenancy.md), so the roster renders the in-game one as
-// plain mono text instead. Giving both the same pill would imply a relationship that does not exist.
+// Deliberately NOT used for the in-game rank, which the roster renders as plain mono text — the two
+// ranks are different facts (tenancy.md), and one pill for both would imply a relationship that does
+// not exist.
 @Component({
   imports: [],
   selector: 'scribe-rank-pill',

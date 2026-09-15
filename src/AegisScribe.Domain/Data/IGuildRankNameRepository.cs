@@ -15,9 +15,8 @@ public interface IGuildRankNameRepository
     /// </remarks>
     Task<IReadOnlyList<GuildRankNameServiceModel>> ListAsync(CancellationToken ct);
 
-    // Whether this community actually follows the guild. The guard on the write: without it an officer
-    // could name the ranks of a guild they have nothing to do with, and the row would be invisible
-    // afterwards because nothing joins to it.
+    // The guard on the write: without it an officer could name the ranks of a guild they have nothing
+    // to do with, and the row would then be invisible because nothing joins to it.
     Task<bool> FollowsGuildAsync(Guid guildId, CancellationToken ct);
 
     // Upsert on (TenantId, GuildId, Rank). A null name removes the row rather than storing an empty

@@ -12,11 +12,11 @@ import {
 import { RuntimeConfigService } from './runtime-config.service';
 
 // Everything a community owns lives under /t/{tenantSlug}, and the slug comes from the active route
-// rather than a stored variable — services build URLs from what the URL actually says, so a switched
-// community can never leave a request pointing at the previous one (.claude/rules/frontend.md).
+// rather than a stored variable, so a switched community can never leave a request pointing at the
+// previous one (frontend.md).
 //
-// Every call goes through the gateway. The SPA never addresses api.* — that hostname exists for the
-// mobile app and for ops, and a browser request to it would be a bug (CLAUDE.md, Restrictions).
+// Every call goes through the gateway. The SPA never addresses api.* — that hostname is for the mobile
+// app and for ops, and a browser request to it would be a bug.
 @Injectable({ providedIn: 'root' })
 export class RosterService {
   private readonly http = inject(HttpClient);

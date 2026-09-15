@@ -5,17 +5,15 @@ using FluentValidation;
 
 namespace AegisScribe.Domain.Facade;
 
-// Deliberately NOT cached, and deliberately not inheriting TenantScopedFacadeBase for a key it would
-// never build. Two independent reasons now:
+// Deliberately NOT cached, for two independent reasons:
 //
 //   - a paginated read's key would have to include the sort, cursor and limit — unbounded cardinality
-//     for a page that is cheap to recompute, the same call CharacterFacade documents for its search;
-//   - the page carries OfficerNote, which is populated per CALLER. A tenant-keyed entry would serve
-//     the first officer's view to every member of the community. That is the trap 7.2b's claim state
-//     was reshaped to avoid, and here it is a reason not to cache at all.
+//     for a page that is cheap to recompute;
+//   - the page carries OfficerNote, which is populated per CALLER, so a tenant-keyed entry would serve
+//     the first officer's view to every member of the community.
 //
-// Validation still belongs here: Limit carries the server-enforced maximum, Sort is a closed
-// whitelist, and the cursor's decoded parts are client-supplied like any other input.
+// Validation still belongs here: Limit carries the server-enforced maximum, Sort is a closed whitelist,
+// and the cursor's decoded parts are client-supplied like any other input.
 public class RosterFacade(
     IRosterBusiness business,
     IValidator<ListRosterViewModel> listValidator,

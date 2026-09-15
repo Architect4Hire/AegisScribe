@@ -9,12 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// 7.2b's two-tenant test, in the shape the prompt names: claiming in tenant A must leave the same
-// Character's standing in tenant B untouched.
-//
-// Every case shares ONE global Character between both communities, because that is the arrangement a
-// broken filter cannot survive — and because it is the honest one. The same player really can be in
-// two communities, and each community's view of who owns that character is its own.
+// The claim's two-tenant test: claiming in tenant A must leave the same Character's standing in tenant
+// B untouched. Every case shares ONE global Character between both communities, which is the
+// arrangement a broken filter cannot survive — and the honest one, since the same player really can be
+// in two communities.
 [Collection("AegisScribe API")]
 public class CharacterClaimIsolationTests(AegisScribeAppFixture fixture)
 {

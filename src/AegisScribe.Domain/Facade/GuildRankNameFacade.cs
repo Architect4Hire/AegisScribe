@@ -9,11 +9,9 @@ using Microsoft.Extensions.Caching.Distributed;
 namespace AegisScribe.Domain.Facade;
 
 // Cached under t:{tenantId}:guild-rank-names via TenantScopedFacadeBase, so no bare key is expressible
-// here (tenancy.md). Safe to cache, unlike the roster page: the payload is one small set per community
-// and contains nothing per-caller.
-//
-// Near-static by nature — a guild renames its ranks about never — so the TTL is the long end of the
-// add-endpoint skill's table, with the write below removing the key the moment it stops being true.
+// here (tenancy.md). Safe to cache, unlike the roster page: one small set per community, nothing
+// per-caller. Near-static — a guild renames its ranks about never — so the TTL is long, with the write
+// below removing the key the moment it stops being true.
 public class GuildRankNameFacade(
     IGuildRankNameBusiness business,
     IValidator<SetGuildRankNameViewModel> setValidator,

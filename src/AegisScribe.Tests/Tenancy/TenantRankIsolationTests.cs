@@ -7,12 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// 7.1's two-tenant test, and the only kind of test that says anything at all about isolation: a
-// single-tenant suite passes every query, because there is no other community's data to leak
-// (tenancy.md). Everything here goes through the endpoint, never the repository.
+// The rank ladder's two-tenant test — the only kind that says anything about isolation, since a
+// single-tenant suite passes every query (tenancy.md). Everything goes through the endpoint.
 //
-// A rank ladder is the clearest case in the repo of the "would two communities disagree" test — both
-// communities below define a rank called "Raider", both are right, and neither may see the other's.
+// Both communities below define a rank called "Raider", both are right, and neither may see the other's.
 [Collection("AegisScribe API")]
 public class TenantRankIsolationTests(AegisScribeAppFixture fixture)
 {

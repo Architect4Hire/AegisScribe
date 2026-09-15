@@ -7,10 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// There's no tenant-creation endpoint yet (that's future work), so tests that need a real Tenant/
-// TenantMembership row reach the database directly, the same way the migration service does —
-// through a plain AegisScribeDbContext against the real aegisscribedb connection string, since the
-// "api" resource runs in its own process and its DI container isn't reachable from the test process.
+// Tests that need a real Tenant/TenantMembership row reach the database directly, the way the
+// migration service does: the "api" resource runs in its own process, so its DI container is not
+// reachable from here.
 internal static class TenantSeeding
 {
     public static string UniqueSlug() => $"tenant-{Guid.NewGuid():N}";
@@ -50,7 +49,7 @@ internal static class TenantSeeding
         var options = new DbContextOptionsBuilder<AegisScribeDbContext>()
             .UseSqlServer(connectionString)
             .Options;
-        // Tenant/TenantMembership are deliberately not ITenantScoped (2.4), so the query filter never
+        // Tenant/TenantMembership are deliberately not ITenantScoped, so the query filter never
         // applies to this seeding path — an always-unresolved TenantContext is correct here.
         return new AegisScribeDbContext(options, new TenantContext());
     }
@@ -58,9 +57,8 @@ internal static class TenantSeeding
     /// <summary>
     /// A context scoped to one tenant, for tests that touch a genuinely <c>ITenantScoped</c> entity.
     /// <para>
-    /// The unresolved context above cannot read those at all: their global query filter dereferences
-    /// <c>ITenantContext.TenantId</c> and <see cref="TenantContext"/> throws rather than substituting a
-    /// default — which is the filter working, not a gap to route around. This stands in for what the
+    /// The unresolved context above cannot read those at all: <see cref="TenantContext"/> throws rather
+    /// than substituting a default, which is the filter working. This stands in for what the
     /// tenant-resolution middleware does for a real request, and nothing else.
     /// </para>
     /// </summary>

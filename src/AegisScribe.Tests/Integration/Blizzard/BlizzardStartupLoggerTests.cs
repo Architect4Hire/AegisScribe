@@ -8,12 +8,11 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.Tests.Integration.Blizzard;
 
-// 6.1 — external.md: the integration "logs once at startup" when credentials are absent.
+// The integration logs once at startup when credentials are absent (external.md).
 //
-// This exists because the obvious home for that warning does not work. BlizzardGateway returns on
-// IsConfigured before the token provider is ever asked, so a warning inside BlizzardTokenProvider is
-// unreachable on the one machine that needs it. Found by running the app and finding no such line in the
-// API log; these tests are what stop it regressing back to that.
+// A hosted service, because the obvious home does not work: BlizzardGateway returns on IsConfigured
+// before the token provider is ever asked, so a warning inside it is unreachable on the one machine
+// that needs it. These tests stop it regressing back to that.
 public class BlizzardStartupLoggerTests
 {
     private const string Id = "an-id";

@@ -6,13 +6,10 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace AegisScribe.Tests.Integration.Blizzard;
 
-// The compliance test the add-external-sync skill asks for by name.
-//
-// The Blizzard Developer API Terms of Use permit storing their data only on the condition that it is
-// refreshed "no less frequently than every thirty (30) days". That makes the staleness window a
-// contractual term wearing the costume of a cache setting — and therefore the setting most likely to be
-// raised by someone who reads it as a performance knob and wants fewer API calls. These tests are what
-// stops that from being a quiet change.
+// The Terms of Use permit storing Blizzard's data only if it is refreshed "no less frequently than
+// every thirty (30) days", which makes the staleness window a contractual term wearing the costume of a
+// cache setting — and therefore the setting most likely to be raised by somebody chasing fewer API
+// calls. These tests are what stops that being a quiet change.
 public class BlizzardStalenessOptionsTests
 {
     [Fact]

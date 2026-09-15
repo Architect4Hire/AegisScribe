@@ -11,13 +11,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// 7.2's two-tenant test, and the sharpest version of the two-zone rule in the repo so far: every case
-// below seeds ONE global Character and has BOTH communities roster it.
-//
-// That is the shape tenancy.md builds up to — one Character row, N RosterEntry rows — and it is the
-// configuration a broken query filter cannot survive. A filter that leaked would not show B some
-// unrelated row; it would show B the rank and standing A assigned to a character B also knows, which
-// is both the likeliest real-world arrangement and the one most likely to look plausible on screen.
+// The roster's two-tenant test. Every case below seeds ONE global Character and has BOTH communities
+// roster it — the shape tenancy.md builds up to, and the configuration a broken query filter cannot
+// survive. A filter that leaked would not show B some unrelated row; it would show B the rank A
+// assigned to a character B also knows, which is the arrangement most likely to look plausible.
 [Collection("AegisScribe API")]
 public class RosterIsolationTests(AegisScribeAppFixture fixture)
 {
@@ -80,10 +77,9 @@ public class RosterIsolationTests(AegisScribeAppFixture fixture)
     [Fact]
     public async Task ARankHeldInOneCommunity_DoesNotProtectTheSameRankIdFromAnother()
     {
-        // The holder count added in 7.2 is query-filtered, and this is what that buys: A's roster
-        // entries must not make B's delete of a rank id 409, and B's delete must still reach nothing
-        // of A's. Both halves matter — the first would be a denial of service across tenants, the
-        // second a cross-tenant delete.
+        // What the query-filtered holder count buys: A's roster entries must not make B's delete of a
+        // rank id 409, and B's delete must still reach nothing of A's. The first would be a
+        // cross-tenant denial of service, the second a cross-tenant delete.
         var scenario = await TwoTenantFixture.CreateAsync(fixture);
         var character = await SeedCharacterAsync();
         var aRank = await SeedRankAsync(scenario.TenantA.Tenant.Id, "Raider", 10, "#cba76a");
@@ -102,10 +98,9 @@ public class RosterIsolationTests(AegisScribeAppFixture fixture)
     [Fact]
     public async Task ACommunityCannotNameAnotherCommunitysEntryAsAMain()
     {
-        // 7.3's cross-tenant case. B knows A's roster entry id — guessing a GUID is not the leak.
-        // What B must not be able to do is reach across with it, and the refusal is a 404 by the same
-        // mechanism as every other cross-tenant id here: the query filter makes A's row come back null
-        // in B's request, indistinguishable from nonexistent.
+        // B knows A's roster entry id — guessing a GUID is not the leak. What B must not be able to do
+        // is reach across with it, and the refusal is a 404 by the same mechanism as every other
+        // cross-tenant id here: the query filter makes A's row come back null in B's request.
         var scenario = await TwoTenantFixture.CreateAsync(fixture);
         var characterInA = await SeedCharacterAsync();
         var characterInB = await SeedCharacterAsync();
@@ -128,8 +123,7 @@ public class RosterIsolationTests(AegisScribeAppFixture fixture)
     [Fact]
     public async Task AnOfficersWriteCannotReachAnotherCommunitysEntry()
     {
-        // tenancy.md's cross-tenant write assertion, now that 7.4 has given the roster writes at all.
-        // B is an owner in B and has no standing in A whatsoever; every one of these is a 404, because
+        // B is an owner in B and has no standing in A whatsoever. Every one of these is a 404, because
         // the query filter makes A's row indistinguishable from nonexistent rather than forbidden.
         var scenario = await TwoTenantFixture.CreateAsync(fixture);
         var character = await SeedCharacterAsync();
@@ -180,8 +174,7 @@ public class RosterIsolationTests(AegisScribeAppFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // A global Character on its own global Realm. Both zones are seeded directly, the way every other
-    // test in this suite reaches reference data.
+    // A global Character on its own global Realm, seeded directly like every other reference read here.
     private async Task<Domain.Managers.Models.Domain.Character> SeedCharacterAsync()
     {
         var realm = await CharacterSeeding.CreateRealmAsync(fixture);
@@ -189,8 +182,7 @@ public class RosterIsolationTests(AegisScribeAppFixture fixture)
         return await CharacterSeeding.CreateCharacterAsync(fixture, realm.Id);
     }
 
-    // Seeds directly, because the write endpoints are 7.4's. What is under test here is isolation of
-    // the entry, not how one is created — the same reasoning GuildLinkIsolationTests seeds links by.
+    // Seeded directly: what is under test is isolation of the entry, not how one is created.
     private async Task<Guid> SeedEntryAsync(Guid tenantId, Guid characterId, Guid? tenantRankId)
     {
         await using var db = await TenantSeeding.OpenDbContextAsync(fixture, tenantId);

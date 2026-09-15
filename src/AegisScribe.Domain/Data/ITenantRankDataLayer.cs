@@ -11,7 +11,7 @@ public interface ITenantRankDataLayer
 
     Task<bool> NameExistsAsync(string name, Guid? excludingId, CancellationToken ct);
 
-    // How many of this community's roster entries still hold the rank (7.2). Composed from the roster
+    // How many of this community's roster entries still hold the rank. Composed from the roster
     // repository rather than the rank one, so each repository keeps to the table it owns.
     Task<int> CountRankHoldersAsync(Guid rankId, CancellationToken ct);
 

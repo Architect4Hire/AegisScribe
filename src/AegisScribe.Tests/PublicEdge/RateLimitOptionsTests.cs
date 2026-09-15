@@ -2,12 +2,10 @@ using AegisScribe.ApiService.Infrastructure;
 
 namespace AegisScribe.Tests.PublicEdge;
 
-// The guard on making the rate limits configurable.
-//
-// Those numbers were literals in Program.cs, and moving them to configuration was done to make the test
-// suite cheaper — which is exactly the kind of motivation that quietly relaxes a security control. The
-// API is publicly addressable (backend.md → "The API's public edge"), so the defaults ARE the production
-// posture and this pins every one of them. Changing a value here should require deciding to.
+// The guard on making the rate limits configurable. Moving them out of code was done to make the test
+// suite cheaper, which is exactly the motivation that quietly relaxes a security control. The API is
+// publicly addressable (backend.md), so the defaults ARE the production posture and this pins every one
+// — changing a value should require deciding to.
 public class RateLimitOptionsTests
 {
     [Fact]

@@ -1,16 +1,12 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// Removing a roster entry that other entries call their main is refused (7.4).
+// Removing a roster entry that other entries call their main is refused: detaching somebody's other
+// characters as a side effect is the silent kind of damage, and the officer cannot see what they would
+// orphan.
 //
-// Forced by the Restrict FK 7.3 put on MainRosterEntryId, but it would be the right answer anyway:
-// detaching somebody's other characters as a side effect of removing one is the silent kind of damage,
-// and the officer doing it cannot see what they are about to orphan. The same reasoning as refusing to
-// delete a rank still in use.
-//
-// Two paths reach here. Business counts the alts first and reports the number, because "detach these
-// two" is more actionable than "detach some". The foreign key catches the race Business cannot — an
-// alt linked between the count and the delete — and has no count to give, so AltCount is null there
-// rather than a zero that would read as a contradiction.
+// Two paths reach here. Business counts the alts first, because "detach these two" is more actionable
+// than "detach some". The foreign key catches the race Business cannot — an alt linked between the
+// count and the delete — and has no count to give, so AltCount is null there rather than a zero.
 public class RosterEntryHasAltsException(int? altCount) : Exception(Describe(altCount))
 {
     public int? AltCount { get; } = altCount;

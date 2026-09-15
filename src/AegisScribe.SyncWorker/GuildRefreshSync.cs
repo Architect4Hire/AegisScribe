@@ -4,15 +4,13 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// 6.6b's background half: keeps linked guild rosters inside the Terms of Use thirty-day window.
+// Keeps linked guild rosters inside the Terms of Use thirty-day window.
 //
-// It never iterates tenants, and it does not have to. Guild is GLOBAL, and a Guild row exists only
-// because some community linked it — so "every guild anybody follows" is simply "every Guild row".
-// Iterating tenants would refetch a shared guild once per community that follows it, which is the exact
-// multiplication external.md exists to prevent.
+// It never iterates tenants and does not have to: Guild is GLOBAL, and a row exists only because some
+// community linked it, so "every guild anybody follows" is simply "every Guild row". Iterating tenants
+// would refetch a shared guild once per follower.
 //
-// Background work draws no tenant budget. That budget bounds work a community ASKED for; this runs on
-// everyone's behalf under the global limiter alone.
+// Background work draws no tenant budget — that bounds work a community ASKED for.
 public sealed class GuildRefreshSync(
     IServiceScopeFactory scopeFactory,
     IBlizzardStalenessPolicy staleness,

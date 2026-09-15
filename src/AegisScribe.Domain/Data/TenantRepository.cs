@@ -85,7 +85,7 @@ public class TenantRepository(AegisScribeDbContext db) : ITenantRepository
         catch (DbUpdateException ex) when (ex.IsUniqueViolationOn(SlugIndexName))
         {
             // TenantBusiness.CreateAsync pre-checks the slug and rejects a taken one as a 400, but two
-            // callers can both pass that check before either writes. The index is the authority (2.7b);
+            // callers can both pass that check before either writes. The index is the authority;
             // without this translation the loser of that race gets a 500 for a condition it could have
             // retried. Not a transient failure, so the execution strategy correctly does not retry it.
             throw new SlugTakenException();

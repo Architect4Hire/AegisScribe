@@ -1,13 +1,10 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// Deliberately NOT ITenantScoped, unlike ordinary tenant-scoped data. TenantResolutionMiddleware
-// checks membership BEFORE any tenant is resolved for the request — that IS how resolution happens —
-// so an ambient filter reading ITenantContext.TenantId would throw on that exact lookup (TenantContext
-// throws when unresolved). TenantMembership and Tenant are the two entities that bootstrap tenancy
-// itself; every real query against this table (TenantRepository.IsMemberAsync included) already
-// filters by an explicit TenantId parameter, so the ambient filter would only ever be redundant with
-// that condition, not add safety beyond it. Do not "fix" this by adding ITenantScoped — see
-// TenantScopedModelBuilderExtensions and TenantRepository for the lookups this would break.
+// Deliberately NOT ITenantScoped. TenantResolutionMiddleware checks membership BEFORE any tenant is
+// resolved — that IS how resolution happens — so an ambient filter reading ITenantContext.TenantId
+// would throw on that exact lookup. Every real query here already filters by an explicit TenantId
+// parameter, so the filter would be redundant rather than safer. Do not "fix" this by adding
+// ITenantScoped.
 public class TenantMembership
 {
     public Guid TenantId { get; set; }

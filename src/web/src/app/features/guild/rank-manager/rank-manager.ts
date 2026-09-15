@@ -18,23 +18,15 @@ interface GuildRankGroup {
   ranks: GuildRankNameServiceModel[];
 }
 
-// The colour a new rank starts from, and the one hex literal in this feature.
-//
-// It is DATA rather than styling: the value is sent to the server as tenant config, stored on the
-// rank, and surfaced later as --rank-color. The design system's rule governs stylesheets and forbids
-// a class→hex map in TypeScript; a seed value for a colour input the officer immediately overwrites
-// is neither, and it cannot be a var(--brass) reference because <input type="color"> needs a literal.
-//
-// It is NOT a claim to track --brass. SCSS and TypeScript cannot share a constant without a build
-// step, so a comment promising to keep the two in sync by hand would be a promise nobody can keep.
-// The consequence of drift here is cosmetic and self-correcting: if --brass moves, new ranks start at
-// a slightly stale gold until somebody picks a different colour, which is the first thing most
-// officers do anyway.
+// The colour a new rank starts from, and the one hex literal in this feature. It is DATA rather than
+// styling: the value is sent to the server as tenant config and surfaced later as --rank-color, and it
+// cannot be a var(--brass) reference because <input type="color"> needs a literal. Drift from --brass
+// is cosmetic and self-correcting, since picking a colour is the first thing most officers do.
 const DEFAULT_RANK_COLOUR = '#CBA76A';
 
-// Two ladders on one screen (design/aegisscribe-armory.html §08), and keeping them together is the
-// point: they are the two things called "rank" in this app, and seeing them side by side is what
-// stops anyone believing one derives from the other.
+// Two ladders on one screen, and keeping them together is the point: they are the two things called
+// "rank" in this app, and seeing them side by side is what stops anyone believing one derives from the
+// other.
 //
 //   The community's ladder — ours entirely. Create, reorder, recolour, delete.
 //   The in-game rank names — labels for the 0-9 the GAME reports. Blizzard does not expose them, so
@@ -47,9 +39,9 @@ const DEFAULT_RANK_COLOUR = '#CBA76A';
 })
 export class RankManager {
   private readonly rosterService = inject(RosterService);
-  // Every subscription below is piped through takeUntilDestroyed(this.destroyRef). These are one-shot
-  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting
-  // signals on a component the user has already navigated away from (frontend.md).
+  // Every subscription below is piped through takeUntilDestroyed(this.destroyRef): these are one-shot
+  // HttpClient observables, so this is about a late callback setting signals on a component the user
+  // has already navigated away from, not a classic leak.
   private readonly destroyRef = inject(DestroyRef);
 
   readonly tenantSlug = input.required<string>();
@@ -61,9 +53,9 @@ export class RankManager {
   readonly newRankName = signal('');
   readonly newRankColour = signal(DEFAULT_RANK_COLOUR);
 
-  // A failed WRITE, reported inline and separately from `state`. Deliberately not the same signal:
-  // `state` gates whether the editor renders at all, so setting it here would wipe the ladder an
-  // officer is halfway through editing because one save failed. Cleared by the next success.
+  // A failed WRITE, reported inline and deliberately not the same signal as `state`: `state` gates
+  // whether the editor renders at all, so setting it here would wipe the ladder an officer is halfway
+  // through editing because one save failed.
   readonly writeError = signal<string | null>(null);
 
   // The server refuses a duplicate name with a 409; this is the same answer offered before the
@@ -111,26 +103,27 @@ export class RankManager {
       return;
     }
 
-    // Appended at the end of the ladder. Ties are broken by name server-side, so a shared position is
-    // a display tie rather than a data error — but starting past the current last avoids one anyway.
+    // Appended at the end of the ladder. Ties are broken by name server-side, so a shared position is a
+    // display tie rather than a data error — but starting past the current last avoids one anyway.
     const viewModel: RankViewModel = {
       name: this.newRankName().trim(),
       sortOrder: Math.min(this.nextSortOrder(), 999),
       colour: this.newRankColour(),
     };
 
-    this.rosterService.createRank(this.tenantSlug(), viewModel)
+    this.rosterService
+      .createRank(this.tenantSlug(), viewModel)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (rank) => {
-        this.writeError.set(null);
-        this.ranks.update((ranks) => [...ranks, rank]);
-        this.newRankName.set('');
-        this.newRankColour.set(DEFAULT_RANK_COLOUR);
-      },
-      // The typed name stays in the box, so a failed save does not also lose the officer's input.
-      error: () => this.writeError.set("Couldn't create that rank. Try again."),
-    });
+        next: (rank) => {
+          this.writeError.set(null);
+          this.ranks.update((ranks) => [...ranks, rank]);
+          this.newRankName.set('');
+          this.newRankColour.set(DEFAULT_RANK_COLOUR);
+        },
+        // The typed name stays in the box, so a failed save does not also lose the officer's input.
+        error: () => this.writeError.set("Couldn't create that rank. Try again."),
+      });
   }
 
   recolour(rank: TenantRankServiceModel, colour: string): void {
@@ -147,8 +140,8 @@ export class RankManager {
     this.update(rank, { ...this.toViewModel(rank), name: trimmed });
   }
 
-  // Reordering is a swap of sort orders with the neighbour, which keeps every other rank's position
-  // untouched — a renumber-everything approach would rewrite rows nobody asked to change.
+  // A swap of sort orders with the neighbour, which leaves every other rank's position untouched — a
+  // renumber-everything approach would rewrite rows nobody asked to change.
   move(rank: TenantRankServiceModel, direction: -1 | 1): void {
     const ordered = this.orderedRanks();
     const index = ordered.findIndex((candidate) => candidate.id === rank.id);
@@ -163,21 +156,21 @@ export class RankManager {
   }
 
   deleteRank(rank: TenantRankServiceModel): void {
-    this.rosterService.deleteRank(this.tenantSlug(), rank.id)
+    this.rosterService
+      .deleteRank(this.tenantSlug(), rank.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: () => {
-        this.writeError.set(null);
-        this.ranks.update((ranks) => ranks.filter((candidate) => candidate.id !== rank.id));
-      },
-      // A 409 here means roster entries still hold this rank — the server refuses rather than
-      // un-ranking everyone who held it, and that refusal is worth reading rather than swallowing.
-      // It is by far the likeliest failure on this button, so the message names it.
-      error: () =>
-        this.writeError.set(
-          `Couldn't delete ${rank.name}. Characters on the roster may still hold it — move them to another rank first.`,
-        ),
-    });
+        next: () => {
+          this.writeError.set(null);
+          this.ranks.update((ranks) => ranks.filter((candidate) => candidate.id !== rank.id));
+        },
+        // A 409 means roster entries still hold this rank — the server refuses rather than un-ranking
+        // everyone who held it. By far the likeliest failure on this button, so the message names it.
+        error: () =>
+          this.writeError.set(
+            `Couldn't delete ${rank.name}. Characters on the roster may still hold it — move them to another rank first.`,
+          ),
+      });
   }
 
   setGuildRankName(row: GuildRankNameServiceModel, name: string): void {
@@ -188,20 +181,21 @@ export class RankManager {
       return;
     }
 
-    this.rosterService.setGuildRankName(this.tenantSlug(), row.guildId, row.rank, value)
+    this.rosterService
+      .setGuildRankName(this.tenantSlug(), row.guildId, row.rank, value)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: () =>
-        this.guildRankNames.update((rows) =>
-          rows.map((candidate) =>
-            candidate.guildId === row.guildId && candidate.rank === row.rank
-              ? { ...candidate, name: value }
-              : candidate,
+        next: () =>
+          this.guildRankNames.update((rows) =>
+            rows.map((candidate) =>
+              candidate.guildId === row.guildId && candidate.rank === row.rank
+                ? { ...candidate, name: value }
+                : candidate,
+            ),
           ),
-        ),
-      error: () =>
-        this.writeError.set(`Couldn't save the name for ${row.guildName} rank ${row.rank}.`),
-    });
+        error: () =>
+          this.writeError.set(`Couldn't save the name for ${row.guildName} rank ${row.rank}.`),
+      });
   }
 
   readonly orderedRanks = computed(() =>
@@ -221,40 +215,43 @@ export class RankManager {
   }
 
   private update(rank: TenantRankServiceModel, viewModel: RankViewModel): void {
-    this.rosterService.updateRank(this.tenantSlug(), rank.id, viewModel)
+    this.rosterService
+      .updateRank(this.tenantSlug(), rank.id, viewModel)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (updated) => {
-        this.writeError.set(null);
-        this.ranks.update((ranks) =>
-          ranks.map((candidate) => (candidate.id === updated.id ? updated : candidate)),
-        );
-      },
-      // Covers rename, recolour and reorder. The ladder stays on screen; only the one change failed.
-      error: () => this.writeError.set(`Couldn't save the change to ${rank.name}. Try again.`),
-    });
+        next: (updated) => {
+          this.writeError.set(null);
+          this.ranks.update((ranks) =>
+            ranks.map((candidate) => (candidate.id === updated.id ? updated : candidate)),
+          );
+        },
+        // Covers rename, recolour and reorder. The ladder stays on screen; only the one change failed.
+        error: () => this.writeError.set(`Couldn't save the change to ${rank.name}. Try again.`),
+      });
   }
 
   private load(tenantSlug: string): void {
     this.state.set('loading');
 
-    this.rosterService.listRanks(tenantSlug)
+    this.rosterService
+      .listRanks(tenantSlug)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (ranks) => {
-        this.ranks.set(ranks);
-        this.state.set('loaded');
-      },
-      error: () => this.state.set('error'),
-    });
+        next: (ranks) => {
+          this.ranks.set(ranks);
+          this.state.set('loaded');
+        },
+        error: () => this.state.set('error'),
+      });
 
-    // A community that follows no guilds simply has no in-game ranks to name, which is an empty
-    // section rather than a failure — so this never touches the screen's state.
-    this.rosterService.listGuildRankNames(tenantSlug)
+    // A community that follows no guilds has no in-game ranks to name, which is an empty section rather
+    // than a failure — so this never touches the screen's state.
+    this.rosterService
+      .listGuildRankNames(tenantSlug)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (rows) => this.guildRankNames.set(rows),
-      error: () => this.guildRankNames.set([]),
-    });
+        next: (rows) => this.guildRankNames.set(rows),
+        error: () => this.guildRankNames.set([]),
+      });
   }
 }

@@ -7,10 +7,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Infrastructure;
 
-// Turns the exceptions the domain layers throw into HTTP. Facades throw ValidationException, Business
-// throws domain exceptions; neither knows about status codes. The 400s keep the ValidationProblemDetails
-// shape the controllers used to build by hand (per-field/per-code errors), so a client's error handling
-// is unchanged. Anything not listed falls through to the default handler as a 500.
+// Turns the exceptions the domain layers throw into HTTP — neither Facades nor Business know about
+// status codes. Anything not listed falls through to the default handler as a 500.
+//
+// Every `type` URI below is the contract and may never be repurposed; `title` and `detail` are for
+// humans and can be reworded freely (api-contract.md). The 409s all share a shape: the request is
+// well-formed and the row exists, and what refuses it is the state of something else.
 public sealed class DomainExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken ct)
@@ -26,9 +28,6 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 return await WriteValidationProblemAsync(httpContext, exception, domainValidation.Errors);
 
             case SlugTakenException:
-                // The one error here that carries a body, because it is the one a client must branch
-                // on: the create form retries with a different slug. The `type` URI is the contract
-                // and may never be repurposed (api-contract.md); `title` is for humans.
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -44,10 +43,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 });
 
             case RankNameTakenException rankNameTaken:
-                // 409 rather than a validation 400, because this is a collision with a row that
-                // already exists rather than a malformed field — the rank form shows it against the
-                // name input and offers a different one. The `type` URI is the contract and may never
-                // be repurposed (api-contract.md).
+                // A collision with an existing row rather than a malformed field, so 409 rather than a
+                // validation 400 — the rank form shows it against the name input.
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -63,8 +60,6 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 });
 
             case CharacterAlreadyClaimedException alreadyClaimed:
-                // 409: the request is well-formed and the character exists — what refuses it is
-                // somebody else already holding the claim. Never a silent overwrite (7.2b).
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -78,10 +73,9 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                         Detail = "Another member of this community has claimed this character. " +
                             "An officer can free it.",
                         // The holder's display name, so the conflict dialog can name them without a
-                        // second round-trip. An extension member is a contract promise for the life of
-                        // v1 (api-contract.md); null when they have set no display name, and null when
-                        // the unique index rather than the pre-check caught the race. No user id and
-                        // no email — the name is all any member can already see through the claim GET.
+                        // second round-trip. Null when they have set none, and null when the unique
+                        // index rather than the pre-check caught the race. No user id and no email —
+                        // the name is all any member can already see through the claim GET.
                         Extensions = { ["claimedByDisplayName"] = alreadyClaimed.ClaimedByDisplayName },
                     },
                 });
@@ -95,8 +89,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                     ProblemDetails = new ProblemDetails
                     {
                         // Distinct from character-already-claimed: being ON the roster and being
-                        // CLAIMED by someone are different facts, and a client branches on which — one
-                        // sends you to the roster, the other to whoever holds the claim.
+                        // CLAIMED are different facts, and a client branches on which — one sends you
+                        // to the roster, the other to whoever holds the claim.
                         Type = "https://api.aegisscribe.com/problems/character-already-on-roster",
                         Title = "That character is already on the roster",
                         Status = StatusCodes.Status409Conflict,
@@ -105,9 +99,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 });
 
             case RosterEntryHasAltsException hasAlts:
-                // 409: the request is well-formed and the entry exists — what refuses it is the alts
-                // hanging off it. Removing it would detach somebody's other characters as a side
-                // effect, which the officer doing it cannot see.
+                // Removing the entry would detach somebody's other characters as a side effect, which
+                // the officer doing it cannot see.
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -128,9 +121,6 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 });
 
             case AltDepthException altDepth:
-                // 409: the request is well-formed and both characters exist — what refuses it is the
-                // shape of the roster. The alt model is one level deep (7.3), and holding that line is
-                // what makes cycles impossible rather than merely unlikely.
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -148,23 +138,17 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 });
 
             case AltLinkNotPermittedException:
-                // Bare 403, like ClaimNotYoursException below and for the same reason: the caller is a
-                // member in good standing, the characters just aren't theirs.
                 httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return true;
 
             case ClaimNotYoursException:
-                // Bare 403. The add-endpoint skill's canonical resource-authorization outcome — the
-                // caller is a member in good standing, the row just isn't theirs. No body, because
-                // there is nothing for a client to branch on beyond the status: an officer wanting
-                // this outcome uses their own route.
+                // Bare 403, no body: the caller is a member in good standing, the row just isn't
+                // theirs, and there is nothing for a client to branch on beyond the status. An officer
+                // wanting this outcome uses their own route.
                 httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return true;
 
             case RankInUseException rankInUse:
-                // 409, because the request is well-formed and the rank exists — what refuses it is the
-                // state of the roster. The holder count is in `detail` rather than only in prose: an
-                // officer being told "reassign these first" needs to know how many there are.
                 httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
                 return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
                 {
@@ -172,13 +156,14 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                     Exception = exception,
                     ProblemDetails = new ProblemDetails
                     {
-                        // Distinct from tenant-rank-name-taken: both are 409s on the rank surface and
-                        // a client branches on the difference — one sends you back to the name field,
-                        // the other to the roster. A `type` URI may never be repurposed
-                        // (api-contract.md).
+                        // Distinct from tenant-rank-name-taken: both are 409s on the rank surface and a
+                        // client branches on the difference — one sends you back to the name field, the
+                        // other to the roster.
                         Type = "https://api.aegisscribe.com/problems/tenant-rank-in-use",
                         Title = "That rank is still in use",
                         Status = StatusCodes.Status409Conflict,
+                        // The holder count is in `detail` rather than only in prose: an officer told to
+                        // "reassign these first" needs to know how many there are.
                         Detail = $"{rankInUse.HolderCount} roster entries still hold this rank. " +
                             "Move them to another rank before deleting it.",
                     },
@@ -186,9 +171,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
 
             case SyncBudgetExhaustedException budgetExhausted:
                 // 429 with a retry hint, never a silent queue (external.md). Retry-After is the part
-                // that matters: a 429 without one tells a client to back off without saying for how
-                // long, which produces exactly the retry storm the limit exists to prevent — the same
-                // reasoning the rate limiter's OnRejected already follows.
+                // that matters: without it a client backs off for an unknown length of time, producing
+                // exactly the retry storm the limit exists to prevent.
                 httpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 httpContext.Response.Headers.RetryAfter =
                     ((int)Math.Ceiling(budgetExhausted.RetryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
@@ -199,10 +183,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                     Exception = exception,
                     ProblemDetails = new ProblemDetails
                     {
-                        // The `type` URI is the contract and may never be repurposed (api-contract.md).
                         // A client branches on this to tell "your community is out of budget" from the
-                        // API's own per-IP throttling, which is also a 429 and means something else
-                        // entirely.
+                        // API's own per-IP throttling, which is also a 429 and means something else.
                         Type = "https://api.aegisscribe.com/problems/tenant-sync-budget-exhausted",
                         Title = "This community has used its sync budget",
                         Status = StatusCodes.Status429TooManyRequests,
@@ -224,8 +206,8 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 return true;
 
             case LastOwnerException:
-                // Unused placeholder until the demote/remove membership work lands (auth.md) — mapped
-                // now so that work only needs to add the throw, not a new case here.
+                // Mapped ahead of the demote/remove membership work (auth.md), so that work only needs
+                // to add the throw.
                 httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return true;
 

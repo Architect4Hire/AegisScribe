@@ -10,19 +10,18 @@ import { TENANT_PICKER_PATH } from './tenant.guard';
 // Matches the API's tenant-scoped route shape, /api/v{n}/t/{slug}/..., regardless of host.
 const TENANT_ROUTE_PATTERN = /\/api\/v\d+\/t\/[^/]+(\/|$)/;
 
-// withCredentials is mandatory and load-bearing: every gateway call is cross-origin, so without it
-// the browser sends no session cookie and every request is anonymous. X-Requested-With on
-// state-changing requests forces a CORS preflight that only our configured SPA origin passes — the
-// second CSRF lock behind SameSite=Lax. See .claude/rules/auth.md -> "Angular side".
+// withCredentials is mandatory and load-bearing: every gateway call is cross-origin, so without it the
+// browser sends no session cookie and every request is anonymous. X-Requested-With on state-changing
+// requests forces a CORS preflight that only our configured SPA origin passes — the second CSRF lock
+// behind SameSite=Lax (auth.md → "Angular side").
 //
-// 401/404 are handled once, here, for every request: a 401 means the session ended (clear the
-// cached identity and send the browser to sign-in); a 404 on a tenant-scoped route means "not
-// yours" -- route to the tenant picker rather than letting a component render an error, and never
-// distinguish "doesn't exist" from "not a member".
+// 401 and 404 are handled once here for every request. A 404 on a tenant-scoped route means "not
+// yours", so it routes to the tenant picker rather than letting a component render an error — never
+// distinguishing "doesn't exist" from "not a member".
 //
-// The one exception is a request carrying SKIP_SIGN_IN_REDIRECT: the cached identity is still
-// dropped, but the browser stays where it is. That request is asking WHETHER anyone is signed in
-// rather than acting as someone who is -- see auth-redirect.context.ts.
+// The exception is a request carrying SKIP_SIGN_IN_REDIRECT: the cached identity is still dropped, but
+// the browser stays put, because that request is asking WHETHER anyone is signed in rather than acting
+// as someone who is.
 export const credentialsInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const currentUser = inject(CurrentUserService);

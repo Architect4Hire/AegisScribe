@@ -55,5 +55,5 @@ public interface IRosterEntryDataLayer
 }
 
 // The rows of a page and how many MAINS produced them. HasMore is decided on the main count, since
-// that is the unit the page is taken in (7.4).
+// that is the unit the page is taken in.
 public sealed record RosterPage(IReadOnlyList<RosterEntryServiceModel> Items, int MainCount);

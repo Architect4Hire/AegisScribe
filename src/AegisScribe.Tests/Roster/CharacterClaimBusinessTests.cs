@@ -36,7 +36,7 @@ public class CharacterClaimBusinessTests
     public async Task Claim_TakesTheUserFromTheCallerAndNeverFromTheRequest()
     {
         // The assertion this whole file exists for. external.md makes a claim the proof of ownership
-        // behind a user-triggered global erasure (14.1), so a claim that could name somebody else
+        // behind a user-triggered global erasure, so a claim that could name somebody else
         // would become a way to delete their data. There is no field on the view model to supply one,
         // and this pins that the written row uses ICurrentUser.
         var characterId = Guid.NewGuid();

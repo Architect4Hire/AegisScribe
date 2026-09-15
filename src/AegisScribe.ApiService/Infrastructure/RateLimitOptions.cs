@@ -1,16 +1,12 @@
 namespace AegisScribe.ApiService.Infrastructure;
 
-// Bound from the "RateLimits" configuration section.
+// Bound from the "RateLimits" configuration section. The defaults below ARE the production values: a
+// deployment changes nothing, and only the test host raises a bucket, because the anonymous limit is
+// tight enough (backend.md → "The API's public edge") that integration tests sharing one API process
+// starve each other.
 //
-// These were literals in Program.cs until the test suite made the cost visible: the anonymous bucket is
-// deliberately tight (backend.md -> "The API's public edge"), tight enough that a handful of integration
-// tests sharing one API process starve each other. The workaround had been to give almost every test
-// collection its own AppHost — nine of them — which is most of what a test run spent its time on.
-//
-// So the numbers move to configuration and the defaults below ARE the production values: absent any
-// configuration this class reproduces exactly what the literals did. A deployment changes nothing; the
-// test host raises one bucket. RateLimitOptionsTests pins the defaults so that "make the tests faster"
-// can never quietly become "weaken the public edge".
+// RateLimitOptionsTests pins these defaults, so "make the tests faster" can never quietly become
+// "weaken the public edge".
 public sealed class RateLimitOptions
 {
     public const string SectionName = "RateLimits";

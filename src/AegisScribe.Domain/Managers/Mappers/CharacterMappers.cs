@@ -32,12 +32,9 @@ public static class CharacterMappers
         IsDegraded = isDegraded,
     };
 
-    // Exact hex match to src/web/src/styles/_tokens.scss's --c-* tokens -- one mapping, kept in
-    // sync deliberately, so the frontend never re-derives it.
-    //
-    // Internal rather than private since 7.5: the roster's list projection needs the same value, and a
-    // second copy of this table is a second thing to get wrong when Blizzard adds a class. It is
-    // applied after materialization there, because a C# switch cannot run inside a SQL projection.
+    // Exact hex match to _tokens.scss's --c-* tokens. One mapping, so the frontend never re-derives it
+    // and a new class is added in one place — which is also why this is internal rather than private:
+    // the roster's list projection needs the same value.
     internal static string ClassColorHex(CharacterClass characterClass) => characterClass switch
     {
         CharacterClass.DeathKnight => "#C41E3A",

@@ -6,13 +6,12 @@ namespace AegisScribe.Domain.Data;
 
 public static class TenantScopedModelBuilderExtensions
 {
-    // Applied to every entity implementing ITenantScoped, so a developer adding entity #40 never has
-    // to remember to wire up isolation by hand (tenancy.md). `ambientTenantId` is a small lambda
-    // (`() => tenantContext.TenantId`) written directly in the caller's OnModelCreating, so its
-    // compiled body naturally captures `this` (the DbContext instance) the same way EF Core's own
-    // documented multi-tenant example does (learn.microsoft.com/ef/core/querying/filters) — that is
-    // what lets each DbContext instance's own injected ITenantContext apply correctly at query time,
-    // despite the compiled model being built, and cached, only once per context type.
+    // Applied to every ITenantScoped entity, so adding entity #40 never means remembering to wire up
+    // isolation by hand (tenancy.md).
+    //
+    // `ambientTenantId` is a lambda written in the caller's OnModelCreating, so its compiled body
+    // captures the DbContext instance — which is what lets each instance's own injected ITenantContext
+    // apply at query time, despite the compiled model being cached once per context type.
     public static void ApplyTenantScopedQueryFilters(
         this ModelBuilder modelBuilder, Expression<Func<Guid>> ambientTenantId)
     {

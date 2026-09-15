@@ -9,7 +9,7 @@ namespace AegisScribe.Domain.Managers.Models.ViewModels;
 // cursor is client-supplied however opaque it looks (api-contract.md).
 public class ListRosterViewModel
 {
-    // How many MAINS to return, not how many rows (7.4). Every alt of a returned main comes with it, so
+    // How many MAINS to return, not how many rows. Every alt of a returned main comes with it, so
     // a group is never split across a page boundary and the roster's ↳ rows always have their parent.
     // A page therefore holds between `Limit` and `Limit × (1 + alts)` rows.
     public int Limit { get; set; } = 25;

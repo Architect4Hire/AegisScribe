@@ -6,14 +6,9 @@ namespace AegisScribe.Domain.Data;
 //
 // The shape is forced rather than chosen (backend.md): Aspire's SQL Server integration enables
 // retry-on-failure, and EF Core's execution strategy refuses to run inside a transaction the caller
-// opened itself — it cannot replay a unit whose boundaries it does not own. Passing the whole unit in
-// as a callback is what lets the two coexist.
+// opened itself. Passing the whole unit in as a callback is what lets the two coexist.
 //
-// Extracted when 7.2b would have made it a third copy. It was already duplicated between
-// TenantRepository and CharacterRepository, and a subtle retry-safety idiom copied a third time is how
-// one of the copies quietly stops matching the others.
-//
-// Two consequences every caller inherits, unchanged by the extraction:
+// Two consequences every caller inherits:
 //   - the callback MAY RUN MORE THAN ONCE on a transient failure, so it must be safe to repeat;
 //   - only work done through this DbContext rolls back, so an outbound HTTP call, a model call or a
 //     queue publish is staged BEFORE the callback, never inside it.

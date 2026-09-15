@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// Runs the character refresh pass (6.5) at startup and then on the configured poll.
+// Runs the character refresh pass at startup and then on the configured poll.
 //
 // Unlike RealmCatalogueSyncWorker, there is no freshness gate to skip a pass: the selection query IS the
 // gate. A run with nothing due costs one indexed query and stops, so a restart is already cheap without

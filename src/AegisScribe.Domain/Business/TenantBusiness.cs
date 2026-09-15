@@ -11,9 +11,9 @@ namespace AegisScribe.Domain.Business;
 public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser, TimeProvider timeProvider) : ITenantBusiness
 {
     // The tenant id when the caller is a member of the tenant named by the route slug; otherwise null.
-    // "No such tenant" and "tenant exists but you're not a member" MUST be indistinguishable — both
-    // null, so both become the same 404; a difference here would confirm the tenant exists
-    // (tenancy.md). That is a domain rule, which is why it lives here and not in the middleware.
+    // "No such tenant" and "not a member" MUST be indistinguishable — both null, so both become the
+    // same 404, because a difference would confirm the tenant exists (tenancy.md). That is a domain
+    // rule, which is why it lives here and not in the middleware.
     public async Task<Guid?> ResolveForCurrentUserAsync(string slug, CancellationToken ct)
     {
         var userId = currentUser.UserId;
@@ -41,10 +41,10 @@ public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser
             : dataLayer.GetRoleAsync(tenantId, userId, ct);
     }
 
-    // Answers the create form's per-keystroke question (5.6c) without making it a 400 factory: a
-    // malformed or reserved slug is a normal answer here, not a validation failure. The reason never
-    // names who holds a taken slug — any authenticated caller can reach this, and naming the holder
-    // would turn it into a community-enumeration oracle (2.7b).
+    // Answers the create form's per-keystroke question without being a 400 factory: a malformed or
+    // reserved slug is a normal answer here, not a validation failure. The reason never names who holds
+    // a taken slug — any authenticated caller can reach this, and naming the holder would make it a
+    // community-enumeration oracle.
     public async Task<SlugCheckServiceModel> CheckSlugAsync(SlugCheckViewModel viewModel, CancellationToken ct)
     {
         // Exactly one of the two is set; the validator already enforced that.
@@ -77,17 +77,16 @@ public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser
     private static SlugCheckServiceModel Unavailable(string? slug, SlugCheckReason reason) =>
         new() { Slug = slug, Available = false, Reason = reason };
 
-    // Slug uniqueness is checked here rather than left to the DB's unique index alone, so a taken slug
-    // reads as a normal domain rejection (the same DomainValidationException shape RegisterAsync uses
-    // for a duplicate email) instead of a raw constraint-violation 500. The index is still the
+    // Slug uniqueness is checked here rather than left to the unique index alone, so a taken slug reads
+    // as a normal domain rejection instead of a constraint-violation 500. The index is still the
     // authority: two callers can pass this check before either writes, and the repository translates
-    // that race into a 409 (SlugTakenException). Two conditions, two answers, on purpose.
+    // that race into a 409. Two conditions, two answers, on purpose.
     public async Task<TenantServiceModel> CreateAsync(CreateTenantViewModel viewModel, CancellationToken ct)
     {
         var userId = currentUser.UserId ?? throw new AuthenticationRequiredException();
 
-        // Derived when the caller omitted one (2.7b), so no client carries a copy of the rules. The
-        // validator has already established that a null slug leaves a derivable name behind it.
+        // Derived when the caller omitted one, so no client carries a copy of the rules. The validator
+        // has already established that a null slug leaves a derivable name behind it.
         var slug = viewModel.Slug
             ?? TenantSlugRules.Derive(viewModel.Name)
             ?? throw new DomainValidationException(new Dictionary<string, string[]>
@@ -95,10 +94,10 @@ public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser
                 ["Slug"] = ["'Name' contains no characters usable in a URL — supply a slug as well."],
             });
 
-        // Checked on the RESOLVED slug, which is the only place both paths meet. The validator can only
-        // vet a slug the caller actually sent, so without this a community named "Admin" derives to
-        // "admin" and takes a reserved route, while a caller who types slug=admin is refused — the hole
-        // being in the derive path, which is the one the create screen defaults to (5.6c).
+        // Checked on the RESOLVED slug, the only place both paths meet. The validator can only vet a
+        // slug the caller actually sent, so without this a community named "Admin" derives to "admin"
+        // and takes a reserved route while a caller who types slug=admin is refused — the hole being in
+        // the derive path, which is the one the create screen defaults to.
         if (TenantSlugRules.IsReserved(slug))
         {
             throw new DomainValidationException(new Dictionary<string, string[]>

@@ -52,12 +52,12 @@ builder.Services.AddBlizzardIntegration();
 builder.Services.AddScoped<RealmCatalogueSync>();
 builder.Services.AddHostedService<RealmCatalogueSyncWorker>();
 
-// The realm catalogue (6.4b) fills the table every character hangs from; this one (6.5) keeps the
+// The realm catalogue fills the table every character hangs from; this one keeps the
 // characters themselves inside the thirty-day window. Both run globally, outside any tenant.
 builder.Services.AddScoped<CharacterRefreshSync>();
 builder.Services.AddHostedService<CharacterRefreshWorker>();
 
-// Guild rosters (6.6b). Global like the rest: a Guild row exists only because somebody linked it, so
+// Guild rosters. Global like the rest: a Guild row exists only because somebody linked it, so
 // refreshing every stale Guild row covers every community without iterating tenants.
 builder.Services.AddScoped<IGuildRepository, GuildRepository>();
 builder.Services.AddScoped<IGuildSyncDataLayer, GuildSyncDataLayer>();

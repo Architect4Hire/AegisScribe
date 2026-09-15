@@ -11,20 +11,17 @@ namespace AegisScribe.Domain.Facade;
 // Caches claim state under t:{tenantId}:claim:{characterId}, via TenantScopedFacadeBase so no bare key
 // is expressible here (tenancy.md).
 //
-// What makes that safe is a property of CharacterClaimServiceModel rather than of this class: the
-// payload is USER-INDEPENDENT. It reports who holds the claim, not whether the caller does, so one
-// member's read is a correct answer for every other member of the community. An `isMine` flag would
-// have been cached for the first caller and then served to everyone — correctly prefixed and still
-// wrong. If a per-user field is ever added to that model, this cache has to go or become per-user.
+// What makes that safe is a property of CharacterClaimServiceModel, not of this class: the payload is
+// USER-INDEPENDENT, reporting who holds the claim rather than whether the caller does. If a per-user
+// field is ever added to that model, this cache has to go or become per-user.
 public class CharacterClaimFacade(
     ICharacterClaimBusiness business,
     IValidator<ClaimCharacterViewModel> claimValidator,
     IDistributedCache cache,
     ITenantContext tenantContext) : TenantScopedFacadeBase(tenantContext), ICharacterClaimFacade
 {
-    // Minutes, for page-load latency (the add-endpoint skill's cache table). Short even by that
-    // standard because claiming is a visible, immediate action — a member who claims a character and
-    // sees it still unclaimed on the next screen will claim it again.
+    // Short, because claiming is a visible, immediate action: a member who claims a character and sees
+    // it still unclaimed on the next screen will claim it again.
     private static readonly DistributedCacheEntryOptions CacheOptions = new()
     {
         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
@@ -48,9 +45,7 @@ public class CharacterClaimFacade(
             }
         }
 
-        // "Unclaimed" is a real answer here, not a miss — unlike CharacterFacade's not-found, which is
-        // deliberately uncached. It is cached for the same reason it is returned as a populated model
-        // with null fields: an unclaimed character is a settled state, and every write below removes
+        // "Unclaimed" is a real answer, not a miss — a settled state, and every write below removes
         // this key the moment it changes.
         var claim = await business.GetAsync(characterId, ct)
             ?? new CharacterClaimServiceModel { CharacterId = characterId };

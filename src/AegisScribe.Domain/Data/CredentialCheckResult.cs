@@ -1,11 +1,11 @@
 namespace AegisScribe.Domain.Data;
 
-// What SignInManager.CheckPasswordSignInAsync's SignInResult collapses down to for this app's one
-// caller. Invalid covers both "wrong password" and (from the business layer) "no such user" — the
-// sign-in form shows one message for those two. LockedOut is its own outcome: unlike an unknown email
-// or a wrong password, it can only ever be reported for an account that exists, so surfacing it is a
-// deliberate, narrow exception to the "no oracle" rule above, accepted for the UX benefit of telling a
-// locked-out member why they can't get in rather than leaving them guessing at their own password.
+// What SignInManager's SignInResult collapses to for this app. Invalid covers both "wrong password"
+// and "no such user", which the sign-in form shows one message for.
+//
+// LockedOut is its own outcome, and a deliberate narrow exception to that: it can only be reported for
+// an account that exists, accepted so a locked-out member is told why rather than left guessing at
+// their own password.
 public enum CredentialCheckResult
 {
     Invalid,

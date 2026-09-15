@@ -1,19 +1,14 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// What this community calls a guild's in-game ranks (7.5).
-//
-// It exists because Blizzard does not give us the names. The guild roster endpoint returns the rank
-// as a NUMBER, 0-9, and nothing else (references/blizzard-endpoints.md) — guild rank names are not
-// exposed by the Game Data API at all. So "rank 3 is Veteran" is something a person types.
+// What this community calls a guild's in-game ranks. It exists because Blizzard does not give us the
+// names: the roster endpoint returns the rank as a NUMBER, 0-9, and the Game Data API exposes no names
+// at all, so "rank 3 is Veteran" is something a person types.
 //
 // TENANT-SCOPED, and the rules decide that rather than taste. The global zone is defined as *public
-// Blizzard data*; a name somebody typed fails that test outright, whatever it describes. And an
-// officer editing a global row has no policy that could authorize it — tenant membership is the only
-// authorization model this app has. Two communities following one guild each keep their own names,
-// which is the same split TenantGuild already makes: the guild is a fact about the world, what a
-// community writes down about it is not.
+// Blizzard data*, which a name somebody typed fails outright; and an officer editing a global row has
+// no policy that could authorize it, since tenant membership is the only authorization model here.
 //
-// Distinct again from TenantRank. Three rank concepts now, and none derives from another:
+// Three rank concepts now, and none derives from another:
 //   GuildMember.BlizzardRank  — the number the game reports.
 //   GuildRankName             — what this community calls that number.
 //   TenantRank                — the community's OWN ladder, unrelated to the guild's.

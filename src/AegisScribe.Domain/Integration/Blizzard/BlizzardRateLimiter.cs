@@ -5,13 +5,12 @@ using Microsoft.Extensions.Options;
 namespace AegisScribe.Domain.Integration.Blizzard;
 
 // A token bucket plus a shared backoff window. Singleton — a per-scope limiter would hand every request
-// its own 36,000/hour budget, which is the same as having none.
+// its own hourly budget, which is the same as having none.
 //
-// Why a token bucket rather than a fixed window: it expresses both of Blizzard's caps at once. The
+// A token bucket rather than a fixed window because it expresses both of Blizzard's caps at once: the
 // replenishment rate holds the hourly total under the contractual 36,000, and the bucket size caps the
-// largest possible instantaneous burst under the per-second limit. A fixed hourly window would permit
-// 36,000 calls in the first second of the hour and satisfy the contract while earning a 429 for every one
-// of them.
+// instantaneous burst under the per-second limit. A fixed hourly window would permit 36,000 calls in
+// the first second and earn a 429 for most of them.
 public sealed class BlizzardRateLimiter : IBlizzardRateLimiter, IAsyncDisposable
 {
     private readonly RateLimiter _limiter;

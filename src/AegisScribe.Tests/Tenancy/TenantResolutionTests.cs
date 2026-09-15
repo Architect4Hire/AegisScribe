@@ -37,7 +37,7 @@ public class TenantResolutionTests(AegisScribeAppFixture fixture)
         var (accessToken, _) = await DirectOAuthFlow.LoginAsBffClientAsync(fixture, email);
 
         var tenant = await TenantSeeding.CreateTenantAsync(fixture);
-        // GET /t/{slug} is Owner-only (2.7) — a lower rank is covered by MemberButNotOwner_GetsForbidden.
+        // GET /t/{slug} is Owner-only — a lower rank is covered by MemberButNotOwner_GetsForbidden.
         await TenantSeeding.AddMembershipAsync(fixture, tenant.Id, userId, TenantRole.Owner);
 
         var response = await GetAsync(fixture, $"/api/v1/t/{tenant.Slug}", accessToken);

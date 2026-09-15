@@ -5,12 +5,9 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.Tests.Integration.Blizzard;
 
-// 6.2 — the contractual cap, pinned in a test.
-//
-// references/blizzard-terms-and-limits.md: 36,000 calls per hour is a term of Blizzard's Developer API Terms
-// of Use, not a performance tunable. This file exists for the same reason the 30-day refresh interval gets
-// its own test — it is the setting most likely to be quietly raised by someone chasing sync throughput, and
-// raising it is a breach rather than a regression.
+// The contractual cap, pinned in a test. 36,000 calls per hour is a term of the Developer API Terms of
+// Use rather than a performance tunable, and it is the setting most likely to be quietly raised by
+// somebody chasing sync throughput — where raising it is a breach rather than a regression.
 public class BlizzardRateLimitComplianceTests
 {
     [Fact]

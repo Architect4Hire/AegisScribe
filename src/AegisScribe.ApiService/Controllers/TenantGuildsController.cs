@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// The guilds a community follows (6.6b).
+// The guilds a community follows.
 //
 // tenantSlug never binds into a ViewModel and never reaches the facade — ITenantContext.TenantId is the
 // only tenant identifier below the controller (tenancy.md).

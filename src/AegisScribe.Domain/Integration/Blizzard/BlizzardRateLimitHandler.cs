@@ -5,16 +5,13 @@ namespace AegisScribe.Domain.Integration.Blizzard;
 
 // Takes a lease for every outbound Blizzard call, and turns a 429 into a shared backoff window.
 //
-// This is registered as the INNERMOST handler on the Blizzard client, and that placement is the whole
-// point. AddServiceDefaults() puts the standard resilience handler on every client, and its retry strategy
-// treats 429 as transient and retries up to three times. Those retries are real HTTP calls against a
-// contractual cap, so the lease has to be taken at the last point before the wire — a lease taken up in a
-// gateway method would count one call and spend four.
+// Registered as the INNERMOST handler, and that placement is the whole point: the standard resilience
+// handler treats 429 as transient and retries up to three times, and those retries are real HTTP calls
+// against a contractual cap. A lease taken up in a gateway method would count one call and spend four.
+// It also makes "every gateway method takes a lease" structurally true rather than a convention each
+// new method has to remember.
 //
-// That also makes "every gateway method takes a lease" structurally true rather than a convention each new
-// method has to remember, the same argument as BlizzardAuthHandler and the bearer header.
-//
-// Note the division of labour with the resilience handler: it owns *retrying*, this owns *when a retry is
+// The division of labour with the resilience handler: it owns *retrying*, this owns *when a retry is
 // allowed to leave*. Nothing here retries, so there is no second retry loop to compound with Polly's.
 public sealed class BlizzardRateLimitHandler(
     IBlizzardRateLimiter rateLimiter,
@@ -29,8 +26,8 @@ public sealed class BlizzardRateLimitHandler(
 
         if (!lease.IsAcquired)
         {
-            // Self-throttled: the budget is spent or we are inside a backoff window. Short-circuit rather
-            // than throw, so the DataLayer falls back to stored data exactly as it does for any other
+            // Self-throttled: the budget is spent or we are inside a backoff window. Short-circuit
+            // rather than throw, so the DataLayer falls back to stored data as it does for any other
             // unavailable answer.
             return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
             {
@@ -51,8 +48,8 @@ public sealed class BlizzardRateLimitHandler(
         return response;
     }
 
-    // Retry-After comes in two forms (RFC 9110): delta-seconds, and an HTTP-date. Blizzard sends
-    // delta-seconds, but the date form is legal and a proxy in the path may rewrite it, so both are read.
+    // Retry-After comes in two forms (RFC 9110). Blizzard sends delta-seconds, but the HTTP-date form is
+    // legal and a proxy in the path may rewrite it, so both are read.
     private TimeSpan? ReadRetryAfter(HttpResponseMessage response)
     {
         var retryAfter = response.Headers.RetryAfter;

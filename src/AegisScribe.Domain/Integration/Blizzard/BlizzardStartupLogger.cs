@@ -4,14 +4,12 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.Domain.Integration.Blizzard;
 
-// external.md asks the integration to say once, at startup, that it has no credentials — separately from
-// reporting Degraded on /health/external.
+// Says once, at startup, that the integration has no credentials (external.md).
 //
-// A hosted service is what actually delivers that, and the reason is worth recording: BlizzardGateway
-// checks IsConfigured and returns before the token provider is ever asked for a token, so the "logged
-// once" warning inside BlizzardTokenProvider is never reached on precisely the machine that needs it —
-// the one with no credentials. Verified by running it: the only Blizzard line in the API log was the
-// health check's. This fires regardless of whether anything asks Blizzard for anything.
+// A hosted service rather than a log inside the token provider, because BlizzardGateway checks
+// IsConfigured and returns before a token is ever requested — so that warning is never reached on
+// precisely the machine that needs it. This fires regardless of whether anything asks Blizzard for
+// anything.
 public sealed class BlizzardStartupLogger(
     IOptions<BlizzardOptions> options,
     ILogger<BlizzardStartupLogger> logger) : IHostedService

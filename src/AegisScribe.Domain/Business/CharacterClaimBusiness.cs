@@ -6,15 +6,13 @@ using AegisScribe.Domain.Managers.Models.ViewModels;
 
 namespace AegisScribe.Domain.Business;
 
-// 7.2b, and the add-endpoint skill's own worked example: the one-claim-per-character rule and the
-// "this claim belongs to another user" resource check both live here, because both need to read
-// something before they can answer. Policies answer "what rank are you here"; Business answers "is
-// this yours" (auth.md).
+// The one-claim-per-character rule and the "this claim belongs to another user" resource check both
+// live here, because both need to read something before they can answer. Policies answer "what rank are
+// you here"; Business answers "is this yours" (auth.md).
 //
 // Every write takes the claimant from ICurrentUser and never from a view model. That is load-bearing
-// beyond ordinary permissions: external.md makes a claim the proof of ownership behind a
-// user-triggered global erasure (14.1), so a claim naming somebody else would become a way to delete
-// their data.
+// beyond ordinary permissions: a claim is the proof of ownership behind a user-triggered global
+// erasure, so a claim naming somebody else would become a way to delete their data.
 public class CharacterClaimBusiness(
     ICharacterClaimDataLayer dataLayer,
     ICurrentUser currentUser,
@@ -28,16 +26,15 @@ public class CharacterClaimBusiness(
     {
         var userId = RequireUserId();
 
-        // Without this the foreign key would turn an unknown character into a 500. The controller
-        // turns null into the 404 it should have been.
+        // Without this the foreign key would turn an unknown character into a 500. The controller turns
+        // null into the 404 it should have been.
         if (!await dataLayer.CharacterExistsAsync(viewModel.CharacterId, ct))
         {
             return null;
         }
 
-        // The skill's worked table, verbatim: read the existing claim before inserting, because
-        // deleting this check gives a character two owners — a refusal that should have happened
-        // didn't, which makes it a rule rather than bookkeeping.
+        // Read before inserting: deleting this check gives a character two owners, which makes it a rule
+        // rather than bookkeeping.
         var existing = await dataLayer.FindByCharacterAsync(viewModel.CharacterId, ct);
 
         if (existing is not null)
@@ -64,8 +61,8 @@ public class CharacterClaimBusiness(
 
         await dataLayer.AddAsync(claim, ct);
 
-        // Re-read rather than mapping the entity: the response carries the holder's display name,
-        // which lives on the Identity user and not on the row just written.
+        // Re-read rather than mapping the entity: the response carries the holder's display name, which
+        // lives on the Identity user and not on the row just written.
         return await dataLayer.FindByCharacterAsync(viewModel.CharacterId, ct);
     }
 
@@ -75,15 +72,15 @@ public class CharacterClaimBusiness(
         var claim = await dataLayer.FindEntityByCharacterAsync(characterId, ct);
 
         // Nothing to release is a satisfied intent — DELETE is idempotent (api-contract.md). This also
-        // covers a claim held in another community, which the query filter makes indistinguishable
-        // from absent, correctly.
+        // covers a claim held in another community, which the query filter correctly makes
+        // indistinguishable from absent.
         if (claim is null)
         {
             return;
         }
 
-        // The skill's canonical resource-authorization case. An officer wanting this outcome has their
-        // own route, which frees the claim and records that they did.
+        // An officer wanting this outcome has their own route, which frees the claim and records that
+        // they did.
         if (claim.UserId != userId)
         {
             throw new ClaimNotYoursException();
@@ -97,8 +94,8 @@ public class CharacterClaimBusiness(
         var actorUserId = RequireUserId();
         var claim = await dataLayer.FindEntityByCharacterAsync(characterId, ct);
 
-        // No claim, no action, and so no audit row: an audit table that recorded things that did not
-        // happen would be worse than one with gaps.
+        // No claim, no action, and so no audit row: an audit table recording things that did not happen
+        // would be worse than one with gaps.
         if (claim is null)
         {
             return;
@@ -108,8 +105,8 @@ public class CharacterClaimBusiness(
         {
             Id = Guid.NewGuid(),
             ActorUserId = actorUserId,
-            // Who was acted upon. The whole reason the row exists — this is an officer reaching into
-            // another member's data.
+            // Who was acted upon — the whole reason the row exists, since this is an officer reaching
+            // into another member's data.
             SubjectUserId = claim.UserId,
             Action = AuditAction.CharacterClaimCleared,
             TargetType = nameof(CharacterClaim),
@@ -123,9 +120,9 @@ public class CharacterClaimBusiness(
         await dataLayer.ClearAsync(claim, auditEntry, ct);
     }
 
-    // Every path here is behind an authenticated tenant policy, so a null user id means the token was
-    // a client-credentials one (which names no Identity user). Failing loudly beats writing a claim or
-    // an audit row with an empty owner.
+    // Every path here is behind an authenticated tenant policy, so a null user id means a
+    // client-credentials token, which names no Identity user. Failing loudly beats writing a claim or an
+    // audit row with an empty owner.
     private string RequireUserId() =>
         currentUser.UserId ?? throw new AuthenticationRequiredException();
 }

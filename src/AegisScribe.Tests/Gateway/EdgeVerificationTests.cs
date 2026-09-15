@@ -5,16 +5,14 @@ using AegisScribe.Tests.Auth;
 
 namespace AegisScribe.Tests.Gateway;
 
-// 1B.9: proves the auth/gateway boundary end to end. Items 1 (the strip test) and 3 (unlisted CORS
-// origin rejected) already have dedicated tests — HeaderSanitisationTests.ForgedAuthorizationHeader_IsStripped
-// and CorsTests.Preflight_FromUnlistedOrigin_IsRejected — and aren't repeated here.
+// The auth/gateway boundary, end to end. The strip test and the unlisted-CORS-origin test have their
+// own files — HeaderSanitisationTests and CorsTests — and are not repeated here.
 [Collection("AegisScribe API")]
 public class EdgeVerificationTests(AegisScribeAppFixture fixture)
 {
-    // Item 2: no gateway response leaks a JWT — the base64 prefix every JWT starts with — in its
-    // body, its headers, or the session cookie. The session cookie is a Data-Protection-encrypted
-    // blob, not a JWT, but this proves that instead of assuming it (gateway.md's own testing
-    // checklist: "grep for eyJ").
+    // No gateway response leaks a JWT in its body, headers, or session cookie. The session cookie is a
+    // Data-Protection-encrypted blob rather than a JWT, but this proves that instead of assuming it
+    // (gateway.md: "grep for eyJ").
     [Fact]
     public async Task NoGatewayResponse_LeaksAJwt()
     {
@@ -46,13 +44,8 @@ public class EdgeVerificationTests(AegisScribeAppFixture fixture)
         }
     }
 
-    // Item 4: the anonymous case still works, with no session at all — no character-lookup endpoint
-    // exists yet this phase (armory features are later work), so registration stands in as the
-    // representative anonymous route (no [Authorize] on AuthController.Register). Combined with the
-    // strip test (stripping is unconditional) and
-    // HeaderSanitisationTests.ForgedAuthorizationHeader_WithNoSession_DoesNotReachApi (a forged
-    // header on a *protected* route is discarded, not forwarded), this fully covers "anonymous still
-    // works, and nothing invented is ever forwarded."
+    // The anonymous case, with no session at all. No character-lookup endpoint exists yet, so
+    // registration stands in as the representative anonymous route.
     [Fact]
     public async Task AnonymousRoute_SucceedsWithNoSession()
     {
@@ -69,23 +62,19 @@ public class EdgeVerificationTests(AegisScribeAppFixture fixture)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    // Item 5: logout revokes the refresh token, so a replay of it fails. Logout_EndsSessionImmediately
-    // already proves the "next request is anonymous immediately" half; this proves the other half —
-    // the actual revocation mechanism logout depends on. The gateway's own session never exposes its
-    // refresh token to a caller (that's the point of the BFF pattern), so this drives the identical
-    // connect/revoke + connect/token calls directly, as the same aegisscribe-bff client with its own
-    // real secret — the exact call shape Gateway/Program.cs's /auth/logout handler already makes.
+    // Logout_EndsSessionImmediately proves the "next request is anonymous" half; this proves the
+    // revocation mechanism logout depends on. The gateway's session never exposes its refresh token to
+    // a caller, so this drives the identical connect/revoke + connect/token calls directly, as the same
+    // aegisscribe-bff client.
     [Fact]
     public async Task Logout_RevokesRefreshToken_ReplayFails()
     {
         var email = await GatewayLoginFlow.RegisterUserAsync(fixture);
         var (_, firstRefreshToken) = await DirectOAuthFlow.LoginAsBffClientAsync(fixture, email);
 
-        // Self-contained positive control: redeem once first and require 200, proving this specific
-        // token chain is genuinely live before revoking it — rather than leaning on some other test
-        // elsewhere in the suite to have already shown a normal (non-revoked) redemption succeeds.
-        // Rolling refresh tokens (auth.md) means this redemption itself rotates the token, so the
-        // one actually revoked and replayed below is the new one this call returns, not the original.
+        // Self-contained positive control: redeem once and require 200, proving this token chain is
+        // genuinely live before revoking it. Rolling refresh tokens (auth.md) mean this redemption
+        // itself rotates the token, so the one revoked and replayed below is the new one.
         using var redeemed = await RedeemRefreshTokenAsync(firstRefreshToken);
         Assert.Equal(HttpStatusCode.OK, redeemed.StatusCode);
         var refreshToken = (await redeemed.Content.ReadFromJsonAsync<JsonDocument>())!
@@ -113,10 +102,10 @@ public class EdgeVerificationTests(AegisScribeAppFixture fixture)
             new("client_secret", fixture.BffSecret),
         ]));
 
-    // Item 6: a request spanning token expiry succeeds with no browser round trip. RefreshCoordinator's
-    // 30-second buffer means a 1-second access token already reads as expired on this very next call —
-    // no Task.Delay needed. A single clean 200 IS "no browser round trip": no redirect, no
-    // 401-then-retry visible to the caller, just a transparent server-side refresh.
+    // A request spanning token expiry succeeds with no browser round trip. RefreshCoordinator's
+    // 30-second buffer means a 1-second access token already reads as expired on this next call, so no
+    // delay is needed. A single clean 200 IS "no browser round trip": no redirect, no 401-then-retry
+    // visible to the caller.
     [Fact]
     public async Task RequestSpanningTokenExpiry_SucceedsTransparently()
     {
@@ -128,12 +117,10 @@ public class EdgeVerificationTests(AegisScribeAppFixture fixture)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    // Item 7: aegisscribe-mobile is a public client with no secret — PKCE's verifier is the only
-    // thing binding an authorization code to the app that requested it (auth.md: "a public client
-    // with no PKCE is a Blocker"). PKCE is required globally at the protocol layer
-    // (RequireProofKeyForCodeExchange() in ApiService/Program.cs), so the code_challenge at authorize
-    // time is mandatory regardless of client — what this proves is that the verifier is actually
-    // checked at redemption, not merely declared upfront.
+    // aegisscribe-mobile is a public client with no secret, so PKCE's verifier is the only thing
+    // binding an authorization code to the app that requested it (auth.md). PKCE is required globally
+    // at the protocol layer, so what this proves is that the verifier is actually checked at
+    // redemption, not merely declared upfront.
     [Fact]
     public async Task MobileTokenRequest_WithoutPkceVerifier_IsRejected()
     {
@@ -156,10 +143,9 @@ public class EdgeVerificationTests(AegisScribeAppFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    // Positive control for the test above: the identical mobile-client flow with the matching
-    // verifier must succeed, so a 400 there is evidence the omitted verifier specifically is what's
-    // rejected — not an unrelated regression (redirect_uri handling for the Native application type,
-    // a missing scope permission, etc.) that would make either test pass or fail for the wrong reason.
+    // Positive control for the test above: the identical flow with the matching verifier must succeed,
+    // so a 400 there is evidence the omitted verifier specifically is what's rejected — not an
+    // unrelated regression that would make either test pass or fail for the wrong reason.
     [Fact]
     public async Task MobileTokenRequest_WithMatchingPkceVerifier_Succeeds()
     {

@@ -9,13 +9,11 @@ using Microsoft.EntityFrameworkCore;
 namespace AegisScribe.Tests.Roster;
 
 // The officer clear is this vertical's one composed write: remove the claim AND record who removed it,
-// or neither. A mocked transaction only proves a commit was ASKED for, so the add-endpoint skill asks
-// for a REAL-database test that a mid-composition failure leaves the store untouched. That is what
-// this file is.
+// or neither. A mocked transaction only proves a commit was ASKED for, so this runs against a real
+// database and asserts a mid-composition failure leaves the store untouched.
 //
-// It matters more here than for an ordinary two-row write: the failure mode a half-committed clear
-// produces is a claim that vanished with no record of who took it, which is precisely the untraceable
-// officer action the audit table exists to prevent.
+// A half-committed clear produces a claim that vanished with no record of who took it — precisely the
+// untraceable officer action the audit table exists to prevent.
 [Collection("AegisScribe API")]
 public class CharacterClaimAtomicityTests(AegisScribeAppFixture fixture)
 {

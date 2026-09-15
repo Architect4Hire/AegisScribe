@@ -1,9 +1,8 @@
 namespace AegisScribe.Domain.Integration.Blizzard;
 
-// Holds the last availability answer. This is a singleton and separate from the gateway on purpose:
-// AddHttpClient<IBlizzardGateway, BlizzardGateway> registers a typed client, which is *transient*, so a
-// cache living on the gateway would be discarded after every call and would quietly spend a Blizzard
-// request on every health poll instead of one per window.
+// Holds the last availability answer. A singleton separate from the gateway on purpose: a typed client
+// is *transient*, so a cache living on it would be discarded after every call and would quietly spend a
+// Blizzard request on every health poll.
 //
 // No lock. Two concurrent probes cost one extra call and settle on the same answer, which is cheaper
 // than serialising every reader.

@@ -73,12 +73,9 @@ public class OpenApiContractTests
                 builder.UseSetting("Oidc:SigningCertificate", pfx);
             }
 
-            // No real SQL Server is available to a bare WebApplicationFactory host the way the
-            // Aspire-orchestrated fixture has one, and Program.cs's startup-time RoleSeeder call
-            // needs *some* working store — swap in EF Core's InMemory provider for it. Aspire's
-            // AddSqlServerDbContext pools the context, which registers more than just
-            // DbContextOptions<T>, so remove everything keyed to AegisScribeDbContext rather than
-            // guessing at EF's internal pooling service types.
+            // A bare WebApplicationFactory host has no SQL Server, and Program.cs's startup RoleSeeder
+            // call needs *some* working store — hence EF Core's InMemory provider. Everything keyed to
+            // AegisScribeDbContext is removed rather than guessing at EF's internal pooling types.
             builder.ConfigureServices(services =>
             {
                 var toRemove = services

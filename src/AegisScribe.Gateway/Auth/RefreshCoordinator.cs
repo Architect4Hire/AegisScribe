@@ -7,23 +7,15 @@ using Microsoft.Extensions.Configuration;
 
 namespace AegisScribe.Gateway.Auth;
 
-// gateway.md: "Refresh is single-flight ... a burst of proxied requests arriving as the token
-// expires must produce one refresh, not twenty." The lock — and the "did someone else already
-// refresh" cache below — are per browser session (keyed by the session cookie's own raw value) and
-// live only within this gateway instance; a real multi-instance deployment would need a distributed
-// lock instead. Noted as a known follow-up rather than solved here, since nothing runs more than one
-// instance yet.
+// Single-flight refresh (gateway.md): a burst of proxied requests arriving as the token expires must
+// produce one refresh, not twenty. The lock and the "recently refreshed" cache are per browser session,
+// keyed by the session cookie's raw value, and live only in this gateway instance — a multi-instance
+// deployment would need a distributed lock.
 //
-// Deliberately does NOT rely on a second HttpContext.AuthenticateAsync() call to notice a racer's
-// completed refresh: AuthenticateAsync caches its result on the HttpContext for the lifetime of the
-// request (confirmed against CookieAuthenticationHandler's source — the base handler memoises the
-// authenticate task per instance, and instances are reused per scheme per request), so a second call
-// after acquiring the lock would silently return the SAME stale, pre-lock result. The true
-// server-side session key is only recoverable by decrypting the cookie's protected ticket and
-// reading its "Microsoft.AspNetCore.Authentication.Cookies-SessionId" claim — an internal,
-// unexposed implementation detail not worth depending on. An in-process "recently refreshed" cache,
-// keyed by the session's raw (still-encrypted) cookie value, sidesteps both problems: it needs no
-// decryption, and it is exactly as instance-local as the lock it backs.
+// Deliberately does NOT re-call HttpContext.AuthenticateAsync to notice a racer's completed refresh:
+// that result is memoised on the HttpContext for the request, so a second call after acquiring the lock
+// returns the SAME stale, pre-lock result. Keying the cache on the still-encrypted cookie value avoids
+// decrypting the ticket to recover the real session id, which is an unexposed implementation detail.
 public class RefreshCoordinator(IHttpClientFactory httpClientFactory, IConfiguration configuration)
 {
     private static readonly TimeSpan RefreshBuffer = TimeSpan.FromSeconds(30);

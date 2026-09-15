@@ -26,7 +26,11 @@
       "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~PublicEdgeTests\" 2>&1)",
       "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~GuildRankName\" 2>&1)",
       "Bash(sed -i \"s|  private readonly rosterService = inject\\(RosterService\\);|  private readonly rosterService = inject\\(RosterService\\);\\\\n  // Every subscription below is piped through takeUntilDestroyed\\(this.destroyRef\\). These are one-shot\\\\n  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting\\\\n  // signals on a component the user has already navigated away from \\(frontend.md\\).\\\\n  private readonly destroyRef = inject\\(DestroyRef\\);|\" src/app/features/guild/rank-manager/rank-manager.ts)",
-      "Bash(sed -i \"s|  private readonly currentUser = inject\\(CurrentUserService\\);|  private readonly currentUser = inject\\(CurrentUserService\\);\\\\n  // Every subscription below is piped through takeUntilDestroyed\\(this.destroyRef\\). These are one-shot\\\\n  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting\\\\n  // signals on a component the user has already navigated away from \\(frontend.md\\).\\\\n  private readonly destroyRef = inject\\(DestroyRef\\);|\" src/app/features/roster/roster-table/roster-table.ts src/app/features/character/character-profile/character-profile.ts)"
+      "Bash(sed -i \"s|  private readonly currentUser = inject\\(CurrentUserService\\);|  private readonly currentUser = inject\\(CurrentUserService\\);\\\\n  // Every subscription below is piped through takeUntilDestroyed\\(this.destroyRef\\). These are one-shot\\\\n  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting\\\\n  // signals on a component the user has already navigated away from \\(frontend.md\\).\\\\n  private readonly destroyRef = inject\\(DestroyRef\\);|\" src/app/features/roster/roster-table/roster-table.ts src/app/features/character/character-profile/character-profile.ts)",
+      "Bash(grep -rn \"^\\\\s*//\" --include=\"*.cs\" src --exclude-dir=bin --exclude-dir=obj)",
+      "Bash(grep -rn \"^\\\\s*///\" --include=\"*.cs\" src --exclude-dir=bin --exclude-dir=obj)",
+      "Bash(grep -rn \"^\\\\s*//\" --include=\"*.ts\" src/web/src)",
+      "Bash(grep -rn \"^\\\\s*\\\\\\(//\\\\|///\\\\|\\\\*\\\\\\)\" --include=\"*.cs\" --include=\"*.ts\" src --exclude-dir=bin --exclude-dir=obj)"
     ]
   },
   "hooks": {

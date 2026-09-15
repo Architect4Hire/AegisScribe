@@ -11,12 +11,9 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Character;
 
-// 6.4's BEHAVIOR line, as a test: a never-synced character arriving from Blizzard.
-//
-// Everything here is real except Blizzard itself — the real CharacterDataLayer, the real repository, the
-// real staleness policy and real SQL Server, with only IBlizzardGateway stubbed. CharacterDataLayerTests
-// pins the sequencing against substitutes; this pins that the sequencing actually lands rows in a
-// database, which is the part a substitute cannot tell you.
+// A never-synced character arriving from Blizzard, with everything real except Blizzard itself — only
+// IBlizzardGateway is stubbed. CharacterDataLayerTests pins the sequencing against substitutes; this
+// pins that it actually lands rows in a database, which is the part a substitute cannot tell you.
 [Collection("AegisScribe API")]
 public class CharacterCacheFirstReadTests(AegisScribeAppFixture fixture)
 {

@@ -2,15 +2,15 @@ using AegisScribe.Domain.Managers.Models.Domain;
 
 namespace AegisScribe.Domain.Data;
 
-// Where the roster's data operations are composed. Two of them are genuinely composite and the rest
-// are pass-throughs kept as the seam Business depends on:
+// Where the roster's data operations are composed. Two are genuinely composite; the rest are
+// pass-throughs kept as the seam Business depends on:
 //
-//   - ListAsync is the two-query page: the mains for this cursor position, then everything in their
-//     groups. Two queries rather than one so that a group is never split across a page boundary.
+//   - ListAsync is a two-query page — the mains for this cursor position, then everything in their
+//     groups — so a group is never split across a page boundary.
 //   - every write pairs with its audit row in a single transaction.
 //
-// The claim and membership lookups reach other repositories rather than other tables, so each
-// repository keeps to what it owns and every query keeps its own tenant filter.
+// The claim and membership lookups reach other repositories rather than other tables, so every query
+// keeps its own tenant filter.
 public class RosterEntryDataLayer(
     IRosterEntryRepository repository,
     ICharacterClaimRepository claims,

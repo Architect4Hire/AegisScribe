@@ -37,7 +37,7 @@ public static class OpenIddictClientSeeder
                     Permissions.ResponseTypes.Code,
                     // openid is what makes this an OIDC (not bare OAuth2) code exchange — the
                     // gateway's OpenIdConnect handler expects an id_token back. offline_access is
-                    // what makes OpenIddict issue a refresh token at all for this client (1B.6).
+                    // what makes OpenIddict issue a refresh token at all for this client.
                     Permissions.Prefixes.Scope + Scopes.OpenId,
                     Permissions.Prefixes.Scope + Scopes.OfflineAccess,
                 },
@@ -74,15 +74,13 @@ public static class OpenIddictClientSeeder
                 Requirements = { Requirements.Features.ProofKeyForCodeExchange },
             });
 
-        // Service-to-service only — never issued against a user's token. No redirect URIs, no
-        // ApplicationType: there is no interactive flow to validate a redirect against. A resource
-        // indicator (RFC 8707) has to be an absolute URI, and OpenIddict only mints against one the
-        // *client* has permission for — so two are granted here: one this API's own AddAudiences()
-        // would accept, and one it deliberately would not, letting a test request a resource that's
-        // valid at the protocol layer but still wrong for this resource server (1B.5's four
-        // token-validation scenarios). Neither is used unless a caller names a "resource" parameter
-        // explicitly (TokenEndpoints.cs); the default token audience is the plain string
-        // "aegisscribe-api", matching AddAudiences() in Program.cs.
+        // Service-to-service only, so no redirect URIs and no ApplicationType — there is no interactive
+        // flow to validate a redirect against.
+        //
+        // Two resource indicators (RFC 8707) are granted: one this API's AddAudiences() accepts and one
+        // it deliberately does not, so a test can request a resource that is valid at the protocol
+        // layer but still wrong for this resource server. Neither is used unless a caller names a
+        // "resource" parameter; the default audience is the plain string "aegisscribe-api".
         await CreateOrUpdateAsync(manager, new OpenIddictApplicationDescriptor
             {
                 ClientId = "aegisscribe-ops",

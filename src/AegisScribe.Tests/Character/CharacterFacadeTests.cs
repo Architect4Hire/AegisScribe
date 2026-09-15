@@ -13,7 +13,7 @@ namespace AegisScribe.Tests.Character;
 
 // Facade: real validators, mocked business, a real in-memory IDistributedCache (4.4, add-endpoint
 // skill). This is the first facade in the repo that actually reads/writes the cache rather than just
-// building the key (2.8) — hit, miss and validation failure are the trio the skill calls out as the
+// building the key — hit, miss and validation failure are the trio the skill calls out as the
 // most-skipped set.
 public class CharacterFacadeTests
 {

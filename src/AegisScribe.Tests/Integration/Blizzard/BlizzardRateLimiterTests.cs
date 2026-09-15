@@ -54,12 +54,10 @@ public class BlizzardRateLimiterTests
     {
         // The budget has to recover, or one exhausted bucket would wedge Blizzard reads until a restart.
         //
-        // This is the one test here that uses the real clock, and not for want of trying: TokenBucketRateLimiter
-        // takes no TimeProvider, and TryReplenish() adds tokens *proportional to elapsed Stopwatch time*
-        // rather than a flat TokensPerPeriod per call — so FakeTimeProvider cannot drive it and calling it in a
-        // tight loop adds nothing. Hence a very short replenishment period and a real delay several times
-        // longer than it, which makes the margin generous rather than tight: a slower machine only elapses
-        // more time, never less.
+        // The one test here using the real clock, and not for want of trying: TokenBucketRateLimiter
+        // takes no TimeProvider, and TryReplenish() adds tokens proportional to elapsed Stopwatch time
+        // rather than a flat amount per call. Hence a very short period and a real delay several times
+        // longer, which makes the margin generous — a slower machine only elapses more time, never less.
         var replenishmentPeriod = TimeSpan.FromMilliseconds(10);
 
         var limiter = Create(

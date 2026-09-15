@@ -2,22 +2,17 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ItemCell } from './item-cell';
 import { EquippedItemServiceModel } from '../../models/item.models';
 
-// The test `.claude/rules/external.md` says exists — and, until this pass, did not.
-//
 // The whole Wowhead integration rests on one undocumented assumption: that Blizzard's item ids and
-// Wowhead's item ids are the same numbers. Nothing guarantees it. Blizzard documents their ids;
-// Wowhead documents nothing, and there is no API to ask. The strategy is widely used and has held for
-// years, which is exactly what makes it dangerous — it is believed rather than checked.
+// Wowhead's are the same numbers. Nothing guarantees it, and the strategy has held for years, which is
+// what makes it dangerous — it is believed rather than checked (external.md).
 //
-// What this test CAN do is pin the transformation. The id we render must be the Blizzard id,
-// unchanged: no offset, no lookup, no mapping table. If somebody ever "fixes" a mismatched link by
-// introducing a translation, this fails and forces the conversation rather than letting one special
-// case become a quiet second id space.
+// What this test CAN do is pin the transformation: the id we render must be the Blizzard id, unchanged.
+// If somebody ever "fixes" a mismatched link by introducing a translation, this fails and forces the
+// conversation rather than letting one special case become a quiet second id space.
 //
-// What it deliberately does NOT do is fetch anything from Wowhead to confirm the item matches.
-// Fanbyte's terms bar automated access and a PreToolUse hook blocks it; a test that scraped them to
-// prove a link works would be a worse violation than a broken link. Verification is a human opening
-// the URLs below — which is why they are real, recognisable items rather than arbitrary numbers.
+// It deliberately does NOT fetch anything from Wowhead to confirm the item matches — scraping them to
+// prove a link works would be a worse violation than a broken link. Verification is a human opening the
+// URLs, which is why these are real, recognisable items.
 describe('Wowhead item id parity', () => {
   // Chosen so a human can check them by eye. If Wowhead ever shows something other than the named item
   // at these ids, the id spaces have diverged and the linking strategy — not this test — is wrong.

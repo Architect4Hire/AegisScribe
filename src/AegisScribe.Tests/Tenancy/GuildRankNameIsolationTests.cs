@@ -9,12 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// 7.5's two-tenant test, and the zone decision it defends.
-//
-// Guild rank names LOOK like global data — "rank 3 is Veteran in Emberfall" is one fact about one
-// guild in the game. They are tenant-scoped anyway, because nobody can read them from Blizzard: a
-// person types them, and a person typing is not public Blizzard data whatever it describes. Every
-// case below shares ONE global Guild between two communities to pin that.
+// The two-tenant test, and the zone decision it defends. Guild rank names LOOK like global data, and
+// are tenant-scoped anyway because nobody can read them from Blizzard — a person types them, and a
+// person typing is not public Blizzard data whatever it describes. Every case shares ONE global Guild
+// between two communities to pin that.
 [Collection("AegisScribe API")]
 public class GuildRankNameIsolationTests(AegisScribeAppFixture fixture)
 {

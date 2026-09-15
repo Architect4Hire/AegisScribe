@@ -23,9 +23,9 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
     public Task<bool> ExistsAsync(Guid characterId, CancellationToken ct) =>
         db.Characters.AsNoTracking().AnyAsync(c => c.Id == characterId, ct);
 
-    // Seek/keyset pagination ordered by (NameLower, Id) — NameLower alone isn't unique (two realms
-    // can share a character name), so Id breaks the tie. Standard EF Core keyset predicate: CompareTo
-    // translates to SQL Server's native > comparison rather than needing a tuple/row-value compare.
+    // Keyset pagination ordered by (NameLower, Id) — NameLower alone isn't unique, since two realms can
+    // share a character name. CompareTo translates to SQL Server's native > comparison rather than
+    // needing a row-value compare.
     public async Task<IReadOnlyList<CharacterSummaryServiceModel>> SearchAsync(
         string region, string? realmSlug, string? nameContains, string? afterNameLower, Guid? afterId, int take, CancellationToken ct)
     {
@@ -38,10 +38,9 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
 
         if (!string.IsNullOrWhiteSpace(nameContains))
         {
-            // A leading-wildcard LIKE '%needle%' — can't use the (RealmId, NameLower) index, so this
-            // scans every character row in scope (region, optionally narrowed by realm). Acceptable at
-            // today's data volume; a future version copying this pattern at scale should reconsider
-            // (e.g. StartsWith, or a dedicated search index) rather than inheriting this silently.
+            // A leading-wildcard LIKE cannot use the (RealmId, NameLower) index, so this scans every
+            // character row in scope. Acceptable at today's volume; at scale it needs StartsWith or a
+            // dedicated search index rather than being inherited silently.
             var needle = nameContains.ToLowerInvariant();
             query = query.Where(c => c.NameLower.Contains(needle));
         }
@@ -92,9 +91,8 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
             .FirstOrDefaultAsync(c => c.RealmId == realmId && c.NameLower == fresh.NameLower, ct);
 
         // A rename or a realm transfer, and the reason this is not a plain find-by-natural-key upsert.
-        // BlizzardCharacterId carries a unique index, so inserting the same character under its new name
-        // would violate it — the row has to be found by source id and moved, not duplicated. It is also
-        // the only way the stored name ever catches up with a rename.
+        // BlizzardCharacterId carries a unique index, so inserting the same character under its new
+        // name would violate it — the row has to be found by source id and moved, not duplicated.
         existing ??= await db.Characters
             .FirstOrDefaultAsync(c => c.BlizzardCharacterId == fresh.BlizzardCharacterId, ct);
 
@@ -143,10 +141,10 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
 
         existing.LastSyncedAt = fresh.LastSyncedAt;
 
-        // Reconciled slot by slot rather than deleted and re-inserted. EquippedItem has a unique index
-        // on (CharacterEquipmentId, Slot), and a delete plus an insert for the same slot inside one
-        // SaveChanges depends on EF ordering the two statements favourably — which is not something to
-        // rely on. Updating in place also means a refresh that changed nothing writes nothing.
+        // Reconciled slot by slot rather than deleted and re-inserted: EquippedItem has a unique index
+        // on (CharacterEquipmentId, Slot), and a delete plus an insert for the same slot in one
+        // SaveChanges relies on EF ordering the statements favourably. Updating in place also means a
+        // refresh that changed nothing writes nothing.
         var bySlot = existing.EquippedItems.ToDictionary(item => item.Slot);
 
         foreach (var incoming in fresh.EquippedItems)
@@ -171,9 +169,8 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
         db.EquippedItems.RemoveRange(bySlot.Values);
     }
 
-    // The whole unit is handed in as a callback rather than exposing BeginTransactionAsync — see
-    // DbContextTransactions, which now holds the single copy of that idiom (7.2b). This used to be one
-    // of three.
+    // A callback rather than an exposed BeginTransactionAsync — see DbContextTransactions, which holds
+    // the single copy of that idiom.
     public Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation, CancellationToken ct) =>
         db.ExecuteInTransactionAsync(operation, ct);

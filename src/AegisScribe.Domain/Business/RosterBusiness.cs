@@ -8,9 +8,8 @@ namespace AegisScribe.Domain.Business;
 
 // The roster's rules: who may read what, and what an officer's writes are allowed to do.
 //
-// WHICH rows exist is the query filter's answer and who may reach the endpoint at all is the policy's,
-// so what lives here is everything that needs to read something before it can decide — the officer-note
-// gate on the read, and every write rule below (auth.md).
+// WHICH rows exist is the query filter's answer, and who may reach the endpoint at all is the policy's.
+// What lives here is everything that needs to read something before it can decide (auth.md).
 public class RosterBusiness(
     IRosterEntryDataLayer dataLayer,
     ICurrentUser currentUser,
@@ -19,9 +18,9 @@ public class RosterBusiness(
 {
     public async Task<RosterPage> ListAsync(ListRosterViewModel viewModel, CancellationToken ct)
     {
-        // The officer-note gate. Decided here because it depends on the caller's membership rather
-        // than on the route, and passed DOWN so the note is blanked in the SQL projection — an
-        // officer-private note never leaves the database on a request that had no business reading it.
+        // Decided here because it depends on the caller's membership rather than the route, and passed
+        // DOWN so the note is blanked in the SQL projection — an officer-private note never leaves the
+        // database on a request that had no business reading it.
         var includeOfficerNote = await IsOfficerAsync(RequireUserId(), ct);
 
         return await dataLayer.ListAsync(
@@ -43,9 +42,7 @@ public class RosterBusiness(
             return null;
         }
 
-        // A rule by the add-endpoint skill's test: delete the check and a character appears on the
-        // roster twice, which is a refusal that should have happened not happening. The unique index
-        // is the authority under a race; this is the readable answer.
+        // The unique index is the authority under a race; this is the readable answer.
         if (await dataLayer.IsOnRosterAsync(viewModel.CharacterId, ct))
         {
             throw new CharacterAlreadyOnRosterException();
@@ -83,8 +80,8 @@ public class RosterBusiness(
         }
 
         // A rank id from another community resolves to nothing under the query filter. Refused rather
-        // than silently stored or silently cleared — either would leave the roster showing something
-        // nobody chose.
+        // than silently stored or cleared — either would leave the roster showing something nobody
+        // chose.
         await RequireRankIsOursAsync(viewModel.TenantRankId, ct);
 
         await dataLayer.SetRankAsync(
@@ -123,8 +120,8 @@ public class RosterBusiness(
                 userId,
                 AuditAction.RosterEntryNoteChanged,
                 // The note's CONTENT is not copied into the audit row. It is one person's private
-                // remark about another, and an audit table that every officer can read (14.2) would
-                // otherwise become a second, permanent copy of it.
+                // remark about another, and an officer-readable audit table would otherwise become a
+                // second, permanent copy of it.
                 DescribeNote(entry.OfficerNote),
                 DescribeNote(viewModel.OfficerNote),
                 ct),
@@ -145,9 +142,9 @@ public class RosterBusiness(
             return true;
         }
 
-        // Refused rather than cascading. Detaching somebody's other characters as a side effect of
-        // removing one is the silent kind of damage, and the officer cannot see what they would
-        // orphan. The Restrict FK would fail this write anyway; this turns a 500 into an answer.
+        // Refused rather than cascading: detaching somebody's other characters as a side effect is the
+        // silent kind of damage, and the officer cannot see what they would orphan. The Restrict FK
+        // would fail this write anyway; this turns a 500 into an answer.
         var alts = await dataLayer.CountAltsAsync(rosterEntryId, ct);
 
         if (alts > 0)
@@ -198,9 +195,9 @@ public class RosterBusiness(
             });
         }
 
-        // Rule 2 — both ends must be in THIS community. The query filter is what makes an id from
-        // another community come back null here, so a cross-tenant link is a 404 by the same mechanism
-        // as every other cross-tenant id in this repo.
+        // Rule 2 — both ends must be in THIS community. The query filter makes an id from another
+        // community come back null, so a cross-tenant link is a 404 by the same mechanism as every
+        // other cross-tenant id in this repo.
         var entry = await dataLayer.FindEntityAsync(rosterEntryId, ct);
         var main = await dataLayer.FindEntityAsync(viewModel.MainRosterEntryId, ct);
 
@@ -223,16 +220,15 @@ public class RosterBusiness(
             }
         }
 
-        // Rules 3 and 4 are checked here for the MESSAGE, not for the enforcement. Reading them and
-        // then writing is a race: two concurrent opposite-direction links each pass their own check
-        // against pre-commit state and then write different rows, so nothing conflicts and a cycle
-        // commits. The rules are therefore enforced inside the UPDATE's own WHERE, one layer down —
-        // what these two produce is the SPECIFIC refusal, which a rows-affected count cannot.
+        // Rules 3 and 4 are checked here for the MESSAGE, not for the enforcement — reading then
+        // writing is a race that lets two opposite-direction links commit a cycle. They are enforced
+        // inside the UPDATE's own WHERE, one layer down; what these produce is the SPECIFIC refusal,
+        // which a rows-affected count cannot.
         await ThrowIfDepthWouldBeExceededAsync(entry, main, ct);
 
         // Captured before the write: an entry may already be an alt of somebody else, and re-parenting
-        // is a normal act. An audit row claiming "No main" beforehand would be wrong in exactly the
-        // case an officer is most likely to be asked about.
+        // is normal. An audit row claiming "No main" beforehand would be wrong in exactly the case an
+        // officer is most likely to be asked about.
         var previousMainId = entry.MainRosterEntryId;
 
         var linked = await dataLayer.TryLinkAltAsync(
@@ -250,17 +246,16 @@ public class RosterBusiness(
 
         if (!linked)
         {
-            // The checks above passed and the write still refused, so the state changed underneath
-            // this request. Re-read to find out which rule now holds and say so — the alternative is a
-            // 409 with no reason, on the one path where the user did nothing wrong.
+            // The checks above passed and the write still refused, so the state changed underneath this
+            // request. Re-read to find out which rule now holds and say so — the alternative is a 409
+            // with no reason, on the one path where the user did nothing wrong.
             await ThrowIfDepthWouldBeExceededAsync(
                 await dataLayer.FindEntityAsync(entry.Id, ct) ?? entry,
                 await dataLayer.FindEntityAsync(main.Id, ct) ?? main,
                 ct);
 
-            // Both rules read clean on the re-read, so the row moved again between the refusal and
-            // now. Refuse rather than retry: another attempt could loop, and the caller re-reading the
-            // roster is the honest next step.
+            // Both rules read clean, so the row moved again between the refusal and now. Refuse rather
+            // than retry: another attempt could loop, and the caller re-reading is the honest next step.
             throw new AltDepthException(AltDepthReason.TargetIsAlreadyAnAlt);
         }
 
@@ -275,10 +270,8 @@ public class RosterBusiness(
             throw new AltDepthException(AltDepthReason.TargetIsAlreadyAnAlt);
         }
 
-        // Depth 2 from above: this entry is already somebody's main.
-        //
-        // The two together are what forecloses cycles — every cycle needs a node that is both a main
-        // and an alt, and neither rule permits one.
+        // Depth 2 from above: this entry is already somebody's main. The two together foreclose cycles
+        // — every cycle needs a node that is both a main and an alt.
         if (await dataLayer.HasAltsAsync(entry.Id, ct))
         {
             throw new AltDepthException(AltDepthReason.EntryAlreadyHasAlts);
@@ -329,11 +322,8 @@ public class RosterBusiness(
     }
 
     // An audit row only when the actor does not claim the entry — which is exactly "an officer reached
-    // into someone else's data" (the prompt's rule for 7.4, and 7.3's before it). A member managing
-    // their own characters writes nothing, and so does an officer managing theirs.
-    //
-    // One read, reused for both halves of the decision: the claimant is both the test ("is this mine")
-    // and the subject of the row that results.
+    // into someone else's data". A member managing their own characters writes nothing, and so does an
+    // officer managing theirs. One read serves both halves: the claimant is the test and the subject.
     private async Task<AuditLog?> AuditIfActingOnSomebodyElseAsync(
         Guid characterId,
         Guid rosterEntryId,
@@ -354,8 +344,8 @@ public class RosterBusiness(
         {
             Id = Guid.NewGuid(),
             ActorUserId = actorUserId,
-            // Whoever claims the character, if anybody does. Null for an unclaimed entry — the action
-            // still happened and is still worth recording, it just has no subject to name.
+            // Null for an unclaimed entry — the action still happened and is still worth recording, it
+            // just has no subject to name.
             SubjectUserId = claimantUserId,
             Action = action,
             TargetType = nameof(RosterEntry),

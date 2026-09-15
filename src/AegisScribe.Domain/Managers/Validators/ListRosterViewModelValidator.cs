@@ -9,7 +9,7 @@ public class ListRosterViewModelValidator : AbstractValidator<ListRosterViewMode
     public ListRosterViewModelValidator()
     {
         // The server-enforced max api-contract.md requires — an unbounded limit is a DoS endpoint with
-        // extra steps. It counts MAINS now (7.4), and the ceiling is lower than the character search's
+        // extra steps. It counts MAINS now, and the ceiling is lower than the character search's
         // 100 for exactly that reason: each main can drag several alts along with it.
         RuleFor(x => x.Limit).InclusiveBetween(1, 50);
 

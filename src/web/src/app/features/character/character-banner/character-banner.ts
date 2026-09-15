@@ -19,7 +19,7 @@ export class CharacterBanner {
   // Known from the route that fetched this character, not the response body -- see the 5.7 plan.
   readonly region = input.required<string>();
 
-  // Claim state, and everything below it, is OPTIONAL (7.5b). Null means there is no community in
+  // Claim state, and everything below it, is OPTIONAL. Null means there is no community in
   // context — the tenant-less front door — and the banner then shows no pill and no button at all.
   // Absent inputs leave this component rendering exactly as it did before claiming existed.
   readonly claim = input<CharacterClaimServiceModel | null>(null);

@@ -7,9 +7,8 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Character;
 
-// 6.4 — the cache-first read (add-endpoint skill, step 6). The full matrix the prompt asks for:
-// fresh, stale, gateway-failure-falls-back, and missing. The repository itself is exercised against
-// real SQL by CharacterRepositoryTests; everything here is about the sequencing.
+// The cache-first read: fresh, stale, gateway-failure-falls-back, and missing. The repository itself is
+// exercised against real SQL by CharacterRepositoryTests; everything here is about the sequencing.
 public class CharacterDataLayerTests
 {
     private const string Region = "us";
@@ -31,9 +30,9 @@ public class CharacterDataLayerTests
         // Nothing is stale unless a test says so, so a test that cares about staleness has to state it.
         _staleness.IsStale(Arg.Any<DateTimeOffset>()).Returns(false);
 
-        // Mirrors what the real repository does on an insert: the gateway leaves Id unset (it has no
-        // store), and the upsert is what assigns one. Without this the substitute hands back null and
-        // the equipment write has no character to attach to.
+        // Mirrors the real repository on insert: the gateway leaves Id unset, and the upsert assigns
+        // one. Without this the substitute hands back null and the equipment write has nothing to
+        // attach to.
         _repository
             .UpsertCharacterAsync(Arg.Any<Domain.Managers.Models.Domain.Character>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(call =>
@@ -276,10 +275,9 @@ public class CharacterDataLayerTests
     [Fact]
     public async Task GetCharacter_WhenTheTransactionUnitIsRetried_DoesNotCallBlizzardAgain()
     {
-        // The rule this test exists for: Aspire's SQL Server integration enables retry-on-failure, so
-        // ExecuteInTransactionAsync's callback MAY RUN MORE THAN ONCE. An HTTP call inside it would fire
-        // again on every retry — spending contractual rate-limit budget, and rolled back by nothing.
-        // Here the substitute runs the unit twice, exactly as a retrying execution strategy would.
+        // ExecuteInTransactionAsync's callback MAY RUN MORE THAN ONCE, so an HTTP call inside it would
+        // fire again on every retry — spending contractual budget, rolled back by nothing. The
+        // substitute runs the unit twice, exactly as a retrying execution strategy would.
         StoredIs(null, thenAfterRefresh: StoredCharacter());
         RealmIsKnown();
         BlizzardHas(FetchedCharacter(), FetchedEquipment());

@@ -3,10 +3,8 @@ using AegisScribe.Domain.Managers.Models.ServiceModels;
 
 namespace AegisScribe.Domain.Data;
 
-// Mostly pass-throughs: each rank operation is one repository call, none of them reaches an external
-// gateway or writes twice, so there is no transaction boundary to own. Kept as the seam Business
-// depends on anyway (add-endpoint skill), which is what let 7.2 add the holder count below without
-// Business learning about a second repository.
+// Mostly pass-throughs — each rank operation is one repository call with no transaction boundary to own
+// — kept as the seam Business depends on.
 //
 // CountRankHoldersAsync is the one genuine composition: it reads the ROSTER table on the rank
 // vertical's behalf, so TenantRankRepository keeps to the table it owns and the roster's own query

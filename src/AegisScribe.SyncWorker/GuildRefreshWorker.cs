@@ -2,7 +2,7 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// Runs the guild roster refresh (6.6b) at startup and then on the character pass's poll interval.
+// Runs the guild roster refresh at startup and then on the character pass's poll interval.
 //
 // No separate knob: both passes answer the same question — what has aged past the refresh window — and
 // a second interval would be two names for one decision. The selection query is the gate, so a pass

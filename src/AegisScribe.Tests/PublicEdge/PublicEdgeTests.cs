@@ -7,13 +7,10 @@ namespace AegisScribe.Tests.PublicEdge;
 [Collection("AegisScribe API - Public Edge")]
 public class PublicEdgeTests(TightRateLimitAppFixture fixture) : IDisposable
 {
-    // fixture.ApiClient carries ServiceDefaults' standard resilience handler, which retries
-    // transient-looking responses (429 included) with backoff — great for production, but it means
-    // a client deliberately trying to observe a 429 (or anything sent after one has already been
-    // triggered in this collection) gets stuck retrying past the resilience handler's own 30s total
-    // timeout instead of ever seeing the response (confirmed against dotnet/aspire#3431, which
-    // documents that CreateHttpClient's resilience settings aren't overridable per-call). These
-    // tests build their own plain client, pointed at the same resolved endpoint, with no retries.
+    // fixture.ApiClient carries the standard resilience handler, which retries 429s with backoff — so a
+    // client deliberately trying to OBSERVE a 429 gets stuck retrying past the handler's own timeout
+    // instead of ever seeing the response, and those settings are not overridable per-call
+    // (dotnet/aspire#3431). These tests use their own plain client with no retries.
     private readonly HttpClient _rawClient = new() { BaseAddress = fixture.ApiClient.BaseAddress };
 
     private static string UniqueEmail() => $"edge-{Guid.NewGuid():N}@example.com";
@@ -21,10 +18,9 @@ public class PublicEdgeTests(TightRateLimitAppFixture fixture) : IDisposable
     [Fact]
     public async Task CrossOriginRequest_CarriesNoCorsHeaders()
     {
-        // An HttpClient doesn't enforce CORS itself — a browser does. The only server-observable
-        // proof that "no CORS policy" holds is the absence of Access-Control-* response headers,
-        // which is exactly what stops a browser reading the response cross-origin even with a
-        // stolen token (backend.md -> "The API's public edge").
+        // An HttpClient does not enforce CORS — a browser does. The only server-observable proof that
+        // "no CORS policy" holds is the absence of Access-Control-* headers, which is what stops a
+        // browser reading the response cross-origin even with a stolen token (backend.md).
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register")
         {
             Content = JsonContent.Create(new { email = UniqueEmail(), password = "Sup3r$ecretPwd!" }),

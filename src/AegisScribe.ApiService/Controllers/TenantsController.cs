@@ -20,7 +20,7 @@ public class TenantsController(ITenantFacade tenantFacade) : ControllerBase
 {
     // Tenant-less like the POST below it, and authenticated for the same reason the endpoint is
     // narrow: it answers "is this slug free" and nothing else. See SlugCheckReason — no answer names
-    // the community holding a taken slug (2.7b).
+    // the community holding a taken slug.
     [HttpGet("slug-check")]
     [EnableRateLimiting(RateLimiterPolicies.SlugCheck)]
     public async Task<ActionResult<SlugCheckServiceModel>> CheckSlug(

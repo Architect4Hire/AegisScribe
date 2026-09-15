@@ -8,9 +8,8 @@ public interface ICharacterRepository
     // Detail read — the domain entity, gear included, for a character page.
     Task<Character?> FindByRealmAndNameAsync(string region, string realmSlug, string name, CancellationToken ct);
 
-    // Existence by id, for callers holding a character id from elsewhere in the app — claiming (7.2b)
-    // and, later, adding to a roster. Deliberately not a full read: the caller needs to turn "no such
-    // character" into a 404 rather than let the foreign key turn it into a 500, and nothing more.
+    // Deliberately not a full read: the caller needs to turn "no such character" into a 404 rather than
+    // let the foreign key turn it into a 500, and nothing more.
     Task<bool> ExistsAsync(Guid characterId, CancellationToken ct);
 
     // List read — projects straight to the summary ServiceModel in SQL. Cursor pagination
@@ -25,21 +24,16 @@ public interface ICharacterRepository
         int take,
         CancellationToken ct);
 
-    // The sync worker's selection query (6.5): characters whose stored data has aged past the refresh
-    // policy, oldest first, capped at the run's budget.
-    //
-    // Oldest first because this is a compliance queue rather than a work queue — the rows closest to
-    // breaching the Terms of Use thirty-day window go first, so a backlog turns into lateness on the
-    // newest rows instead of the oldest. Equipment counts toward staleness too: it carries its own
-    // LastSyncedAt and its own obligation, and a failed gear fetch otherwise leaves a fresh character
-    // row whose gear no query would ever pick up again.
+    // The sync worker's selection query, oldest first — a compliance queue rather than a work queue, so
+    // a backlog becomes lateness on the newest rows rather than the oldest. Equipment counts toward
+    // staleness too, or a failed gear fetch leaves a fresh character row whose gear no query picks up.
     Task<IReadOnlyList<StaleCharacterRef>> FindStaleAsync(DateTimeOffset staleBefore, int take, CancellationToken ct);
 
-    // The write operations below stage changes only — ExecuteInTransactionAsync calls
-    // SaveChangesAsync once for the whole unit — so they are composed inside one callback and commit or
-    // roll back together.
+    // The writes below stage changes only — ExecuteInTransactionAsync calls SaveChangesAsync once for
+    // the whole unit — so they commit or roll back together.
+    //
     // Keyed on (RealmId, NameLower), the natural key, because Blizzard character ids do not survive a
-    // rename or a realm transfer. Returns the persisted entity.
+    // rename or a realm transfer.
     Task<Character> UpsertCharacterAsync(Character fresh, Guid realmId, CancellationToken ct);
 
     // Reconciles the equipped-item set for a character in place, slot by slot.

@@ -12,11 +12,8 @@ namespace AegisScribe.Tests.Character;
 public class StaleCharacterQueryTests(AegisScribeAppFixture fixture)
 {
     // The fixture database is shared and accumulates rows from every run, and this query orders
-    // oldest-first across the whole table. So no test here may assume its own subject lands on a page:
-    // a deliberately FRESH one sorts last, and even a 20-day-old one competes with every older row
-    // left behind by previous runs. Every assertion about WHICH rows come back therefore asks for the
-    // entire stale set; the paging behaviour has its own test at the bottom, which is where a page
-    // size belongs.
+    // oldest-first across the whole table — so no test here may assume its subject lands on a page.
+    // Every assertion about WHICH rows come back asks for the entire stale set; paging has its own test.
     private const int WholeStaleSet = 100_000;
 
     [Fact]

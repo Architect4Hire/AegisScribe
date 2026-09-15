@@ -8,9 +8,8 @@ namespace AegisScribe.Domain.Data;
 
 public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryRepository
 {
-    // Where an unranked entry sorts under RosterSort.Rank. A sentinel rather than SQL's own NULL
-    // ordering because it makes every term of the keyset comparison non-null — a three-way compare
-    // instead of a nulls-last special case repeated in both the WHERE and the ORDER BY.
+    // Where an unranked entry sorts under RosterSort.Rank. A sentinel rather than SQL's NULL ordering,
+    // so every term of the keyset comparison is non-null.
     private const int UnrankedOrder = int.MaxValue;
 
     public async Task<IReadOnlyList<Guid>> ListMainIdsAsync(
@@ -20,12 +19,9 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
         // group whole across a page boundary.
         var mains = db.RosterEntries.AsNoTracking().Where(entry => entry.MainRosterEntryId == null);
 
-        // One keyset per sort, written out rather than abstracted over. Three explicit predicates are
-        // longer than one generic one and much easier to verify against their own ORDER BY — and the
-        // ORDER BY agreeing with the predicate is the whole correctness condition of a cursor.
-        //
-        // The CompareTo(...) idiom translates to SQL Server's native comparison rather than needing a
-        // row-value compare — the same shape CharacterRepository.SearchAsync uses.
+        // One keyset per sort, written out rather than abstracted over: three explicit predicates are
+        // much easier to verify against their own ORDER BY, and the ORDER BY agreeing with the
+        // predicate is the whole correctness condition of a cursor.
         return sort switch
         {
             RosterSort.Name => await ByNameAsync(mains, afterKey, afterId, take, ct),
@@ -34,14 +30,13 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
         };
     }
 
-    // Every sort breaks ties by character NAME before falling back to the id. That is not decoration:
-    // a roster whose equally-ranked members reorder themselves between reads looks broken, and an id
-    // tie-break alone is a random GUID ordering. The id is still there underneath, because two
-    // characters on different realms can share a name and a total order is what makes a keyset
-    // resumable at all.
+    // Every sort breaks ties by character name before falling back to the id: a roster whose
+    // equally-ranked members reorder themselves between reads looks broken, and an id tie-break alone
+    // is a random GUID ordering. The id stays underneath because two characters on different realms
+    // can share a name, and a total order is what makes a keyset resumable at all.
     //
-    // So the compound sorts carry a two-part key, "{primary}~{nameLower}". A malformed one restarts the
-    // page rather than failing the request: a cursor is opaque but still client-supplied
+    // So the compound sorts carry a two-part key, "{primary}~{nameLower}". A malformed one restarts
+    // the page rather than failing the request: a cursor is opaque but still client-supplied
     // (api-contract.md).
     private const char KeySeparator = '~';
 
@@ -101,8 +96,7 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
             Name = entry.Character.NameLower,
         });
 
-        // Item level descends, so its half of the comparison flips with it — highest first is the only
-        // direction a roster is read in (screen S3's ↓). Name and id still ascend.
+        // Item level descends, so its half of the comparison flips with it. Name and id still ascend.
         if (afterItemLevel is not null && afterName is not null && afterId is not null)
         {
             keyed = keyed.Where(row =>
@@ -155,9 +149,8 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
                 || (entry.MainRosterEntryId != null && mainIds.Contains(entry.MainRosterEntryId.Value)))
             .Select(entry => new RosterRow
             {
-                // The guild the in-game rank belongs to, carried alongside the model so the rank NAME
-                // can be resolved after materialization. Not on the wire — the guild's name is, which
-                // is what the column needs to be unambiguous.
+                // Carried alongside the model so the rank NAME can be resolved after materialization.
+                // Not on the wire — the guild's name is, which is what the column needs.
                 GuildId = db.GuildMembers
                     .Where(member => member.CharacterId == entry.CharacterId
                         && db.TenantGuilds.Any(link => link.GuildId == member.GuildId))
@@ -174,12 +167,10 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
                     Level = entry.Character.Level,
                     ItemLevel = entry.Character.ItemLevel,
                     LastSyncedAt = entry.Character.LastSyncedAt,
-                    // The game's rank, from the guild membership — restricted to guilds THIS community
-                    // follows, through the tenant-scoped link rather than the global Guild table. A
-                    // character in a guild nobody here follows has no in-game rank to show.
-                    //
-                    // Deterministic by guild name when a community follows several, so the column
-                    // never silently means a different guild between two reads.
+                    // Restricted to guilds THIS community follows, through the tenant-scoped link
+                    // rather than the global Guild table. Deterministic by guild name when a community
+                    // follows several, so the column never silently means a different guild between
+                    // two reads.
                     BlizzardRank = db.GuildMembers
                         .Where(member => member.CharacterId == entry.CharacterId
                             && db.TenantGuilds.Any(link => link.GuildId == member.GuildId))
@@ -197,9 +188,9 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
                     RankColour = entry.TenantRank == null ? null : entry.TenantRank.Colour,
                     RankSortOrder = entry.TenantRank == null ? (int?)null : entry.TenantRank.SortOrder,
                     MainRosterEntryId = entry.MainRosterEntryId,
-                    // The claim, joined through the tenant-scoped CharacterClaims table so a claim held
-                    // in another community cannot appear here. DisplayName only — a member's email is
-                    // not a fellow member's to see, the same line CharacterClaimRepository draws.
+                    // Joined through the tenant-scoped CharacterClaims table so a claim held in
+                    // another community cannot appear here. DisplayName only — a member's email is not
+                    // a fellow member's to see.
                     ClaimedByUserId = db.CharacterClaims
                         .Where(claim => claim.CharacterId == entry.CharacterId)
                         .Select(claim => claim.UserId)
@@ -224,17 +215,16 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
     // The two fields SQL cannot produce, applied over one bounded page.
     private async Task ApplyDerivedAsync(List<RosterRow> rows, CancellationToken ct)
     {
-        // The class colour comes from the single mapping table in CharacterMappers, not from a second
-        // copy here and emphatically not from the frontend — a C# switch just cannot run inside a SQL
-        // projection, so it runs here instead.
+        // The single class→colour mapping lives in CharacterMappers, and a C# switch cannot run inside
+        // a SQL projection — so it runs here rather than becoming a second copy.
         foreach (var row in rows)
         {
             row.Model.ClassColor = CharacterMappers.ClassColorHex(row.Model.Class);
         }
 
-        // The community's names for the in-game ranks on this page. One extra query rather than a
-        // correlated subquery per row, because the rank NAME depends on the guild the rank came from —
-        // itself the result of a subquery — and nesting those is unreadable for no gain at this size.
+        // One extra query rather than a correlated subquery per row: the rank NAME depends on the
+        // guild the rank came from, itself the result of a subquery, and nesting those is unreadable
+        // for no gain at this size.
         var wanted = rows
             .Where(row => row.GuildId is not null && row.Model.BlizzardRank is not null)
             .Select(row => row.GuildId!.Value)
@@ -256,15 +246,14 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
 
         foreach (var row in rows.Where(row => row.GuildId is not null && row.Model.BlizzardRank is not null))
         {
-            // Left null when nobody has named that rank. The UI shows the bare number then — Blizzard
-            // does not expose guild rank names, so inventing one would present our guess as the
-            // guild's own.
+            // Left null when nobody has named that rank; the UI shows the bare number. Blizzard does
+            // not expose guild rank names, so inventing one would present our guess as the guild's own.
             row.Model.BlizzardRankName = byKey.GetValueOrDefault((row.GuildId!.Value, row.Model.BlizzardRank!.Value));
         }
     }
 
     // The wire model plus the one field that stays behind: the guild the in-game rank came from, which
-    // the rank-name lookup needs and the client does not (it gets the guild's NAME instead).
+    // the rank-name lookup needs and the client does not.
     private sealed class RosterRow
     {
         public required Guid? GuildId { get; init; }
@@ -358,22 +347,15 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
     public async Task<bool> TryLinkAltAsync(Guid rosterEntryId, Guid mainRosterEntryId, CancellationToken ct)
     {
         // One UPDATE, no prior SELECT deciding anything. Both depth rules are in the WHERE, so the
-        // check and the write are the same statement and two concurrent callers are serialised by the
-        // row lock rather than by hope — the same shape, and the same reason, as
-        // SyncBudgetRepository.TryConsumeAsync.
+        // check and the write are one statement and concurrent callers are serialised by the row lock
+        // rather than by hope — same shape as SyncBudgetRepository.TryConsumeAsync.
         //
-        // Why a re-read inside the transaction would NOT have been enough: the subquery has to read the
-        // row the other transaction is exclusively locking. Racing links of A→B and B→A each have to
-        // read the row the other is writing, so the second one blocks until the first commits and then
-        // sees the main it wanted is now an alt.
+        // Racing links of A→B and B→A each have to read the row the other is exclusively locking, so
+        // the second blocks until the first commits and then sees the main it wanted is now an alt.
+        // That can deadlock; SQL Server's error 1205 is transient, so the execution strategy wrapping
+        // this retries the whole unit and the retry refuses properly.
         //
-        // That can also deadlock — each holding one row and wanting the other. SQL Server kills a
-        // victim with error 1205, which is transient, so the execution strategy wrapping this
-        // (DbContextTransactions) retries the whole unit and the retry refuses properly. That is the
-        // retryable-callback shape doing the job it exists for.
-        //
-        // All three RosterEntries references carry the ambient query filter, so every row involved is
-        // this community's.
+        // All three RosterEntries references carry the ambient query filter.
         var affected = await db.RosterEntries
             .Where(entry => entry.Id == rosterEntryId
                 // Rule 3: the target must not itself be an alt.
@@ -397,14 +379,10 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
     private const string RosterIndexName = "IX_RosterEntries_TenantId_CharacterId";
     private const string AltForeignKeyName = "FK_RosterEntries_RosterEntries_MainRosterEntryId";
 
-    // Two of this feature's rules are enforced by the database as well as by a check in Business, and
-    // that is deliberate — a check alone is a read-then-write, and two racing requests both pass it.
-    // The database winning that race is the design working; the caller seeing a 500 because nobody
-    // translated the violation is the design leaking. So both constraints are translated here, on the
-    // transaction boundary where the SaveChanges that trips them actually happens.
-    //
-    // Same shape as TenantRepository's slug translation, and neither is retried: a constraint
-    // violation is not a transient failure, so the execution strategy correctly lets it through.
+    // Two of this feature's rules are enforced by the database as well as by a check in Business,
+    // deliberately: a check alone is a read-then-write and two racing requests both pass it. So both
+    // constraints are translated here, on the transaction boundary where the SaveChanges that trips
+    // them happens. Neither is retried — a constraint violation is not a transient failure.
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
     {
@@ -420,9 +398,8 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
         }
         catch (DbUpdateException ex) when (ex.IsForeignKeyViolationOn(AltForeignKeyName))
         {
-            // An alt was linked to this entry between the has-alts count and the delete. The count is
-            // unknown from here and deliberately not re-queried: this path is already the loser of a
-            // race, and the caller's next step is to re-read the roster either way.
+            // An alt was linked between the has-alts count and the delete. The count is deliberately
+            // not re-queried: this path already lost the race, and the caller re-reads either way.
             throw new RosterEntryHasAltsException(altCount: null);
         }
     }

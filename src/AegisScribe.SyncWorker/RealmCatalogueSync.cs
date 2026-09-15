@@ -5,14 +5,11 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// 6.4b — fills Realm for every realm in a region, connected-realm grouping included.
+// Fills Realm for every realm in a region, connected-realm grouping included.
 //
-// Runs GLOBALLY, outside any tenant, and that is the whole economics of it: realm data is identical for
+// Runs GLOBALLY, outside any tenant, which is the whole economics of it: realm data is identical for
 // every community, so one pass serves all of them. Per-tenant would multiply ~100 calls by tenant count
-// and breach the contractual cap on the third community (tenancy.md, external.md).
-//
-// Reaches Blizzard only through the gateway and writes only through the repository, per external.md's
-// rules for the worker.
+// and breach the contractual cap on the third community.
 public sealed class RealmCatalogueSync(
     IBlizzardGateway gateway,
     IRealmRepository realms,
@@ -21,12 +18,9 @@ public sealed class RealmCatalogueSync(
     TimeProvider timeProvider,
     ILogger<RealmCatalogueSync> logger)
 {
-    // Not a throughput control — the rate limiter already holds outbound calls to 9/second, so a pass of
-    // ~100 connected realms is limiter-bound at roughly eleven seconds whatever this says.
-    //
-    // What it bounds is QUEUE OCCUPANCY. An unbounded fan-out parks ~100 leases in a queue 200 deep
-    // (BlizzardOptions.MaxQueuedCalls), and a user's character lookup then waits behind the entire realm
-    // catalogue. Four holds that to four.
+    // Not a throughput control — the rate limiter already holds outbound calls to 9/second. What this
+    // bounds is QUEUE OCCUPANCY: an unbounded fan-out parks ~100 leases in a queue 200 deep, and a
+    // user's character lookup then waits behind the entire realm catalogue.
     private const int MaxConcurrentConnectedRealmFetches = 4;
 
     public async Task<RealmCatalogueSyncResult> RunAsync(CancellationToken ct)
@@ -46,8 +40,8 @@ public sealed class RealmCatalogueSync(
         if (await IsCatalogueFreshAsync(region, ct))
         {
             // The restart gate. `aspire run` restarts this worker constantly in local development, and
-            // without this every restart would spend ~100 contractual calls re-fetching a catalogue that
-            // has not changed since breakfast.
+            // every restart would otherwise spend ~100 contractual calls re-fetching an unchanged
+            // catalogue.
             logger.LogInformation(
                 "The realm catalogue for {Region} is inside the refresh window; skipping this pass.",
                 region);
@@ -99,8 +93,8 @@ public sealed class RealmCatalogueSync(
     {
         var latest = await realms.LatestSyncedAtAsync(region, ct);
 
-        // No realms at all means a first run, never "fresh". A region holding only realms that 6.4
-        // resolved lazily is also due, because those are a handful of rows rather than a catalogue.
+        // No realms at all means a first run, never "fresh". A region holding only lazily-resolved
+        // realms is also due, because those are a handful of rows rather than a catalogue.
         return latest is { } lastSyncedAt
             && lastSyncedAt > timeProvider.GetUtcNow() - stalenessOptions.Value.RealmRefreshAfter;
     }
@@ -114,8 +108,7 @@ public sealed class RealmCatalogueSync(
         var gate = new Lock();
         var failures = 0;
 
-        // Bounded, never Task.WhenAll over the whole list (external.md, add-external-sync step 6). A
-        // guild roster taught this lesson first; a hundred connected realms would teach it again.
+        // Bounded, never Task.WhenAll over the whole list (external.md).
         await Parallel.ForEachAsync(
             connectedRealmIds,
             new ParallelOptions { MaxDegreeOfParallelism = MaxConcurrentConnectedRealmFetches, CancellationToken = ct },
@@ -132,9 +125,9 @@ public sealed class RealmCatalogueSync(
                 }
                 catch (BlizzardUnavailableException exception)
                 {
-                    // One group failing does not fail the pass. The realms we did get are still worth
-                    // storing, and the next run picks up the rest — which is what makes this resumable
-                    // without tracking progress anywhere.
+                    // One group failing does not fail the pass: the realms we did get are worth storing
+                    // and the next run picks up the rest, which is what makes this resumable without
+                    // tracking progress anywhere.
                     lock (gate)
                     {
                         failures++;

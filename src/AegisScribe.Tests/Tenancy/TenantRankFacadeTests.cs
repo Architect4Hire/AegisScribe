@@ -12,12 +12,11 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Tenancy;
 
-// Facade: real validators, mocked business, a real in-memory IDistributedCache (add-endpoint skill's
-// hit / miss / validation-failure trio, plus the invalidation this facade owes because it writes).
+// Facade: real validators, mocked business, a real in-memory IDistributedCache — hit, miss, validation
+// failure, plus the invalidation this facade owes because it writes.
 //
-// The tenancy-specific assertion these carry over CharacterFacadeTests is the KEY SHAPE: this is the
-// first facade caching tenant-scoped data, and a bare key here would serve one community's ladder to
-// another (tenancy.md).
+// The tenancy-specific assertion is the KEY SHAPE: a bare key here would serve one community's ladder
+// to another (tenancy.md).
 public class TenantRankFacadeTests
 {
     private static readonly Guid TenantId = Guid.Parse("8e2b0f1a-2c3d-4e5f-9a7b-1c2d3e4f5a6b");

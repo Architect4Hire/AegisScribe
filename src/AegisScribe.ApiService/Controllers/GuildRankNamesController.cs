@@ -8,14 +8,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// What this community calls the in-game ranks of the guilds it follows (7.5).
+// What this community calls the in-game ranks of the guilds it follows. Blizzard's roster endpoint
+// returns a rank NUMBER and nothing more, so somebody has to type "Veteran", and these are the routes
+// where they do it.
 //
-// The table exists because Blizzard does not give us the names — the guild roster endpoint returns a
-// rank NUMBER, 0-9, and nothing more. Somebody has to type "Veteran", and these are the routes where
-// they do it.
-//
-// Not to be confused with /ranks, which is the community's OWN ladder (TenantRank). Three rank
-// concepts, none derived from another; this one only ever labels a number the game reported.
+// Not to be confused with /ranks, which is the community's OWN ladder. This one only ever labels a
+// number the game reported.
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/t/{tenantSlug}/guild-rank-names")]

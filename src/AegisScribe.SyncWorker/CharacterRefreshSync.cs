@@ -4,18 +4,13 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// 6.5 — the eager half of the refresh story (add-external-sync skill, step 6).
+// The eager half of the refresh story. The DataLayer's cache-first read refreshes what somebody asked
+// for; this refreshes what nobody asked for and the Terms of Use require anyway — every stored row
+// re-fetched at least every thirty days, so a character nobody visits does not age out silently.
 //
-// The DataLayer's cache-first read refreshes what somebody asked for. This refreshes what nobody asked
-// for and the Terms of Use require anyway: every stored row must be re-fetched at least every thirty
-// days, and a character nobody visits would otherwise age out silently.
-//
-// It runs GLOBALLY, outside any tenant, and never iterates tenants. Character and CharacterEquipment are
-// global reference data (tenancy.md) — one row serves every community that rosters that character — so
-// refreshing per tenant would multiply this job's API calls by tenant count and breach the contractual
-// cap on the third community. No tenant is ever resolved here, and nothing needs one.
-//
-// Reaches Blizzard only through the gateway and writes only through the repository, per external.md.
+// It runs GLOBALLY, outside any tenant, and never iterates tenants. Character and CharacterEquipment
+// are global reference data (tenancy.md), so refreshing per tenant would multiply this job's API calls
+// by tenant count and breach the contractual cap on the third community.
 public sealed class CharacterRefreshSync(
     IServiceScopeFactory scopeFactory,
     IBlizzardStalenessPolicy staleness,
@@ -55,9 +50,9 @@ public sealed class CharacterRefreshSync(
         var failed = 0;
         var gate = new Lock();
 
-        // Bounded, never Task.WhenAll over the batch (external.md, add-external-sync step 6). The batch
-        // is capped by CharacterBatchSize, but "bounded by the budget" is not the same as bounded
-        // concurrency — 200 requests in flight at once is still 200 leases queued ahead of every user.
+        // Bounded, never Task.WhenAll over the batch (external.md). "Bounded by the budget" is not the
+        // same as bounded concurrency — 200 requests in flight is still 200 leases queued ahead of
+        // every user.
         await Parallel.ForEachAsync(
             due,
             new ParallelOptions { MaxDegreeOfParallelism = settings.MaxConcurrentRefreshes, CancellationToken = ct },
@@ -89,10 +84,9 @@ public sealed class CharacterRefreshSync(
 
     private async Task<RefreshOutcome> RefreshOneAsync(StaleCharacterRef candidate, CancellationToken ct)
     {
-        // One DI scope per character, and this is not optional: a DbContext is not thread-safe, and this
-        // loop runs several iterations at once. Sharing one scope across the fan-out produces the
-        // "second operation started on this context" failure under exactly the load that makes it
-        // hardest to reproduce. MaxConcurrentRefreshes caps how many are ever live.
+        // One DI scope per character, and not optional: a DbContext is not thread-safe and this loop
+        // runs several iterations at once. Sharing one scope produces the "second operation started on
+        // this context" failure under exactly the load that makes it hardest to reproduce.
         using var scope = scopeFactory.CreateScope();
 
         var gateway = scope.ServiceProvider.GetRequiredService<IBlizzardGateway>();
@@ -107,10 +101,9 @@ public sealed class CharacterRefreshSync(
 
             if (fresh is null)
             {
-                // Blizzard 404'd: renamed, transferred or deleted. The row is left alone — removing other
-                // people's data on the strength of a 404 is the erasure routine's job, not a sync job's.
-                // It stays in the selection query and will be retried next pass, which is correct: a
-                // transient 404 heals itself and a permanent one costs one call a pass.
+                // Renamed, transferred or deleted. The row is left alone — removing other people's data
+                // on the strength of a 404 is the erasure routine's job. It stays in the selection
+                // query: a transient 404 heals itself and a permanent one costs one call a pass.
                 return RefreshOutcome.Gone;
             }
 

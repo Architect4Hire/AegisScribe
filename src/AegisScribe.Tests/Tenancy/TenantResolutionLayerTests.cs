@@ -130,7 +130,7 @@ public class TenantBusinessTests
         Assert.False(result.Available);
         Assert.Equal(SlugCheckReason.Taken, result.Reason);
         // The answer carries the slug that was asked about and nothing identifying the holder — this
-        // endpoint is reachable by any authenticated caller (2.7b).
+        // endpoint is reachable by any authenticated caller.
         Assert.Equal("ashes-of-dawn", result.Slug);
     }
 

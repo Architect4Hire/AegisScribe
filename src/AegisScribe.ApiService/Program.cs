@@ -24,17 +24,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Backs IIdempotencyStore (Idempotency-Key replay for POSTs that create something — api-contract.md).
-// Same integration Gateway already uses for its session store; api.csproj/AppHost now reference it too.
+// Backs IIdempotencyStore — Idempotency-Key replay for POSTs that create something (api-contract.md).
 builder.AddRedisDistributedCache("cache");
 
-// ITenantContext is a scoped, per-request dependency now that OnModelCreating reads it for the
-// tenant-scoped query filter (2.4) — AddSqlServerDbContext always pools in this Aspire version (its
-// settings type has no pooling toggle, confirmed against the installed package), and pooling would
-// freeze the FIRST request's instance into the pooled context and silently reuse it for every later
-// request. That is tenancy.md's worst failure mode, via a completely different mechanism than a
-// missing filter. Plain AddDbContext + EnrichSqlServerDbContext is Aspire's documented unpooled
-// alternative — same retries/health checks/telemetry, without AddDbContextPool underneath.
+// Unpooled deliberately: OnModelCreating reads the scoped ITenantContext, and AddSqlServerDbContext
+// always pools in this Aspire version — which would freeze the FIRST request's tenant into the pooled
+// context and reuse it for every later one (tenancy.md's worst failure mode).
 builder.Services.AddDbContext<AegisScribeDbContext>((sp, options) =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("aegisscribedb"));
@@ -43,40 +38,24 @@ builder.Services.AddDbContext<AegisScribeDbContext>((sp, options) =>
 });
 builder.EnrichSqlServerDbContext<AegisScribeDbContext>();
 
-// Add services to the container.
-
-// Controller → Facade → Business → DataLayer is the whole HTTP surface (backend.md, the
-// add-endpoint skill) — no minimal-API route mapping for anything beyond framework-provided
-// endpoints like health checks.
-// api-contract.md: "Enums cross the wire as strings, never as integers." TenantRole
-// (TenantMembershipServiceModel.Role) is the first enum any response has carried — global so every
-// future one gets this for free. Two registrations, because MVC's wire serialization
-// (Mvc.JsonOptions, via AddJsonOptions) and the native OpenAPI document's schema generation
-// (Http.Json.JsonOptions, via ConfigureHttpJsonOptions) read from two separate JsonSerializerOptions
-// instances — setting only one leaves the actual response and its documented schema disagreeing.
+// Enums cross the wire as strings (api-contract.md). Two registrations, because MVC serialization and
+// OpenAPI schema generation read separate JsonSerializerOptions — setting one leaves the response and
+// its documented schema disagreeing.
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
-// URL segment only (api-contract.md forbids header/query-string versioning) — AddApiVersioning()'s
-// own default reader reads BOTH query string and URL segment unless overridden here. AddMvc() wires
-// versioning into controller action selection; AddOpenApi() must come after
-// AddApiVersioning()/AddApiExplorer() in this chain to pick up Asp.Versioning's version-aware
-// variant instead of the plain one.
+// URL segment only — the default reader also accepts a query string unless overridden
+// (api-contract.md). AddOpenApi() must come last, to pick up the version-aware variant.
 builder.Services.AddApiVersioning(options =>
     {
         options.ApiVersionReader = new UrlSegmentApiVersionReader();
-        options.ReportApiVersions = true; // emits api-supported-versions / api-deprecated-versions
-
-        // Deprecation/Sunset support for later: Asp.Versioning has this built in as a policy builder —
-        // options.Policies.Deprecate(1.0).Effective(...).Link(...).Title(...).Type(...) and
-        // .Sunset(1.0).Effective(...) — emitted as real RFC 8594 headers once a version actually needs
-        // retiring. Nothing to configure now; v1 is the only version and isn't deprecated.
+        options.ReportApiVersions = true;
     })
     .AddApiExplorer(options =>
     {
-        options.GroupNameFormat = "'v'VVV"; // formats 1.0 as "v1", matching the existing URLs
+        options.GroupNameFormat = "'v'VVV";
         options.SubstituteApiVersionInUrl = true; // required specifically for URL-segment versioning
     })
     .AddMvc()
@@ -88,25 +67,19 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
 
-        // The API's principals come from OpenIddict tokens, which identify the user by "sub" — not
-        // by Identity's default NameIdentifier claim, which those tokens never carry. Without this,
-        // UserManager.GetUserId and ICurrentUser.UserId both come back null for every signed-in
-        // caller: /me 401s and tenant resolution 404s every member.
+        // OpenIddict tokens identify the user by "sub", not Identity's default NameIdentifier. Without
+        // this, UserManager.GetUserId is null for every signed-in caller.
         options.ClaimsIdentity.UserIdClaimType = OpenIddictConstants.Claims.Subject;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AegisScribeDbContext>()
     .AddDefaultTokenProviders()
-    // AddIdentityCore (unlike AddIdentity) does not register SignInManager on its own — the user
-    // repository (AegisScribe.Domain) needs CheckPasswordSignInAsync for the interactive sign-in leg.
+    // AddIdentityCore, unlike AddIdentity, does not register SignInManager; the user repository needs
+    // CheckPasswordSignInAsync.
     .AddSignInManager();
 
-// OpenIddict is both the token issuer (server) and, as of this phase, the API's own validator —
-// AddValidation(o => o.UseLocalServer()) shares keys directly since issuer and resource server are
-// the same process here, rather than fetching a JWKS. Enabling the authorization/token endpoint
-// passthroughs makes those routes reachable via Controllers/AuthorizationController.cs, which
-// handles the interactive sign-in flow (1B.6) alongside the client_credentials grant aegisscribe-ops
-// uses.
+// Both the token issuer and the API's own validator: UseLocalServer() shares keys in-process rather
+// than fetching a JWKS, and the passthroughs hand connect/* to AuthorizationController.
 builder.Services.AddOpenIddict()
     .AddCore(options => options.UseEntityFrameworkCore().UseDbContext<AegisScribeDbContext>())
     .AddServer(options =>
@@ -116,34 +89,22 @@ builder.Services.AddOpenIddict()
             .SetRevocationEndpointUris("connect/revoke")
             .SetEndSessionEndpointUris("connect/logout");
 
-        // A static issuer, not the default per-request-computed one — mandatory once
-        // UseForwardedHeaders() is in the mix (1B.7): the interactive flow arrives proxied through
-        // the gateway (X-Forwarded-Proto rewrites the scheme to https), but the gateway's own
-        // backchannel calls to connect/token (refresh, connect/revoke) go straight to the API over
-        // its internal http address and never pass through YARP at all — so the computed issuer
-        // would differ by which path minted the token, and OpenIddict's own validation correctly
-        // rejects a token whose issuer doesn't match. Confirmed against OpenIddict's Zirku sample,
-        // which carries the identical warning for its mTLS aliasing scenario. This is a stable
-        // placeholder, not a real reachable address — UseLocalServer() validates by shared keys in
-        // this same process, never by dereferencing the issuer over the network — and becomes the
-        // real https://api.aegisscribe.com once an actual deployment exists.
+        // Static, not the default per-request-computed issuer: the gateway's backchannel token calls
+        // bypass YARP, so a computed issuer would differ by which path minted the token and OpenIddict
+        // would reject its own. Never dereferenced — UseLocalServer() validates by shared keys.
         options.SetIssuer(new Uri("https://api.aegisscribe.internal/"));
 
         options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange()
             .AllowRefreshTokenFlow()
-            // Needed for aegisscribe-ops (client credentials) — one of the three clients this
-            // phase registers; the two interactive flows above serve the bff/mobile clients.
+            // For aegisscribe-ops; the interactive flows above serve the bff and mobile clients.
             .AllowClientCredentialsFlow();
 
-        // OpenIddict's built-in resource allow-list (RegisterResources) exists for a fleet of
-        // distinct downstream resource servers; there is exactly one here ("aegisscribe-api"), and
-        // it enforces its own audience in AddValidation below. Without this, a caller naming any
-        // other resource is rejected by the protocol layer before minting — which would make the
-        // wrong-audience scenario (a token that mints fine but the API rejects) unreachable.
+        // One resource server, enforcing its own audience in AddValidation below. The built-in
+        // allow-list would reject a wrong-audience request before minting, making that scenario — a
+        // token that mints fine but the API rejects — untestable.
         options.DisableResourceValidation();
 
-        // A plain config knob (not test-only): a caller may request a shorter lifetime per-token
-        // (see TokenEndpoints.cs), clamped to never exceed this configured default.
+        // A caller may request a shorter per-token lifetime, clamped to never exceed this default.
         options.SetAccessTokenLifetime(
             TimeSpan.FromSeconds(builder.Configuration.GetValue("Oidc:AccessTokenLifetimeSeconds", 900)));
 
@@ -169,10 +130,8 @@ builder.Services.AddOpenIddict()
         options.UseAspNetCore();
     });
 
-// OpenIddict's access tokens are encrypted JWTs (JWE) — AddJwtBearer cannot read them at all (a
-// silent 401 with nothing logged), so the default scheme is OpenIddict's own validation handler,
-// registered above by AddValidation(). No cookie auth, no login form, no session, no antiforgery —
-// this is a pure token resource server (auth.md).
+// OpenIddict's access tokens are encrypted JWTs — AddJwtBearer cannot read them and fails with a
+// silent 401. No cookies, no session: a pure token resource server (auth.md).
 builder.Services.AddAuthentication(OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
 
 builder.Services.AddAuthorizationBuilder()
@@ -181,21 +140,16 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AuthPolicies.TenantOfficer, policy => policy.AddRequirements(new TenantRoleRequirement(TenantRole.Officer)))
     .AddPolicy(AuthPolicies.TenantOwner, policy => policy.AddRequirements(new TenantRoleRequirement(TenantRole.Owner)));
 
-// Every layer below the controllers — facades, business, data layers, repositories, validators, and
-// the ambient TenantContext — lives in AegisScribe.Domain and registers itself (backend.md -> "Two
-// projects, one direction"). The host supplies what is host-shaped: the DbContext and Identity above,
-// and the caller, read from the validated token.
+// Every layer below the controllers lives in AegisScribe.Domain and registers itself. The host
+// supplies only what is host-shaped: the DbContext, Identity, and the caller from the token.
 builder.Services.AddAegisScribeDomain();
 
-// Registered on its own rather than from AddAegisScribeDomain: the Blizzard integration brings its own
-// typed client and token lifecycle, and the sync worker will want it without the request stack (6.5).
-// Credentials arrive as Blizzard__ClientId / Blizzard__ClientSecret from the AppHost, and their absence
-// is a supported state — the gateway degrades and this host still starts (external.md).
+// Separate, because the sync worker wants this without the request stack. Missing credentials are a
+// supported state — the gateway degrades and the host still starts (external.md).
 builder.Services.AddBlizzardIntegration();
 
-// The per-tenant fairness budget (6.6). Separate from the Blizzard section because it limits a
-// different thing: that one is the contractual cap on the whole process, this one is one community's
-// share of tenant-triggered work.
+// Per-tenant fairness, distinct from the Blizzard limiter: that is the contractual cap on the whole
+// process, this is one community's share of tenant-triggered work.
 builder.Services.AddOptions<TenantSyncBudgetOptions>()
     .BindConfiguration(TenantSyncBudgetOptions.SectionName)
     .Validate(
@@ -204,8 +158,8 @@ builder.Services.AddOptions<TenantSyncBudgetOptions>()
         "refuses every tenant-triggered sync rather than removing the limit.")
     .ValidateOnStart();
 
-// Tagged external so it reports at /health/external and stays out of /health: no Blizzard credentials is
-// normal locally, and it must not make the API look unready.
+// Tagged external so it stays out of /health: absent Blizzard credentials is normal locally and must
+// not make the API look unready.
 builder.Services.AddHealthChecks()
     .AddCheck<BlizzardGatewayHealthCheck>("blizzard", tags: [HealthCheckTags.External]);
 
@@ -214,30 +168,22 @@ builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler>();
 builder.Services.AddScoped<IIdempotencyStore, RedisIdempotencyStore>();
 
-// Facades throw ValidationException and Business throws domain exceptions; this is where they
-// become problem+json (or a bare 401). Controllers never catch them.
+// Where facade and business exceptions become problem+json. Controllers never catch them.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 
-// Partitioned by who's calling, in order: authenticated sub, then OAuth client_id (a fleet-wide
-// budget — many devices share one client_id), then IP only for genuinely anonymous requests. Never
-// falls back to IP once either claim is present — a carrier NAT puts a whole city behind one address
-// (backend.md -> "The API's public edge"). No request carries a real sub/client_id until 1B.5 wires
-// token validation, so today everything lands in the IP bucket; the shape is correct ahead of that.
+// Partitioned by sub, then client_id (a fleet-wide budget), then IP for anonymous requests only —
+// never falling back to IP once either claim is present, because a carrier NAT puts a whole city
+// behind one address (backend.md → "The API's public edge").
 //
-// Fixed window, not sliding: System.Threading.RateLimiting's SlidingWindowRateLimiter doesn't
-// reliably populate the RetryAfter lease metadata when QueueLimit is 0 (dotnet/runtime#131175),
-// and a 429 without Retry-After fails the one thing this is required to do.
-// Read once at startup rather than per request: the partitioners below run on every request, and an
-// IOptions resolution inside one would be overhead for a value that cannot change without a restart.
-// Absent configuration these are exactly the literals this block used to carry — see RateLimitOptions.
+// Fixed window, not sliding: SlidingWindowRateLimiter doesn't reliably populate the RetryAfter lease
+// metadata when QueueLimit is 0 (dotnet/runtime#131175).
 var rateLimits = builder.Configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>()
     ?? new RateLimitOptions();
 
 if (!rateLimits.IsValid)
 {
-    // Fails startup rather than serving traffic with a broken edge. A non-positive permit limit does
-    // not relax the limiter, it rejects everything — and a zero window divides by nothing.
+    // A non-positive permit limit does not relax the limiter, it rejects everything.
     throw new InvalidOperationException(
         "RateLimits configuration is invalid: every permit limit and the window must be positive.");
 }
@@ -256,9 +202,8 @@ builder.Services.AddRateLimiter(options =>
         return ValueTask.CompletedTask;
     };
 
-    // Stacks on top of the global limiter above. The slug-check endpoint is authenticated, so `sub` is
-    // normally present; the IP fallback is there so a misconfiguration degrades to a bucket rather
-    // than to no limit at all.
+    // Stacks on the global limiter below. The endpoint is authenticated, so the IP fallback only
+    // catches a misconfiguration.
     options.AddPolicy(RateLimiterPolicies.SlugCheck, httpContext =>
     {
         var partition = httpContext.User.FindFirst("sub")?.Value
@@ -317,46 +262,37 @@ using (var scope = app.Services.CreateScope())
     await RoleSeeder.SeedPlatformAdminRoleAsync(scope.ServiceProvider);
 }
 
-// Configure the HTTP request pipeline.
-// Non-production, not just Development — no third-party consumers exist to serve a public schema
-// in any deployed environment, and this is what makes it 404 in Production (backend.md).
+// Non-production, not just non-Development: a public schema is free reconnaissance and there are no
+// third-party consumers to serve it to (backend.md).
 if (!app.Environment.IsProduction())
 {
     app.MapOpenApi().WithDocumentPerVersion();
 }
 
-// Must run before UseHttpsRedirection (and anything else depending on scheme/host) so it can
-// restore the original public scheme from the gateway's X-Forwarded-Proto before those middlewares
-// see the request (host-and-deploy/proxy-load-balancer's own ordering guidance) — otherwise the
-// internal gateway->API hop, which is plain HTTP, looks like an insecure request and gets redirected.
-// KnownNetworks/KnownProxies are left at their framework defaults (loopback only, verified against
-// the current docs): gateway and API run on the same machine in this local-first setup (aspire.md),
-// so "trust only the gateway's network" and "trust loopback" are the same statement today. A real
-// multi-host deployment would need this widened to the gateway's actual address/subnet — a
-// follow-up, not solved here, since no such deployment exists yet.
+// Before UseHttpsRedirection, so the public scheme is restored from X-Forwarded-Proto first —
+// otherwise the plain-HTTP gateway→API hop looks insecure and gets redirected.
+//
+// KnownNetworks/KnownProxies stay at their loopback defaults: gateway and API share a machine here. A
+// multi-host deployment would have to widen them to the gateway's subnet.
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
 });
 
-// Early, so it wraps everything that can throw a domain exception — the tenant-resolution middleware
-// as well as the controllers. DomainExceptionHandler decides what it handles; the rest are 500s.
+// Early, so it wraps the tenant-resolution middleware as well as the controllers.
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
-// Serves wwwroot/css/{tokens,sign-in}.css for the connect/authorize sign-in page (1B.4d) — the one
-// screen in the app that's server-rendered HTML instead of the Angular bundle, so it needs its own
-// static assets. Anonymous and unauthenticated by nature; placed before UseAuthentication so a request
-// for these two files never runs through the pipeline built for API routes.
+// Serves the CSS for the connect/authorize sign-in page, the one server-rendered screen in the app.
+// Before UseAuthentication so those files never run through the pipeline built for API routes.
 app.UseStaticFiles();
 
 app.UseAuthentication();
-// After authentication so HttpContext.User carries whatever claims a token has — even one that
-// will later fail authorization — for the rate limiter's sub/client_id partitioning above.
+// After authentication, so the limiter's sub/client_id partitioning sees the token's claims.
 app.UseRateLimiter();
-// After authentication (needs HttpContext.User to check membership) and before authorization (a
-// tenant-aware policy, added later, will read the ITenantContext this populates) — tenancy.md.
+// After authentication (needs HttpContext.User) and before authorization (tenant-aware policies read
+// the ITenantContext this populates) — tenancy.md.
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
@@ -366,10 +302,8 @@ app.MapDefaultEndpoints();
 
 app.Run();
 
-// No real non-Development environment exists for this project yet, so this path is unexercised —
-// it exists so a certificate is selected BY ENVIRONMENT rather than the dev helper being called
-// unconditionally. Expects a base64-encoded PFX; production loading (Key Vault, mounted secret,
-// etc.) is a deployment-specific decision this app doesn't make yet.
+// Expects a base64-encoded PFX. Real production loading (Key Vault, mounted secret) is a deployment
+// decision this app does not make yet.
 static X509Certificate2 LoadOidcCertificate(string? base64Pfx)
 {
     if (string.IsNullOrEmpty(base64Pfx))

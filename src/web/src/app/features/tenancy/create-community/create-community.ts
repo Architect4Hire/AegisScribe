@@ -7,9 +7,9 @@ import { Observable, catchError, debounceTime, distinctUntilChanged, of, switchM
 import { TenantService } from '../../../core/tenant.service';
 import { SlugCheckServiceModel } from '../../../models/auth.models';
 
-// Mirrors TenantSlugRules in the Domain project. Held here only to stop the form submitting something
-// the server will certainly reject -- the authoritative rules, the derivation and the reserved list
-// all live server-side and reach this screen through GET /tenants/slug-check (2.7b).
+// Mirrors TenantSlugRules in the Domain project, held here only to stop the form submitting something
+// the server will certainly reject. The authoritative rules, the derivation and the reserved list all
+// live server-side and reach this screen through GET /tenants/slug-check.
 const MAX_NAME_LENGTH = 200;
 const MIN_SLUG_LENGTH = 3;
 const MAX_SLUG_LENGTH = 64;
@@ -18,14 +18,13 @@ const MAX_SLUG_LENGTH = 64;
 // appears while the user is still looking at the field.
 const SLUG_CHECK_DEBOUNCE_MS = 350;
 
-// 'derived' -- the slug is whatever the server makes of the name, and its input is read-only.
-// 'edited'  -- the user has taken it over, and the name no longer drives it.
+// 'derived' — the slug is whatever the server makes of the name, and its input is read-only.
+// 'edited'  — the user has taken it over, and the name no longer drives it.
 type SlugMode = 'derived' | 'edited';
 
-// The design system's four states are loading / empty / degraded / error, and those are for
-// data-bound components. This form binds no external data that can go stale, so its four are
-// idle / checking / submitting / error. There is deliberately NO degraded state: the slug check is a
-// live hint, not data we hold, and its failure path is 'unavailable' below.
+// The design system's four states are for data-bound components. This form binds no external data that
+// can go stale, so there is deliberately NO degraded state: the slug check is a live hint, not data we
+// hold, and its failure path is 'unavailable'.
 type SubmitState = 'idle' | 'submitting';
 type CheckState = 'idle' | 'checking' | 'answered' | 'unavailable';
 
@@ -51,11 +50,10 @@ export class CreateCommunity {
   readonly state = signal<SubmitState>('idle');
   readonly formErrors = signal<string[]>([]);
 
-  // The server's rejection of the slug is held here rather than in the control's own errors. Flagging
-  // it also unlocks the field, which swaps one input for another in the template, and the incoming
-  // formControlName directive re-runs updateValueAndValidity on registration -- wiping anything set
-  // with setErrors(). Held in a signal, the message survives that swap instead of flashing and
-  // vanishing.
+  // Held here rather than in the control's own errors: flagging the slug also unlocks the field, which
+  // swaps one input for another, and the incoming formControlName directive re-runs
+  // updateValueAndValidity on registration — wiping anything set with setErrors(). In a signal, the
+  // message survives that swap instead of flashing and vanishing.
   readonly slugServerErrors = signal<string[]>([]);
 
   // Intl is the only source for these. A curated zone list in the repo is data we would be inventing,
@@ -70,9 +68,9 @@ export class CreateCommunity {
   });
 
   constructor() {
-    // One pipeline shape, two sources. switchMap rather than mergeMap is load-bearing: it cancels the
-    // superseded request, so a slower answer for an earlier keystroke can never overwrite a newer one
-    // and leave the field showing a slug the user has already typed past.
+    // switchMap rather than mergeMap is load-bearing: it cancels the superseded request, so a slower
+    // answer for an earlier keystroke can never overwrite a newer one and leave the field showing a
+    // slug the user has already typed past.
     this.form.controls.name.valueChanges
       .pipe(
         debounceTime(SLUG_CHECK_DEBOUNCE_MS),
@@ -92,8 +90,8 @@ export class CreateCommunity {
       .subscribe((result) => this.applyCheck(result));
   }
 
-  // Always the server's answer, never a local derivation (2.7b) -- so until the first check returns
-  // there is simply nothing to show.
+  // Always the server's answer, never a local derivation — so until the first check returns there is
+  // nothing to show.
   get previewSlug(): string | null {
     if (this.slugMode() === 'edited') {
       return this.form.controls.slug.value || null;
@@ -102,8 +100,7 @@ export class CreateCommunity {
     return this.check()?.slug ?? null;
   }
 
-  // Hands the field to the user, seeded with what the server derived, so Edit is a starting point
-  // rather than a blank box.
+  // Seeded with what the server derived, so Edit is a starting point rather than a blank box.
   editSlug(): void {
     if (this.slugMode() === 'edited') {
       return;
@@ -111,9 +108,9 @@ export class CreateCommunity {
 
     this.slugMode.set('edited');
 
-    // emitEvent: false because we already know this exact slug's availability -- it is the answer
-    // being displayed. Letting the seed fire the pipeline would spend a request, and a rate-limit
-    // permit, to be told the same thing again.
+    // emitEvent: false because we already know this exact slug's availability — it is the answer being
+    // displayed. Letting the seed fire the pipeline would spend a request, and a rate-limit permit, to
+    // be told the same thing again.
     this.form.controls.slug.setValue(this.check()?.slug ?? '', { emitEvent: false });
   }
 
@@ -141,8 +138,8 @@ export class CreateCommunity {
     }
   }
 
-  // What the hint under the slug field says. Every branch names the address or says why there is not
-  // one; none of them names the community holding a taken slug, because the API does not either.
+  // Every branch names the address or says why there is not one; none names the community holding a
+  // taken slug, because the API does not either.
   get slugMessage(): string | null {
     if (this.checkState() === 'checking') {
       return 'Checking…';
@@ -169,9 +166,8 @@ export class CreateCommunity {
       case 'NotDerivable':
         return 'We could not build an address from that name — type one yourself.';
       default:
-        // A reason added to the API after this build shipped. `available` is still trustworthy, so
-        // say the only thing we actually know (api-contract.md -> clients tolerate what they do not
-        // know).
+        // A reason added to the API after this build shipped. `available` is still trustworthy, so say
+        // the only thing we actually know (api-contract.md).
         return 'This address is not available. Try another.';
     }
   }
@@ -184,8 +180,8 @@ export class CreateCommunity {
   }
 
   slugErrors(): string[] {
-    // The server's rejection wins: it is the authoritative one, and re-stating our own client-side
-    // guess beside it would read as two different problems.
+    // The server's rejection wins: re-stating our own client-side guess beside it would read as two
+    // different problems.
     const fromServer = this.slugServerErrors();
     if (fromServer.length > 0) {
       return fromServer;
@@ -217,13 +213,13 @@ export class CreateCommunity {
 
     const { name, slug, timeZoneId } = this.form.getRawValue();
 
-    // A null slug asks the server to derive one (2.7b). Note the check result is NOT consulted: it
-    // was a hint, and the authority is the unique index a moment from now.
+    // A null slug asks the server to derive one. The check result is deliberately NOT consulted: it was
+    // a hint, and the authority is the unique index a moment from now.
     this.tenants
       .create({ name: name.trim(), timeZoneId, slug: this.slugMode() === 'edited' ? slug : null })
       .subscribe({
-        // Navigation, not a stored "current tenant" -- there is no such variable, and one would drift
-        // from the URL (.claude/rules/frontend.md -> "Tenant context is part of the chrome").
+        // Navigation, not a stored "current tenant" — there is no such variable, and one would drift
+        // from the URL (frontend.md → "Tenant context is part of the chrome").
         next: (tenant) => void this.router.navigate(['/t', tenant.slug]),
         error: (error: unknown) => {
           this.state.set('idle');
@@ -241,8 +237,7 @@ export class CreateCommunity {
 
     const errors = control.errors ?? {};
 
-    // Server messages win when present: they are the authoritative rejection, and re-stating our own
-    // client-side guess beside one would read as two different problems.
+    // Server messages win when present, for the same reason as in slugErrors().
     if (Array.isArray(errors['server'])) {
       return errors['server'] as string[];
     }
@@ -275,8 +270,8 @@ export class CreateCommunity {
 
     this.checkState.set('checking');
     return this.tenants.checkSlug('name' in query ? { name: value } : { slug: value }).pipe(
-      // A failed check must not become a dead end: availability is a hint, the server decides at
-      // submit time, so the form stays usable and says so.
+      // A failed check must not become a dead end: availability is a hint, the server decides at submit
+      // time, so the form stays usable and says so.
       catchError(() => {
         this.checkState.set('unavailable');
         return of(null);
@@ -293,9 +288,9 @@ export class CreateCommunity {
     this.checkState.set('answered');
   }
 
-  // 400 is the ordinary rejection -- a slug the pre-check found taken, a time zone the server does not
-  // recognise. 409 is the race the pre-check cannot close (SlugTakenException): same field, but it
-  // also unlocks the input, because a user cannot act on "taken" while the box is read-only.
+  // 400 is the ordinary rejection — a slug the pre-check found taken, an unrecognised time zone. 409 is
+  // the race the pre-check cannot close: same field, but it also unlocks the input, because a user
+  // cannot act on "taken" while the box is read-only.
   private applyServerErrors(error: unknown): void {
     if (!(error instanceof HttpErrorResponse)) {
       this.formErrors.set([GENERIC_ERROR]);
@@ -336,8 +331,7 @@ export class CreateCommunity {
     this.formErrors.set(unplaceable);
   }
 
-  // A slug rejection the user cannot reach is not a rejection they can fix, so flagging it opens the
-  // field. Every other field keeps its value.
+  // A slug rejection the user cannot reach is not one they can fix, so flagging it opens the field.
   private flagSlug(messages: string[]): void {
     this.editSlug();
     this.form.controls.slug.markAsTouched();
@@ -382,8 +376,8 @@ function supportedTimeZones(detected: string): string[] {
     const supported = Intl.supportedValuesOf('timeZone');
     return supported.includes(detected) ? supported : [detected, ...supported];
   } catch {
-    // No supportedValuesOf in this engine: offer the detected zone rather than a hardcoded list of
-    // our own invention.
+    // No supportedValuesOf in this engine: offer the detected zone rather than a hardcoded list of our
+    // own invention.
     return [detected];
   }
 }

@@ -30,12 +30,11 @@ public class CharacterClaimDataLayer(
             return true;
         }, ct);
 
-    // The one write in this vertical that must be atomic. An officer freeing someone else's claim and
-    // the record of them having done it are one act: a removal that committed without its audit row
-    // would be exactly the untraceable officer action the audit table exists to prevent.
+    // The one write in this vertical that must be atomic: a removal that committed without its audit
+    // row would be exactly the untraceable officer action the audit table exists to prevent.
     //
-    // Both repositories resolve the same scoped DbContext, so both stage into one SaveChanges inside
-    // the callback. Nothing but repository calls goes in here — the callback is retryable.
+    // Both repositories resolve the same scoped DbContext, so both stage into one SaveChanges. Nothing
+    // but repository calls goes in here — the callback is retryable.
     public async Task ClearAsync(CharacterClaim claim, AuditLog auditEntry, CancellationToken ct) =>
         await claims.ExecuteInTransactionAsync(async token =>
         {

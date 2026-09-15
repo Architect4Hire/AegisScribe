@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// Tenant-triggered sync, and the budget that bounds it (6.6).
+// Tenant-triggered sync, and the budget that bounds it.
 //
 // tenantSlug is never bound into a ViewModel or passed down — the resolved ITenantContext.TenantId is
 // the only tenant identifier that reaches the facade (tenancy.md: "never accept a TenantId from the

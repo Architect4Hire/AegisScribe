@@ -6,14 +6,11 @@ namespace AegisScribe.Domain.Data;
 // Recognising the constraint that refused a write, so a repository can turn it into the domain
 // exception the caller already knows how to handle.
 //
-// This matters more than it looks. Several rules in this repo are enforced by an index or a foreign
-// key rather than only by a check in Business — deliberately, because a check-then-write is a race
-// (see DbContextTransactions, and RosterEntryRepository.TryLinkAltAsync). The database winning that
-// race is the DESIGN working; the caller seeing a 500 because nobody translated the violation is the
-// design leaking. Every constraint that backs a domain rule needs a line here.
-//
-// Extracted when this would have become a fourth copy — it was already duplicated across
-// TenantRepository, TenantRankRepository and CharacterClaimRepository.
+// Several rules in this repo are enforced by an index or a foreign key rather than only by a check in
+// Business, deliberately, because a check-then-write is a race (see
+// RosterEntryRepository.TryLinkAltAsync). The database winning that race is the DESIGN working; the
+// caller seeing a 500 because nobody translated the violation is the design leaking. Every constraint
+// that backs a domain rule needs a line here.
 internal static class SqlConstraintViolations
 {
     // 2627 is a unique-constraint violation, 2601 a unique-index one; SQL Server names the index in

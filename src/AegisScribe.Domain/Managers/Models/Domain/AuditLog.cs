@@ -1,15 +1,10 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// Who did what to whom, in which community, when (7.2b).
+// Who did what to whom, in which community, when.
 //
-// Built here because this is the first phase that must write one: 14.2 owns the officer-visible
-// SCREEN, and 7.4, membership management and the event lock only ever say "writes an AuditLog row".
-// So the entity itself has no owning phase before the first audited action, which is the officer's
-// claim clear.
-//
-// Deliberately generic rather than claim-shaped, because those later phases all write here. There is
-// no read path yet, and no endpoint — 14.2 adds that, under TenantOfficer, read-only. Audit rows are
-// never editable or deletable from the app.
+// Deliberately generic rather than shaped around any one action, because roster writes, membership
+// management and the event lock all write here. Audit rows are never editable or deletable from the
+// app, and the read path is officer-only.
 public class AuditLog : ITenantScoped
 {
     public Guid Id { get; set; }
@@ -34,8 +29,8 @@ public class AuditLog : ITenantScoped
 
     public Guid? TargetId { get; set; }
 
-    // Human-readable state either side of the action, for 14.2 to render. Not machine-parsed, and
-    // deliberately not a serialized entity — a schema change must not make old rows unreadable.
+    // Human-readable state either side of the action. Not machine-parsed, and deliberately not a
+    // serialized entity — a schema change must not make old rows unreadable.
     public string? Before { get; set; }
 
     public string? After { get; set; }

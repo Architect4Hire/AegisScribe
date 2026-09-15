@@ -7,15 +7,13 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace AegisScribe.ApiService.Infrastructure.Idempotency;
 
-// api-contract.md: "Every POST that creates something accepts an Idempotency-Key header... a repeat
-// within the retention window (24 hours) replays the stored response instead of acting again. Same
-// key with a different body is a 422, not a silent overwrite." The header is accepted, not required —
-// a client that omits it just gets no replay protection.
+// Idempotency-Key replay for creating POSTs (api-contract.md): a repeat within the retention window
+// replays the stored response, and the same key with a different body is a 422 rather than a silent
+// overwrite. The header is accepted, not required.
 //
-// Hashes the already-bound ViewModel (ActionArguments) rather than the raw request body: simpler than
-// buffering the stream, and the bound arguments are what actually determines the outcome. Only a 2xx
-// result is stored — a validation failure isn't cached, so a corrected retry under the same key still
-// goes through.
+// Hashes the already-bound ViewModel rather than the raw body: simpler than buffering the stream, and
+// the bound arguments are what determines the outcome. Only a 2xx is stored, so a corrected retry
+// under the same key still goes through.
 public class IdempotencyActionFilter(IIdempotencyStore store, ICurrentUser currentUser) : IAsyncActionFilter
 {
     private const string HeaderName = "Idempotency-Key";

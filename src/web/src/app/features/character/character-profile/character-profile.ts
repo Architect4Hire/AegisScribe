@@ -39,8 +39,8 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'collections', label: 'Collections' },
 ];
 
-// The routed character-profile screen (design/aegisscribe-armory.html §S1). region/realmSlug/name
-// come from the route (withComponentInputBinding), never a stored variable.
+// The routed character-profile screen. region/realmSlug/name come from the route, never a stored
+// variable.
 @Component({
   imports: [
     CharacterBanner,
@@ -60,19 +60,18 @@ export class CharacterProfile {
   private readonly characterService = inject(CharacterService);
   private readonly claimService = inject(ClaimService);
   private readonly currentUser = inject(CurrentUserService);
-  // Every subscription below is piped through takeUntilDestroyed(this.destroyRef). These are one-shot
-  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting
-  // signals on a component the user has already navigated away from (frontend.md).
+  // Every subscription below is piped through takeUntilDestroyed(this.destroyRef): these are one-shot
+  // HttpClient observables, so this is about a late callback setting signals on a component the user
+  // has already navigated away from, not a classic leak.
   private readonly destroyRef = inject(DestroyRef);
 
   readonly region = input.required<string>();
   readonly realmSlug = input.required<string>();
   readonly name = input.required<string>();
 
-  // OPTIONAL, and that is the whole shape of 7.5b. This component serves two routes: the public
-  // front door at /characters/... where there is no community, and /t/:slug/characters/... where
-  // there is. Undefined on the first, bound from the parent route segment on the second — one
-  // component, no fork.
+  // OPTIONAL, because this component serves two routes: the public front door at /characters/...
+  // where there is no community, and /t/:slug/characters/... where there is. Undefined on the first,
+  // bound from the parent route segment on the second — one component, no fork.
   readonly tenantSlug = input<string | undefined>(undefined);
 
   readonly tabs = TABS;
@@ -86,9 +85,8 @@ export class CharacterProfile {
   // Null with no community in context, which is what makes the banner show no claim controls at all.
   readonly claim = signal<CharacterClaimServiceModel | null>(null);
 
-  // A failed claim reported inline, never by replacing the page. `state` gates whether the character
-  // renders at all, so setting it here would take a perfectly good character page away because a
-  // claim button failed.
+  // Reported inline, never by replacing the page: `state` gates whether the character renders at all,
+  // so setting it here would take a good character page away because a claim button failed.
   readonly claimError = signal<string | null>(null);
 
   readonly currentUserId = computed(() => this.currentUser.user()?.id ?? null);
@@ -130,41 +128,44 @@ export class CharacterProfile {
 
   claimCharacter(): void {
     this.withTenantAndCharacter((tenantSlug, characterId) =>
-      this.claimService.claim(tenantSlug, characterId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (claim) => {
-          this.claimError.set(null);
-          this.claim.set(claim);
-        },
-        // A 409 means somebody claimed it first. Reported inline, with the character still on screen.
-        error: () =>
-          this.claimError.set(
-            'Could not claim this character. Somebody else may have claimed it first.',
-          ),
-      }),
+      this.claimService
+        .claim(tenantSlug, characterId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (claim) => {
+            this.claimError.set(null);
+            this.claim.set(claim);
+          },
+          // A 409 means somebody claimed it first. Reported inline, with the character still on screen.
+          error: () =>
+            this.claimError.set(
+              'Could not claim this character. Somebody else may have claimed it first.',
+            ),
+        }),
     );
   }
 
   releaseClaim(): void {
     this.withTenantAndCharacter((tenantSlug, characterId) =>
-      this.claimService.release(tenantSlug, characterId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => this.clearLocalClaim(characterId),
-        error: () => this.claimError.set('Could not release this claim. Try again.'),
-      }),
+      this.claimService
+        .release(tenantSlug, characterId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => this.clearLocalClaim(characterId),
+          error: () => this.claimError.set('Could not release this claim. Try again.'),
+        }),
     );
   }
 
   clearHolder(): void {
     this.withTenantAndCharacter((tenantSlug, characterId) =>
-      this.claimService.clearHolder(tenantSlug, characterId)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => this.clearLocalClaim(characterId),
-        error: () => this.claimError.set('Could not clear this claim. Try again.'),
-      }),
+      this.claimService
+        .clearHolder(tenantSlug, characterId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => this.clearLocalClaim(characterId),
+          error: () => this.claimError.set('Could not clear this claim. Try again.'),
+        }),
     );
   }
 
@@ -182,8 +183,8 @@ export class CharacterProfile {
     const tenantSlug = this.tenantSlug();
     const characterId = this.character()?.id;
 
-    // Unreachable from the UI — the controls only render when both are present — but the guard keeps
-    // that a property of this method rather than of the template.
+    // Unreachable from the UI, since the controls only render when both are present — but the guard
+    // keeps that a property of this method rather than of the template.
     if (tenantSlug && characterId) {
       action(tenantSlug, characterId);
     }
@@ -194,21 +195,22 @@ export class CharacterProfile {
     this.claim.set(null);
     this.claimError.set(null);
 
-    this.characterService.getCharacter(region, realmSlug, name)
+    this.characterService
+      .getCharacter(region, realmSlug, name)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (character) => {
-        this.character.set(character);
-        this.state.set('loaded');
-        this.loadClaim(character.id);
-      },
-      error: (error: unknown) => {
-        this.character.set(null);
-        this.state.set(
-          error instanceof HttpErrorResponse && error.status === 404 ? 'empty' : 'error',
-        );
-      },
-    });
+        next: (character) => {
+          this.character.set(character);
+          this.state.set('loaded');
+          this.loadClaim(character.id);
+        },
+        error: (error: unknown) => {
+          this.character.set(null);
+          this.state.set(
+            error instanceof HttpErrorResponse && error.status === 404 ? 'empty' : 'error',
+          );
+        },
+      });
   }
 
   private loadClaim(characterId: string): void {
@@ -220,13 +222,14 @@ export class CharacterProfile {
       return;
     }
 
-    this.claimService.getClaim(tenantSlug, characterId)
+    this.claimService
+      .getClaim(tenantSlug, characterId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-      next: (claim) => this.claim.set(claim),
-      // Deliberately silent, and deliberately NOT this.state: a character page that loaded is worth
-      // more than the claim strip on it. Leaving claim null simply hides the controls.
-      error: () => this.claim.set(null),
-    });
+        next: (claim) => this.claim.set(claim),
+        // Deliberately silent, and deliberately NOT this.state: a character page that loaded is worth
+        // more than the claim strip on it. Leaving claim null simply hides the controls.
+        error: () => this.claim.set(null),
+      });
   }
 }

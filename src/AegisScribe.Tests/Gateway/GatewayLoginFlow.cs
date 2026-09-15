@@ -42,13 +42,12 @@ internal static class GatewayLoginFlow
         return (email, id);
     }
 
-    // Drives the full authorization-code + PKCE round trip by hand: GET /auth/login (gateway) ->
-    // redirect to connect/authorize (API) -> POST the sign-in form -> the OIDC handler's default
-    // response_mode is form_post, so the API replies 200 with a self-submitting HTML form (not a
-    // redirect) carrying code/state/iss as hidden fields -> POST those to the callback, which is
-    // where the cookie actually gets set. A plain HttpClientHandler with cookies enabled and
-    // redirects disabled is what lets each hop's headers be inspected instead of the framework
-    // silently following them or executing the form's auto-submit script itself.
+    // Drives the full authorization-code + PKCE round trip by hand: /auth/login → connect/authorize →
+    // POST the sign-in form → the API replies 200 with a self-submitting form (response_mode is
+    // form_post, not a redirect) → POST those fields to the callback, where the cookie is set.
+    //
+    // A plain handler with cookies on and redirects off is what lets each hop's headers be inspected
+    // rather than silently followed.
     public static async Task<LoggedInClient> LoginAsync(
         AegisScribeAppFixture fixture, string email, int? tokenLifetimeSeconds = null)
     {
@@ -111,12 +110,9 @@ internal static class GatewayLoginFlow
             throw new InvalidOperationException("The callback response carried no session cookie.");
         }
 
-        // The session cookie's Domain is .aegisscribe.com (RESTRICTION, deliberately not
-        // environment-conditional — see the 1B.6 plan), which a real cookie jar rejects outright
-        // for a request to localhost: it doesn't domain-match, so CookieContainer would silently
-        // never send it back. Every subsequent authenticated call therefore attaches it as an
-        // explicit header instead of relying on the jar — exactly the gap a real deployment
-        // wouldn't have once app./bff./api. are real subdomains.
+        // The session cookie's Domain does not domain-match localhost, so a real CookieContainer
+        // silently never sends it back. Every subsequent authenticated call attaches it as an explicit
+        // header instead — a gap a real deployment would not have once app./bff./api. are subdomains.
         var sessionCookie = setCookie[..setCookie.IndexOf(';')];
 
         return new LoggedInClient(http, email, setCookie, sessionCookie);

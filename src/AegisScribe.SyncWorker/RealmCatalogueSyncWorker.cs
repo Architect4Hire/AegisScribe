@@ -3,13 +3,12 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.SyncWorker;
 
-// Runs the realm catalogue pass (6.4b) at startup and then on a poll.
+// Runs the realm catalogue pass at startup and then on a poll.
 //
-// The poll interval is deliberately not the refresh window: RealmCatalogueSync decides whether a pass is
-// actually due by looking at what is stored, so this only controls how soon after a window expires the
-// worker notices. Putting the decision in the job rather than the schedule is what makes a restart cheap
-// — `aspire run` restarts this process constantly, and the schedule has no memory across restarts while
-// the database does.
+// The poll interval is deliberately not the refresh window: RealmCatalogueSync decides whether a pass
+// is due from what is stored, so this only controls how soon the worker notices. Putting the decision
+// in the job rather than the schedule is what makes a restart cheap — the schedule has no memory
+// across restarts, and the database does.
 public sealed class RealmCatalogueSyncWorker(
     IServiceScopeFactory scopeFactory,
     TimeProvider timeProvider,

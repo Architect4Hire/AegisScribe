@@ -13,22 +13,21 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// This community's roster (7.2, completed in 7.4) — one row per character the community has taken in,
-// carrying the rank IT assigned rather than the one the game reports.
+// This community's roster — one row per character the community has taken in, carrying the rank IT
+// assigned rather than the one the game reports. Reads are TenantMember, writes are TenantOfficer.
+// Claiming lives in its own controller: adding somebody to the roster and claiming a character are
+// different acts by different people.
 //
-// Reads are TenantMember, writes are TenantOfficer. Claiming is NOT here: 7.2b owns it, because adding
-// somebody to the roster and claiming a character are different acts by different people.
-//
-// tenantSlug never binds into a ViewModel and never reaches the facade — ITenantContext.TenantId is
-// the only tenant identifier below the controller. A caller with no membership in the named community
-// gets a 404 from the resolution middleware, never a 403.
+// tenantSlug never binds into a ViewModel and never reaches the facade — ITenantContext.TenantId is the
+// only tenant identifier below the controller. A caller with no membership gets a 404 from the
+// resolution middleware, never a 403.
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/t/{tenantSlug}/roster")]
 public class RosterController(IRosterFacade rosterFacade) : ControllerBase
 {
-    // Reads are TenantMember: a community's own roster is not privileged information inside it. The
-    // officer note on each row is, and comes back null unless the caller is one.
+    // TenantMember: a community's own roster is not privileged information inside it. The officer note
+    // on each row is, and comes back null unless the caller is one.
     [HttpGet]
     [Authorize(Policy = AuthPolicies.TenantMember)]
     public async Task<ActionResult<CursorPageServiceModel<RosterEntryServiceModel>>> List(
@@ -48,9 +47,8 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
 
         var page = await rosterFacade.ListAsync(viewModel, ct);
 
-        // hasMore is decided on the MAIN count, not the row count: the page is taken in mains, and a
-        // full page of mains dragging alts along would otherwise look like an over-full page and end
-        // the pagination early.
+        // Decided on the MAIN count, not the row count: the page is taken in mains, and a full page of
+        // mains dragging alts along would look over-full and end the pagination early.
         var hasMore = page.MainCount == viewModel.Limit;
 
         return this.ConditionalOk(new CursorPageServiceModel<RosterEntryServiceModel>
@@ -61,9 +59,8 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
         });
     }
 
-    // Puts an existing global Character on the roster. Idempotency-Key'd, because a mobile network can
-    // fail after the server commits and an officer would otherwise see the add refused as a duplicate
-    // of itself.
+    // Idempotency-Key'd, because a mobile network can fail after the server commits and an officer would
+    // otherwise see the add refused as a duplicate of itself.
     [HttpPost]
     [Idempotent]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -77,8 +74,8 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
     }
 
     // Rank and note are separate PUTs rather than one PATCH, and that is a data-safety choice: JSON
-    // cannot distinguish "field omitted" from "field set to null", so a combined PATCH sent by a UI
-    // that only edits rank would silently wipe an officer's note.
+    // cannot distinguish "field omitted" from "field set to null", so a combined PATCH sent by a UI that
+    // only edits rank would silently wipe an officer's note.
     [HttpPut("{rosterEntryId:guid}/rank")]
     [Authorize(Policy = AuthPolicies.TenantOfficer)]
     public async Task<IActionResult> SetRank(
@@ -91,9 +88,9 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
         Guid rosterEntryId, SetOfficerNoteViewModel viewModel, CancellationToken ct) =>
         await rosterFacade.SetOfficerNoteAsync(rosterEntryId, viewModel, ct) ? NoContent() : NotFound();
 
-    // 204 whether or not the entry was there: DELETE is idempotent and the intent is satisfied either
-    // way (api-contract.md). The one case that is not 204 is an entry other entries call their main —
-    // that is a 409, because removing it would orphan somebody's other characters.
+    // 204 whether or not the entry was there: DELETE is idempotent (api-contract.md). The one case that
+    // is not 204 is an entry other entries call their main — a 409, because removing it would orphan
+    // somebody's other characters.
     [HttpDelete("{rosterEntryId:guid}")]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [Authorize(Policy = AuthPolicies.TenantOfficer)]
@@ -104,9 +101,9 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
         return NoContent();
     }
 
-    // Alt linking (7.3). TenantMember, because a member reorganises their OWN characters — which ones
-    // those are is a claim question, and answering it means reading data, so it is a Business rule
-    // rather than a policy. An officer passes that rule by rank and is audited for it.
+    // TenantMember, because a member reorganises their OWN characters — which ones those are is a claim
+    // question, and answering it means reading data, so it is a Business rule rather than a policy. An
+    // officer passes that rule by rank and is audited for it.
     [HttpPut("{rosterEntryId:guid}/main")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -121,14 +118,12 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
     public async Task<IActionResult> UnlinkAlt(Guid rosterEntryId, CancellationToken ct) =>
         await rosterFacade.UnlinkAltAsync(rosterEntryId, ct) ? NoContent() : NotFound();
 
-    // Where an unranked entry sorts under RosterSort.Rank — must match
-    // RosterEntryRepository.UnrankedOrder, because this is the value the keyset compares against when
-    // the page resumes.
+    // Must match RosterEntryRepository.UnrankedOrder — this is the value the keyset compares against
+    // when the page resumes.
     private const int UnrankedOrder = int.MaxValue;
 
     // The sort key of the last MAIN on the page, plus its id. The sort's own name rides along so a
-    // cursor minted under one ordering cannot be replayed against another — decoded below, a mismatch
-    // restarts the page rather than seeking to a position that means nothing in the new ordering.
+    // cursor minted under one ordering cannot be replayed against another.
     private static string? EncodeCursor(IReadOnlyList<RosterEntryServiceModel> items, RosterSort sort)
     {
         var lastMain = items.LastOrDefault(item => item.MainRosterEntryId is null);
@@ -139,8 +134,8 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
         }
 
         // Compound for the sorts that tie: every ordering breaks a tie by character name before falling
-        // back to the id, so the cursor has to carry both halves or the resumed page loses the
-        // tie-break and starts reordering equally-ranked members between reads.
+        // back to the id, so the cursor carries both halves or the resumed page loses the tie-break and
+        // starts reordering equally-ranked members between reads.
         var name = lastMain.CharacterName.ToLowerInvariant();
 
         var key = sort switch
@@ -154,9 +149,8 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
     }
 
     // The cursor is opaque but still client-supplied, so it is re-validated here like any other input
-    // (api-contract.md) — a malformed value, or one from a different sort, restarts the page rather
-    // than failing the request. There is nothing tenant-shaped in it to tamper with: the tenant comes
-    // from the route either way.
+    // (api-contract.md) — a malformed value, or one from a different sort, restarts the page rather than
+    // failing the request. There is nothing tenant-shaped in it to tamper with.
     private static (string? AfterKey, Guid? AfterId) DecodeCursor(string? cursor, RosterSort sort)
     {
         if (string.IsNullOrEmpty(cursor))

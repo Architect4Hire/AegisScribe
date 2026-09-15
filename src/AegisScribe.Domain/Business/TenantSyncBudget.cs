@@ -5,22 +5,19 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.Domain.Business;
 
-// The per-tenant ceiling on tenant-TRIGGERED Blizzard work (external.md -> "Sync is global;
-// tenant-triggered work has a budget").
+// The per-tenant ceiling on tenant-TRIGGERED Blizzard work (external.md).
 //
-// The distinction that matters: the shared BlizzardRateLimiter enforces the contractual 36,000 calls an
-// hour for the whole process, and is indifferent to who spends them. This decides whether one community
-// may keep spending while others are waiting. Without it, a 400-member guild pressing "re-sync" is
-// perfectly within the global cap and still starves every other community for minutes.
+// The distinction that matters: BlizzardRateLimiter enforces the contractual cap for the whole process
+// and is indifferent to who spends it. This decides whether one community may keep spending while
+// others wait — without it, a 400-member guild pressing "re-sync" is within the global cap and still
+// starves everyone else for minutes.
 //
-// Background refresh never draws on this. The worker's passes are global — run once on behalf of
-// everyone — so charging them to whichever tenant happens to roster the character would bill a
-// community for work done for all of them.
+// Background refresh never draws on this: the worker's passes are global, so charging them to whichever
+// tenant happens to roster the character would bill one community for work done for all of them.
 public interface ITenantSyncBudget
 {
-    // Spends `calls` or throws SyncBudgetExhaustedException with a retry hint. Deliberately not a
-    // bool: a caller that forgets to check a bool spends the budget anyway, and this is the one place
-    // where "failed open" is the wrong default.
+    // Throws rather than returning a bool: a caller that forgets to check a bool spends the budget
+    // anyway, and this is the one place where failing open is the wrong default.
     Task ConsumeAsync(Guid tenantId, int calls, CancellationToken ct);
 
     Task<SyncBudgetServiceModel> GetAsync(Guid tenantId, CancellationToken ct);
@@ -49,9 +46,8 @@ public class TenantSyncBudget(
             return;
         }
 
-        // Re-read only on the denied path, to say WHEN rather than just "no". The read is not part of
-        // the accounting decision — that was made atomically above — so a window that rolls over
-        // between the two costs nothing worse than a retry hint of zero.
+        // Re-read only on the denied path, to say WHEN rather than just "no". Not part of the
+        // accounting decision, which was made atomically above.
         var window = await dataLayer.FindAsync(tenantId, ct);
 
         throw new SyncBudgetExhaustedException(RetryAfter(window, settings, now), settings.CallsPerWindow);
@@ -63,8 +59,8 @@ public class TenantSyncBudget(
         var now = timeProvider.GetUtcNow();
         var window = await dataLayer.FindAsync(tenantId, ct);
 
-        // No row, or a row whose window has rolled over, both mean a full budget. A tenant that has
-        // never triggered a sync has no row, and that is a normal state rather than one to repair.
+        // No row, or a rolled-over window, both mean a full budget. A tenant that has never triggered a
+        // sync has no row, which is normal rather than something to repair.
         var spent = window is null || window.WindowStartedAt <= now - settings.Window
             ? 0
             : window.CallsConsumed;
@@ -83,8 +79,8 @@ public class TenantSyncBudget(
     {
         if (window is null)
         {
-            // Denied with no row at all means a single request asked for more than a whole window.
-            // Waiting will not help, so the hint is the window itself rather than a misleading zero.
+            // Denied with no row means a single request asked for more than a whole window. Waiting
+            // will not help, so the hint is the window itself rather than a misleading zero.
             return settings.Window;
         }
 

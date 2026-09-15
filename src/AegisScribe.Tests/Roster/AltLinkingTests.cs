@@ -12,12 +12,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.Tests.Roster;
 
-// 7.3, through the endpoint. Two things are under test and they are easy to conflate: the SHAPE rules
-// that keep alts one level deep, and the AUTHORIZATION rule that decides whose characters you may
+// Alt linking through the endpoint. Two things are under test and they are easy to conflate: the SHAPE
+// rules that keep alts one level deep, and the AUTHORIZATION rule that decides whose characters you may
 // reorganise at all.
 //
-// The shape rules are what make cycles impossible. There is no cycle-detection walk to test, because
-// there is no cycle to detect — rules 3 and 4 below refuse the only thing a cycle could be built from.
+// There is no cycle-detection walk to test, because there is no cycle to detect — rules 3 and 4 refuse
+// the only thing a cycle could be built from.
 [Collection("AegisScribe API")]
 public class AltLinkingTests(AegisScribeAppFixture fixture)
 {
@@ -94,9 +94,8 @@ public class AltLinkingTests(AegisScribeAppFixture fixture)
     [Fact]
     public async Task ATwoCycleIsUnreachable()
     {
-        // Stated as its own case because it is the thing the prompt asks for, and because the reason
-        // it passes is worth pinning: the SECOND link is refused by rule 3 (A is already an alt), not
-        // by any cycle check. There is no walk here to regress.
+        // Its own case because the reason it passes is worth pinning: the SECOND link is refused by
+        // rule 3 (A is already an alt), not by any cycle check. There is no walk here to regress.
         var member = await TenantSide.CreateAsync(fixture, "Alt Cycle", TenantRole.Member);
         var a = await SeedEntryAsync(member.Tenant.Id, "Thornwake", claimedBy: member.UserId);
         var b = await SeedEntryAsync(member.Tenant.Id, "Thornbite", claimedBy: member.UserId);
@@ -112,14 +111,11 @@ public class AltLinkingTests(AegisScribeAppFixture fixture)
     [Fact]
     public async Task TwoOppositeLinksRacing_CannotProduceACycle()
     {
-        // The case ATwoCycleIsUnreachable above does NOT cover, because it awaits the first response
-        // before sending the second. Fired together, both requests read pre-commit state, both pass
-        // the depth rules, and both write a DIFFERENT row — so nothing at the database level detects a
-        // conflict unless the check and the write are the same statement.
-        //
-        // Raced the same way SyncBudgetRepositoryTests races the budget, and for the same reason: a
-        // read-then-write implementation passes this occasionally and fails it under load, so the
-        // assertion is on the exact outcome rather than "usually fine".
+        // What ATwoCycleIsUnreachable above does NOT cover, because it awaits the first response before
+        // sending the second. Fired together, both requests read pre-commit state, both pass the depth
+        // rules, and both write a DIFFERENT row — so nothing at the database level detects a conflict
+        // unless the check and the write are the same statement. A read-then-write implementation
+        // passes this occasionally and fails it under load, so the assertion is on the exact outcome.
         var member = await TenantSide.CreateAsync(fixture, "Alt Race", TenantRole.Member);
         var a = await SeedEntryAsync(member.Tenant.Id, "Thornwake", claimedBy: member.UserId);
         var b = await SeedEntryAsync(member.Tenant.Id, "Thornbite", claimedBy: member.UserId);
@@ -267,8 +263,8 @@ public class AltLinkingTests(AegisScribeAppFixture fixture)
             .ReadFromJsonAsync<CursorPageServiceModel<RosterEntryServiceModel>>(Json))!.Items;
     }
 
-    // A roster entry plus the claim that decides who may reorganise it. Both seeded directly: roster
-    // writes are 7.4's, and 7.2b's claim endpoint has its own tests.
+    // A roster entry plus the claim that decides who may reorganise it, both seeded directly — the
+    // claim endpoint has its own tests.
     private async Task<Guid> SeedEntryAsync(Guid tenantId, string characterName, string claimedBy)
     {
         var realm = await CharacterSeeding.CreateRealmAsync(fixture);

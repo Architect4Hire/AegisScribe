@@ -1,11 +1,9 @@
 namespace AegisScribe.Domain.Managers.Models.Domain;
 
-// The alt model is one level deep (7.3): a main has no main. Two ways to violate it, both refused
-// here, and refusing them is what makes cycles impossible rather than merely unlikely — every cycle
-// needs a node that is both a main and an alt.
-//
-// One exception type with two reasons rather than two types: a client branches on "this is a depth
-// problem" and renders the remedy, which differs by reason and travels in the message.
+// The alt model is one level deep: a main has no main. Refusing both ways to violate it is what makes
+// cycles impossible rather than merely unlikely — every cycle needs a node that is both a main and an
+// alt. One type with two reasons, because a client branches on "this is a depth problem" and renders
+// the remedy, which differs by reason.
 public class AltDepthException(AltDepthReason reason) : Exception(Describe(reason))
 {
     public AltDepthReason Reason { get; } = reason;

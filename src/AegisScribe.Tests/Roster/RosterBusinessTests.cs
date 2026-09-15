@@ -8,11 +8,9 @@ using NSubstitute;
 
 namespace AegisScribe.Tests.Roster;
 
-// Business: mocked data layer. Two things are worth unit-testing here and the rest is not:
-//
-//   - the keyset position and sort are passed down INTACT rather than quietly defaulted, because a
-//     dropped argument looks like "pagination is broken" rather than like a bug;
-//   - the officer-note flag is decided from the caller's ROLE, which is the gate on a private field.
+// Business against a mocked data layer. Two things are worth unit-testing here: that the keyset
+// position and sort pass down INTACT rather than quietly defaulting, and that the officer-note flag is
+// decided from the caller's ROLE.
 //
 // The write rules turn on the interaction between an entry, a claim and a membership role, so they are
 // exercised end-to-end in RosterWriteTests instead — stubbing all three would prove the stubs agree

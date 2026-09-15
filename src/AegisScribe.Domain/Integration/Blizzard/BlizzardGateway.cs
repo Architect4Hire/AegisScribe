@@ -7,13 +7,12 @@ using Microsoft.Extensions.Options;
 
 namespace AegisScribe.Domain.Integration.Blizzard;
 
-// A typed HttpClient, and therefore transient — anything that needs to survive between calls lives in a
+// A typed HttpClient, and therefore transient — anything that must survive between calls lives in a
 // singleton (BlizzardAvailabilityCache, BlizzardTokenProvider, BlizzardRateLimiter).
 //
-// Two things this class deliberately does NOT do, because both are handlers on its client and so apply to
-// every call without any method having to remember them: the bearer header (BlizzardAuthHandler) and the
-// rate-limit lease (BlizzardRateLimitHandler, which sits innermost so it also covers the retries the
-// standard resilience handler makes).
+// The bearer header and the rate-limit lease are deliberately absent from every method here: both are
+// handlers on this client, so they apply to every call without anyone having to remember them. The
+// rate-limit handler sits innermost, so it also covers the resilience handler's retries.
 public sealed class BlizzardGateway(
     HttpClient httpClient,
     IOptions<BlizzardOptions> options,
@@ -25,8 +24,8 @@ public sealed class BlizzardGateway(
 
     public async Task<BlizzardAvailability> CheckAvailabilityAsync(CancellationToken cancellationToken)
     {
-        // Checked here, before a request is built, so an unconfigured deployment costs nothing: no
-        // HttpClient, no resilience pipeline, no synthetic response for the circuit breaker to count.
+        // Before a request is built, so an unconfigured deployment costs nothing: no HttpClient, no
+        // resilience pipeline, no synthetic response for the circuit breaker to count.
         if (!options.Value.IsConfigured)
         {
             return BlizzardAvailability.NotConfigured;
@@ -49,7 +48,7 @@ public sealed class BlizzardGateway(
         var slug = Uri.EscapeDataString(realmSlug.ToLowerInvariant());
 
         // dynamic-, not static-. A static- namespace here 404s, and a 404 from this method reads as
-        // "no such realm" — the same confusion the character reads guard against.
+        // "no such realm".
         var payload = await GetAsync<BlizzardRealmResponse>(
             $"/data/wow/realm/{slug}?namespace={settings.DynamicNamespace}&locale={settings.Locale}",
             cancellationToken);
@@ -96,8 +95,7 @@ public sealed class BlizzardGateway(
 
         // The namespace trap, and the reason this method exists rather than a caller building the URL:
         // the path sits under /data/wow/ like Game Data, but the namespace is profile-. A static- or
-        // dynamic- namespace here returns a 404 that reads as "no such guild"
-        // (references/blizzard-endpoints.md).
+        // dynamic- namespace returns a 404 that reads as "no such guild".
         var payload = await GetAsync<BlizzardGuildRosterResponse>(
             $"/data/wow/guild/{realm}/{guild}/roster" +
             $"?namespace={settings.ProfileNamespace}&locale={settings.Locale}",
@@ -139,9 +137,8 @@ public sealed class BlizzardGateway(
 
     private async Task<BlizzardAvailability> ProbeAsync(BlizzardOptions settings, CancellationToken cancellationToken)
     {
-        // The realm index: documented in references/blizzard-endpoints.md rather than guessed, always
-        // present, and needs no id to look up. Realms move, so they are dynamic- data — a static-
-        // namespace here would 404 and read like "no realms exist".
+        // The realm index: always present, and needs no id to look up. Realms move, so they are
+        // dynamic- data — a static- namespace would 404 and read like "no realms exist".
         var requestUri = $"/data/wow/realm/index?namespace={settings.DynamicNamespace}&locale={settings.Locale}";
 
         try
@@ -177,16 +174,14 @@ public sealed class BlizzardGateway(
         }
     }
 
-    // The character profile endpoints, from references/blizzard-endpoints.md. Three things here are
-    // load-bearing and none of them are obvious from the path:
+    // Three things here are load-bearing and none are obvious from the path:
     //
-    //  - the namespace is profile-{region}, NOT static-. Getting it wrong returns a 404, which this
-    //    method's caller would faithfully report as "this character does not exist" — the reference
-    //    calls that the single most confusing failure mode in the integration, which is why the
-    //    namespace is computed by BlizzardOptions and asserted in tests rather than typed here.
+    //  - the namespace is profile-{region}, NOT static-. Getting it wrong returns a 404, which the
+    //    caller would faithfully report as "this character does not exist" — the single most confusing
+    //    failure mode in this integration, which is why it is computed and asserted in tests.
     //  - locale is a query parameter. Blizzard ignores Accept-Language entirely.
-    //  - the name is lowercased AND percent-encoded. Plenty of characters on an EU realm have an accent
-    //    in their name, and an unencoded one produces a malformed URL rather than a 404.
+    //  - the name is lowercased AND percent-encoded. Plenty of EU characters have an accent in their
+    //    name, and an unencoded one produces a malformed URL rather than a 404.
     private string BuildCharacterRequestUri(string realmSlug, string characterName, string? segment)
     {
         var settings = options.Value;
@@ -203,10 +198,8 @@ public sealed class BlizzardGateway(
     private async Task<TPayload?> GetAsync<TPayload>(string requestUri, CancellationToken cancellationToken)
         where TPayload : class
     {
-        // Same guard as the availability probe, and for the same reason: an unconfigured deployment must
-        // not build a request. This throws rather than returning null because "we have no credentials" is
-        // not "this character does not exist" — BlizzardAuthHandler would short-circuit the call anyway,
-        // but a 503 read as a 404 is exactly the confusion this method exists to prevent.
+        // Throws rather than returning null because "we have no credentials" is not "this character
+        // does not exist" — a 503 read as a 404 is exactly the confusion this method exists to prevent.
         if (!options.Value.IsConfigured)
         {
             throw new BlizzardUnavailableException("Blizzard credentials are not configured.");
@@ -237,7 +230,7 @@ public sealed class BlizzardGateway(
 
             if (!response.IsSuccessStatusCode)
             {
-                // 429 and the rate limiter's synthetic 503 both land here, and that is the point: being
+                // 429 and the rate limiter's synthetic 503 both land here, which is the point: being
                 // throttled means we could not ask, so the caller falls back to the stored row rather
                 // than concluding the character is gone.
                 logger.LogWarning(
@@ -262,9 +255,9 @@ public sealed class BlizzardGateway(
     }
 
     // Blizzard answers a profile request for any realm in a connected-realm group and reports the
-    // character's actual realm in the response. That matters to whoever persists this: keying the row on
-    // the slug we asked for would create a second row for a character we already hold under its real
-    // realm. Nothing here can fix it — the gateway has no store — so it says so loudly instead.
+    // character's actual realm in the response. Keying the row on the slug we asked for would create a
+    // second row for a character we already hold. Nothing here can fix it — the gateway has no store —
+    // so it says so loudly instead.
     private void WarnIfRealmDiffers(string requestedSlug, string? reportedSlug, string characterName)
     {
         if (reportedSlug is null || string.Equals(requestedSlug, reportedSlug, StringComparison.OrdinalIgnoreCase))

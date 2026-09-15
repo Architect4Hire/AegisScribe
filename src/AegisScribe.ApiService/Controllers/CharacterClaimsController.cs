@@ -9,12 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisScribe.ApiService.Controllers;
 
-// "That character is mine" (7.2b) — a claim ties an Identity user to a character, inside one community.
+// "That character is mine" — a claim ties an Identity user to a character, inside one community.
 //
-// Claiming is NOT Battle.net verification (out of scope, CLAUDE.md) and asserts nothing to Blizzard.
-// It grants no permission either: rank and OfficerNote stay TenantOfficer-gated regardless of who
-// claims what. Nor does it require the character to be on this community's roster — adding someone to
-// the roster and claiming a character are different acts by different people.
+// It is NOT Battle.net verification (out of scope, CLAUDE.md) and asserts nothing to Blizzard. It
+// grants no permission either: rank and OfficerNote stay TenantOfficer-gated regardless of who claims
+// what. Nor does it require the character to be on this community's roster.
 //
 // tenantSlug never binds into a ViewModel and never reaches the facade.
 [ApiController]
@@ -22,9 +21,8 @@ namespace AegisScribe.ApiService.Controllers;
 [Route("api/v{version:apiVersion}/t/{tenantSlug}/claims")]
 public class CharacterClaimsController(ICharacterClaimFacade claimFacade) : ControllerBase
 {
-    // Claim state for one character. Always 200: an unclaimed character is a real answer with null
-    // fields, not a 404 — a 404 would leave the client unable to tell "nobody has claimed this" from
-    // "no such character".
+    // Always 200: an unclaimed character is a real answer with null fields, and a 404 would leave the
+    // client unable to tell "nobody has claimed this" from "no such character".
     [HttpGet("{characterId:guid}")]
     [Authorize(Policy = AuthPolicies.TenantMember)]
     public async Task<ActionResult<CharacterClaimServiceModel>> Get(Guid characterId, CancellationToken ct) =>
@@ -62,8 +60,8 @@ public class CharacterClaimsController(ICharacterClaimFacade claimFacade) : Cont
     }
 
     // An officer frees whoever holds the claim, and the act is audited. A separate route from the
-    // self-release above because it is a separate act by a different actor on someone else's data —
-    // and it FREES the claim, it never hands it to anyone.
+    // self-release above because it acts on someone else's data — and it FREES the claim, never hands
+    // it to anyone.
     [HttpDelete("{characterId:guid}/holder")]
     [Authorize(Policy = AuthPolicies.TenantOfficer)]
     public async Task<IActionResult> ClearHolder(Guid characterId, CancellationToken ct)

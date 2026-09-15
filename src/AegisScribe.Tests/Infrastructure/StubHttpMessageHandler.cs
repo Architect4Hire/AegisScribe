@@ -2,12 +2,9 @@ using System.Net;
 
 namespace AegisScribe.Tests.Infrastructure;
 
-// The first fake HttpMessageHandler in this repo — nothing needed one before the Blizzard gateway (6.1).
-// It records every request it is asked to send and answers from a script, so a test can assert on the
-// URL, the namespace, the headers and, importantly, how many requests were made at all.
-//
-// Requests are recorded before the response is produced, so the count is accurate even for a script that
-// throws.
+// Records every request and answers from a script, so a test can assert on the URL, the namespace, the
+// headers and — importantly — how many requests were made at all. Requests are recorded before the
+// response is produced, so the count is accurate even for a script that throws.
 public sealed class StubHttpMessageHandler : HttpMessageHandler
 {
     private readonly Func<HttpRequestMessage, int, Task<HttpResponseMessage>> _respond;

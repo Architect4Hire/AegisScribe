@@ -12,11 +12,11 @@ public interface IGuildSyncDataLayer
     Task<Guild?> SyncAsync(string region, string realmSlug, string guildName, CancellationToken ct);
 }
 
-// 6.6b's composition: one Blizzard call in, a guild, its members and their characters out.
+// One Blizzard call in; a guild, its members and their characters out.
 //
-// The sequencing is the same as every other sync here — fetch everything first, then transact — and for
-// the same reason: ExecuteInTransactionAsync hands the unit to EF's execution strategy, which may run it
-// more than once, and an HTTP call inside would fire again on every retry.
+// Fetch everything first, then transact, for the same reason as every other sync here:
+// ExecuteInTransactionAsync hands the unit to EF's execution strategy, which may run it more than once,
+// and an HTTP call inside would fire again on every retry.
 public class GuildSyncDataLayer(
     IBlizzardGateway gateway,
     IGuildRepository guilds,
@@ -26,9 +26,8 @@ public class GuildSyncDataLayer(
 {
     public async Task<Guild?> SyncAsync(string region, string realmSlug, string guildName, CancellationToken ct)
     {
-        // ONE call for the guild and every member. The roster response carries the guild object too,
-        // so linking does not cost a separate guild-summary call
-        // (references/blizzard-endpoints.md -> "Batching").
+        // ONE call for the guild and every member: the roster response carries the guild object too, so
+        // linking does not cost a separate guild-summary call.
         var snapshot = await gateway.FetchGuildRosterAsync(realmSlug, Slugify(guildName), ct);
 
         if (snapshot is null)
@@ -37,7 +36,7 @@ public class GuildSyncDataLayer(
         }
 
         // Members can sit on several realms — connected realms share a roster. Each unknown realm costs
-        // one call, and after 6.4b's catalogue pass there are usually none.
+        // one call, and after the catalogue pass there are usually none.
         var realmIds = await ResolveRealmsAsync(region, realmSlug, snapshot, ct);
 
         if (!realmIds.TryGetValue(realmSlug.ToLowerInvariant(), out var guildRealmId))
@@ -67,10 +66,9 @@ public class GuildSyncDataLayer(
                         continue;
                     }
 
-                    // Creates the Character row if this is the first time we have seen them. The roster
-                    // carries enough to do that — name, id, realm, level, class, faction — which is what
-                    // makes a whole roster storable from one call. Item level stays 0 and gear stays
-                    // absent until the refresh worker reaches them.
+                    // Creates the Character row on first sight. The roster carries enough to do that —
+                    // name, id, realm, level, class, faction — which is what makes a whole roster
+                    // storable from one call. Item level and gear wait for the refresh worker.
                     var character = await characters.UpsertCharacterAsync(membership.Character, memberRealmId, token);
 
                     ranks[character.Id] = membership.BlizzardRank;
@@ -104,8 +102,7 @@ public class GuildSyncDataLayer(
                 continue;
             }
 
-            // Sequential, not parallel: a roster spans a handful of realms at most, so the bounded-
-            // concurrency machinery would be more moving parts than the problem has.
+            // Sequential, not parallel: a roster spans a handful of realms at most.
             var fetched = await gateway.FetchRealmAsync(region, slug, ct);
 
             if (fetched is null)

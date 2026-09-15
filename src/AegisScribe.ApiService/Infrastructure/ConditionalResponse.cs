@@ -6,11 +6,9 @@ using Microsoft.Net.Http.Headers;
 namespace AegisScribe.ApiService.Infrastructure;
 
 // ETag + If-None-Match on collection and detail GETs (api-contract.md): a 304 costs a few bytes where
-// the body costs kilobytes, and on a metered connection with a background refresh that difference is
-// the user's data allowance.
+// the body costs kilobytes, and on a metered connection that difference is the user's data allowance.
 //
-// Extracted from CharactersController when the roster became the second caller (7.2). It stays in the
-// API project because it is pure HTTP shape — Domain holds no IActionResult (backend.md).
+// In the API project because it is pure HTTP shape — Domain holds no IActionResult (backend.md).
 public static class ConditionalResponse
 {
     /// <summary>
@@ -32,10 +30,9 @@ public static class ConditionalResponse
         return controller.Ok(body);
     }
 
-    // A hash of the serialized body rather than a timestamp column. For a character that is because
-    // CharacterEquipment tracks its own staleness independently of Character, so no single column is
-    // authoritative; for a roster page it is because the page is a join across three tables whose
-    // rows change independently. Hashing what was actually produced is correct in both cases.
+    // A hash of the serialized body rather than a timestamp column: no single column is authoritative
+    // for a character (equipment tracks its own staleness) or for a roster page (a join across three
+    // tables that change independently). Hashing what was actually produced is correct in both cases.
     private static string ComputeETag<T>(T value)
     {
         var bytes = JsonSerializer.SerializeToUtf8Bytes(value);

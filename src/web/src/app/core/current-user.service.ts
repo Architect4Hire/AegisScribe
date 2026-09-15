@@ -5,9 +5,8 @@ import { UserServiceModel } from '../models/auth.models';
 import { skipSignInRedirect } from './auth-redirect.context';
 import { RuntimeConfigService } from './runtime-config.service';
 
-// The one place the signed-in user and their tenant memberships are cached, so the auth guard and
-// the tenant guard both read from a single GET /api/v1/me rather than each fetching it themselves.
-// See .claude/rules/auth.md -> "Angular side".
+// The one place the signed-in user and their tenant memberships are cached, so the auth guard and the
+// tenant guard both read from a single GET /api/v1/me (auth.md → "Angular side").
 @Injectable({ providedIn: 'root' })
 export class CurrentUserService {
   private readonly http = inject(HttpClient);
@@ -18,9 +17,8 @@ export class CurrentUserService {
 
   private pending: Promise<UserServiceModel> | null = null;
 
-  // Returns the cached user if one is loaded; otherwise fetches once. Concurrent callers (the two
-  // guards typically run back-to-back on the same navigation) share the one in-flight request
-  // rather than firing a second GET /me.
+  // Concurrent callers — the two guards typically run back-to-back on the same navigation — share the
+  // one in-flight request rather than firing a second GET /me.
   async ensureLoaded(): Promise<UserServiceModel> {
     const cached = this._user();
     if (cached) {
@@ -35,13 +33,11 @@ export class CurrentUserService {
     }
   }
 
-  // Answers "is anyone signed in?" without acting as though someone is. The landing guard uses it
-  // to decide what '/' resolves to: a 401 here is the ANSWER ("nobody"), not a failure, so the
-  // request opts out of the interceptor's sign-in redirect and this returns null rather than
-  // throwing.
+  // Answers "is anyone signed in?" without acting as though someone is. A 401 here is the ANSWER, not
+  // a failure, so the request opts out of the interceptor's sign-in redirect and this returns null.
   //
-  // It deliberately does not share `pending` with ensureLoaded(): a probe must never become the
-  // in-flight request a real caller awaits, or that caller would silently lose its redirect.
+  // Deliberately does not share `pending` with ensureLoaded(): a probe must never become the in-flight
+  // request a real caller awaits, or that caller would silently lose its redirect.
   async probeSession(): Promise<UserServiceModel | null> {
     const cached = this._user();
     if (cached) {
@@ -51,9 +47,8 @@ export class CurrentUserService {
     try {
       return await this.load(true);
     } catch {
-      // Signed out and a genuine outage land in the same place, and should: both mean we cannot
-      // say this visitor is signed in, and the signed-out page is the one that needs nothing to
-      // render.
+      // Signed out and a genuine outage land in the same place, and should: both mean we cannot say
+      // this visitor is signed in, and the signed-out page needs nothing to render.
       return null;
     }
   }
@@ -65,7 +60,9 @@ export class CurrentUserService {
   }
 
   hasMembership(tenantSlug: string): boolean {
-    return this._user()?.memberships.some((membership) => membership.tenantSlug === tenantSlug) ?? false;
+    return (
+      this._user()?.memberships.some((membership) => membership.tenantSlug === tenantSlug) ?? false
+    );
   }
 
   private async load(skipSignIn = false): Promise<UserServiceModel> {
