@@ -10,6 +10,8 @@ public interface ITenantBusiness
 
     Task<TenantRole?> GetRoleForCurrentUserAsync(Guid tenantId, CancellationToken ct);
 
+    Task<SlugCheckServiceModel> CheckSlugAsync(SlugCheckViewModel viewModel, CancellationToken ct);
+
     Task<TenantServiceModel> CreateAsync(CreateTenantViewModel viewModel, CancellationToken ct);
 
     Task<TenantServiceModel> GetByIdAsync(Guid tenantId, CancellationToken ct);

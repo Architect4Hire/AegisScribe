@@ -12,6 +12,7 @@
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="NSubstitute" Version="6.2.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -22,10 +23,20 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Captured Blizzard response bodies, read from disk at test time rather than embedded as string
+       literals: add-external-sync asks for real captures, and a body you can replace with `curl > file`
+       stays replaceable. See Integration/Blizzard/Fixtures/README.md. -->
+  <ItemGroup>
+    <None Update="Integration\Blizzard\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AegisScribe.AppHost\AegisScribe.AppHost.csproj" />
     <ProjectReference Include="..\AegisScribe.ApiService\AegisScribe.ApiService.csproj" />
     <ProjectReference Include="..\AegisScribe.Domain\AegisScribe.Domain.csproj" />
+    <!-- For the sync jobs themselves (6.4b). The AppHost reference above starts the worker as a
+         process; this one lets a test construct a job directly and assert on its behaviour. -->
+    <ProjectReference Include="..\AegisScribe.SyncWorker\AegisScribe.SyncWorker.csproj" />
   </ItemGroup>
 
 </Project>

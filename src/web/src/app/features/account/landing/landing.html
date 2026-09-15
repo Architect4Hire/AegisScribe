@@ -1,0 +1,34 @@
+<main class="landing">
+  <section class="hero">
+    <span class="brand">
+      <img class="brand-mark" src="logo.png" alt="" />
+      AEGISSCRIBE
+    </span>
+
+    <h1 class="hero-heading">A register of what your guild bears.</h1>
+
+    <p class="hero-body">
+      Every member's characters, gear and progression in one armory — with a roster that keeps your
+      own ranks, a raid calendar that knows who signed up, and notifications where your community
+      already lives.
+    </p>
+
+    <ul class="hero-points">
+      <li>Characters, equipment and progression, kept current automatically.</li>
+      <li>Your community's own ranks and roster, separate from the in-game guild.</li>
+      <li>A raid calendar with signups and attendance, in your guild's timezone.</li>
+    </ul>
+
+    <div class="hero-actions">
+      <a class="btn btn-primary hero-cta" href="#register">Register</a>
+      <button class="btn btn-secondary" type="button" (click)="login()">Log in</button>
+    </div>
+  </section>
+
+  <section class="panel register-card" id="register" aria-labelledby="register-heading">
+    <div class="panel-body">
+      <h2 class="register-heading" id="register-heading">Create an account</h2>
+      <scribe-register-form />
+    </div>
+  </section>
+</main>

@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { UserServiceModel } from '../models/auth.models';
+import { SKIP_SIGN_IN_REDIRECT } from './auth-redirect.context';
 import { CurrentUserService } from './current-user.service';
 
 const user: UserServiceModel = {
@@ -77,6 +78,47 @@ describe('CurrentUserService', () => {
 
     expect(service.hasMembership('ashes-of-dawn')).toBe(true);
     expect(service.hasMembership('emberwatch')).toBe(false);
+  });
+
+  it('probeSession returns the user when a session exists', async () => {
+    const promise = service.probeSession();
+    httpMock.expectOne('/api/v1/me').flush(user);
+
+    expect(await promise).toEqual(user);
+  });
+
+  it('probeSession returns null on a 401 instead of throwing', async () => {
+    const promise = service.probeSession();
+    httpMock.expectOne('/api/v1/me').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(await promise).toBeNull();
+  });
+
+  it('probeSession opts its request out of the sign-in redirect', async () => {
+    const promise = service.probeSession();
+    const request = httpMock.expectOne('/api/v1/me');
+
+    expect(request.request.context.get(SKIP_SIGN_IN_REDIRECT)).toBe(true);
+    request.flush(user);
+    await promise;
+  });
+
+  it('ensureLoaded keeps the sign-in redirect, so only the probe is exempt', async () => {
+    const promise = service.ensureLoaded();
+    const request = httpMock.expectOne('/api/v1/me');
+
+    expect(request.request.context.get(SKIP_SIGN_IN_REDIRECT)).toBe(false);
+    request.flush(user);
+    await promise;
+  });
+
+  it('probeSession reuses an already-cached user without a second fetch', async () => {
+    const load = service.ensureLoaded();
+    httpMock.expectOne('/api/v1/me').flush(user);
+    await load;
+
+    expect(await service.probeSession()).toEqual(user);
+    httpMock.expectNone('/api/v1/me');
   });
 
   it('hasMembership is false before anything has loaded', () => {

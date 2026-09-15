@@ -1,6 +1,14 @@
 // Mirrors `AegisScribe.Domain.Managers.Models.Domain.ItemQuality`. Enums serialize as their name
 // (Program.cs registers a JsonStringEnumConverter for both Mvc and minimal-API JSON options).
-export type ItemQuality = 'Poor' | 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Artifact';
+export type ItemQuality =
+  | 'Poor'
+  | 'Common'
+  | 'Uncommon'
+  | 'Rare'
+  | 'Epic'
+  | 'Legendary'
+  | 'Artifact'
+  | 'Heirloom';
 
 // Mirrors `AegisScribe.Domain.Managers.Models.Domain.EquipmentSlot`.
 export type EquipmentSlot =

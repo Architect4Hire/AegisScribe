@@ -8,10 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Same pair as MigrationService: EnrichSqlServerDbContext for the Aspire integration's retries and
+         health checks, and OpenIddict's EF Core provider because AegisScribeDbContext is configured with
+         UseOpenIddict() — one context, one migration history (CLAUDE.md). -->
+    <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.5.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="7.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AegisScribe.ServiceDefaults\AegisScribe.ServiceDefaults.csproj" />
+    <!-- Gateways and repositories, never the API (backend.md). Domain references neither. -->
+    <ProjectReference Include="..\AegisScribe.Domain\AegisScribe.Domain.csproj" />
   </ItemGroup>
 </Project>

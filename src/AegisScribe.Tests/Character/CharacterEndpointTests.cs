@@ -11,15 +11,13 @@ namespace AegisScribe.Tests.Character;
 // Its own collection/AppHost for the same reason MeEndpointCollection/TenantResolutionCollection
 // have one: these are unauthenticated requests against the shared IP rate-limit bucket
 // (backend.md -> "The API's public edge"), so a busy shared collection could make this flaky.
-[CollectionDefinition("AegisScribe API - Characters")]
-public class CharacterEndpointCollection : ICollectionFixture<AegisScribeAppFixture>;
 
 // Through the endpoint, the whole stack: CharactersController -> ICharacterFacade -> CharacterBusiness
 // -> ICharacterDataLayer -> CharacterRepository -> SQL, plus the global handler's 400 mapping and the
 // controller's own 404/ETag handling. The layers below the controller already have their own focused
 // tests (Repository/DataLayer/Business/Facade) — this is the missing "does it actually work as a
 // route" check the add-endpoint skill calls for (skills-evals, 4.6).
-[Collection("AegisScribe API - Characters")]
+[Collection("AegisScribe API")]
 public class CharacterEndpointTests(AegisScribeAppFixture fixture)
 {
     // The API serializes enums as strings (Program.cs's JsonStringEnumConverter registration,

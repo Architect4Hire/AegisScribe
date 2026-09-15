@@ -1,0 +1,71 @@
+/* AegisScribe design tokens — copied from design/aegisscribe-armory.html's `:root` block, the same
+   source .claude/skills/aegisscribe-design-system/references/tokens.md and src/web/src/styles/_tokens.scss
+   transcribe. This file is a COPY, not a reinterpretation: same names, same values. If this ever
+   disagrees with the HTML reference, the HTML wins.
+
+   This page (1B.4d) only needs a subset — ground/surfaces, ink, accent, critical and form/space/type —
+   but the full block is kept so a later addition here never has to re-transcribe from scratch. */
+:root {
+  /* ── ground & surfaces ───────────────────────────────────────────────── */
+  --ground: #0a0e13;
+  --surface-1: #111823;
+  --surface-2: #18212d;
+  --surface-3: #212c3a;
+  --line: #26313f;
+  --line-soft: #1c2531;
+  --line-strong: #38465a;
+
+  /* ── ink ──────────────────────────────────────────────────────────────
+     --ink-3 is for labels. Never for content a user has to read. */
+  --ink: #e6ebf2;
+  --ink-2: #97a3b4;
+  --ink-3: #616d7e;
+
+  /* ── accent ───────────────────────────────────────────────────────────
+     Three roles only: active nav item, focus ring, primary action. */
+  --brass: #cba76a;
+  --brass-bright: #e3c48d;
+  --brass-dim: rgba(203, 167, 106, 0.14);
+  --brass-line: rgba(203, 167, 106, 0.38);
+  --brass-ink: #1a1206; /* text on a brass surface, e.g. .btn-primary */
+
+  /* ── semantic state ─────────────────────────────────────────────────── */
+  --ok: #3e9c77;
+  --ok-bg: rgba(62, 156, 119, 0.14);
+  --ok-border: rgba(62, 156, 119, 0.3);
+  --attention: #d08a2c;
+  --attention-bg: rgba(208, 138, 44, 0.14);
+  --attention-border: rgba(208, 138, 44, 0.3);
+  --critical: #c25a50;
+  --critical-bg: rgba(194, 90, 80, 0.14);
+  --critical-border: rgba(194, 90, 80, 0.3);
+
+  /* ── type ─────────────────────────────────────────────────────────────
+     Condensed grotesque for the interface; Cinzel for the wordmark only. */
+  --font-display: "Cinzel", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Barlow Semi Condensed", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --t-h1: 1.75rem; /* 28px */
+  --t-body: 0.9375rem; /* 15px */
+  --t-sm: 0.8125rem; /* 13px — dense UI, table cells */
+  --t-xs: 0.6875rem; /* 11px — uppercase labels, .10em */
+
+  /* ── space (4px base) ───────────────────────────────────────────────── */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  /* ── form ─────────────────────────────────────────────────────────────
+     Radii stay small on purpose — see the reference's §04. */
+  --r-1: 3px; /* controls, item cells */
+  --r-2: 6px; /* panels, frames */
+
+  --shadow-raise:
+    0 1px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.45);
+}

@@ -12,12 +12,10 @@ namespace AegisScribe.Tests.Auth;
 // Its own collection/AppHost for the same reason TenantResolutionCollection has one: a full
 // register + code+PKCE exchange per test would push the shared "AegisScribe API" collection past the
 // API's 20/min anonymous-IP rate-limit bucket.
-[CollectionDefinition("AegisScribe API - Me")]
-public class MeEndpointCollection : ICollectionFixture<AegisScribeAppFixture>;
 
 // Through the endpoint, the whole stack: MeController → IMeFacade → MeBusiness (via ICurrentUser)
 // → IUserDataLayer → UserRepository → SQL, plus the global handler's 401 and 400 mappings.
-[Collection("AegisScribe API - Me")]
+[Collection("AegisScribe API")]
 public class MeEndpointTests(AegisScribeAppFixture fixture)
 {
     [Fact]

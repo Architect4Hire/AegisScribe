@@ -1,0 +1,134 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric?namespace=profile-us"
+    }
+  },
+  "id": 176946929,
+  "name": "Aldric",
+  "gender": {
+    "type": "MALE",
+    "name": "Male"
+  },
+  "faction": {
+    "type": "ALLIANCE",
+    "name": "Alliance"
+  },
+  "race": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/playable-race/1?namespace=static-11.1.7_60216-us"
+    },
+    "name": "Human",
+    "id": 1
+  },
+  "character_class": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/playable-class/1?namespace=static-11.1.7_60216-us"
+    },
+    "name": "Warrior",
+    "id": 1
+  },
+  "active_spec": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/playable-specialization/73?namespace=static-11.1.7_60216-us"
+    },
+    "name": "Protection",
+    "id": 73
+  },
+  "realm": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+    },
+    "name": "Argent Dawn",
+    "id": 1092,
+    "slug": "argent-dawn"
+  },
+  "guild": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/guild/argent-dawn/aegis-vigil?namespace=profile-us"
+    },
+    "name": "Aegis Vigil",
+    "id": 88213714,
+    "realm": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "id": 1092,
+      "slug": "argent-dawn"
+    },
+    "faction": {
+      "type": "ALLIANCE",
+      "name": "Alliance"
+    }
+  },
+  "level": 80,
+  "experience": 0,
+  "achievement_points": 21450,
+  "achievements": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/achievements?namespace=profile-us"
+  },
+  "titles": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/titles?namespace=profile-us"
+  },
+  "pvp_summary": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/pvp-summary?namespace=profile-us"
+  },
+  "encounters": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/encounters?namespace=profile-us"
+  },
+  "media": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/character-media?namespace=profile-us"
+  },
+  "last_login_timestamp": 1757246400000,
+  "average_item_level": 623,
+  "equipped_item_level": 620,
+  "specializations": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/specializations?namespace=profile-us"
+  },
+  "statistics": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/statistics?namespace=profile-us"
+  },
+  "mythic_keystone_profile": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/mythic-keystone-profile?namespace=profile-us"
+  },
+  "equipment": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/equipment?namespace=profile-us"
+  },
+  "appearance": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/appearance?namespace=profile-us"
+  },
+  "collections": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/collections?namespace=profile-us"
+  },
+  "active_title": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/title/386?namespace=static-11.1.7_60216-us"
+    },
+    "name": "the Undaunted",
+    "id": 386,
+    "display_string": "{name} the Undaunted"
+  },
+  "reputations": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/reputations?namespace=profile-us"
+  },
+  "quests": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/quests?namespace=profile-us"
+  },
+  "achievements_statistics": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/achievements/statistics?namespace=profile-us"
+  },
+  "professions": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/professions?namespace=profile-us"
+  },
+  "covenant_progress": {
+    "chosen_covenant": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/covenant/1?namespace=static-11.1.7_60216-us"
+      },
+      "name": "Kyrian",
+      "id": 1
+    },
+    "renown_level": 80
+  }
+}

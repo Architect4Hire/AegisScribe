@@ -8,7 +8,7 @@ namespace AegisScribe.Tests.Tenancy;
 // asserted below the layers that consume them. One registration for a real user id (memberships carry
 // an FK to AspNetUsers); everything else is direct database work, so this adds almost nothing to the
 // collection's anonymous rate-limit budget.
-[Collection("AegisScribe API - Tenancy")]
+[Collection("AegisScribe API")]
 public class TenantRepositoryTests(AegisScribeAppFixture fixture)
 {
     [Fact]

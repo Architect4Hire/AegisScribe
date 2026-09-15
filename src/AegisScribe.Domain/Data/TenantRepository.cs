@@ -1,5 +1,6 @@
 using AegisScribe.Domain.Managers.Models.Domain;
 using AegisScribe.Domain.Managers.Models.ServiceModels;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Domain.Data;
@@ -13,6 +14,11 @@ public class TenantRepository(AegisScribeDbContext db) : ITenantRepository
         db.Tenants
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Slug == slug, ct);
+
+    public Task<bool> SlugExistsAsync(string slug, CancellationToken ct) =>
+        db.Tenants
+            .AsNoTracking()
+            .AnyAsync(t => t.Slug == slug, ct);
 
     public Task<bool> IsMemberAsync(Guid tenantId, string userId, CancellationToken ct) =>
         db.TenantMemberships
@@ -65,21 +71,26 @@ public class TenantRepository(AegisScribeDbContext db) : ITenantRepository
         return db.SaveChangesAsync(ct);
     }
 
-    // The Aspire-enabled execution strategy refuses to run inside a caller-opened transaction (backend.md),
-    // so the whole unit is handed in as a callback rather than exposing BeginTransactionAsync. The
-    // callback may run more than once on a transient failure — safe here because AddAsync/AddMembershipAsync
-    // only mark already-constructed entities as tracked, which is a no-op to repeat for the same instance.
+    // The whole unit is handed in as a callback rather than exposing BeginTransactionAsync — see
+    // DbContextTransactions for why that shape is forced. The callback may run more than once on a
+    // transient failure, which is safe here because AddAsync/AddMembershipAsync only mark
+    // already-constructed entities as tracked: a no-op to repeat for the same instance.
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
     {
-        var strategy = db.Database.CreateExecutionStrategy();
-        return await strategy.ExecuteAsync(async () =>
+        try
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(ct);
-            var result = await operation(ct);
-            await db.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-            return result;
-        });
+            return await db.ExecuteInTransactionAsync(operation, ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueViolationOn(SlugIndexName))
+        {
+            // TenantBusiness.CreateAsync pre-checks the slug and rejects a taken one as a 400, but two
+            // callers can both pass that check before either writes. The index is the authority (2.7b);
+            // without this translation the loser of that race gets a 500 for a condition it could have
+            // retried. Not a transient failure, so the execution strategy correctly does not retry it.
+            throw new SlugTakenException();
+        }
     }
+
+    private const string SlugIndexName = "IX_Tenants_Slug";
 }

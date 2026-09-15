@@ -8,7 +8,7 @@ namespace AegisScribe.Tests.Tenancy;
 // Proves the harness works against 2.7's endpoints — the only tenant-scoped routes that exist so far.
 // Reuses the "Tenant CRUD" collection since it's the same endpoints TenantEndpointTests already
 // exercises there; no need for a third AppHost just for this.
-[Collection("AegisScribe API - Tenant CRUD")]
+[Collection("AegisScribe API")]
 public class TwoTenantFixtureTests(AegisScribeAppFixture fixture)
 {
     [Fact]

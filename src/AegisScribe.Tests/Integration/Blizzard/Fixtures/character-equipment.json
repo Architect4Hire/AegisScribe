@@ -1,0 +1,322 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/equipment?namespace=profile-us"
+    }
+  },
+  "character": {
+    "key": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric?namespace=profile-us"
+    },
+    "name": "Aldric",
+    "id": 176946929,
+    "realm": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "id": 1092,
+      "slug": "argent-dawn"
+    }
+  },
+  "equipped_items": [
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/212010?namespace=static-11.1.7_60216-us"
+        },
+        "id": 212010
+      },
+      "slot": {
+        "type": "HEAD",
+        "name": "Head"
+      },
+      "quantity": 1,
+      "context": 35,
+      "bonus_list": [10389, 6652, 10353, 1540, 10255],
+      "quality": {
+        "type": "EPIC",
+        "name": "Epic"
+      },
+      "name": "Cyclopean Cage Helm",
+      "modified_appearance_id": 1042113,
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/212010?namespace=static-11.1.7_60216-us"
+        },
+        "id": 212010
+      },
+      "item_class": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item-class/4?namespace=static-11.1.7_60216-us"
+        },
+        "name": "Armor",
+        "id": 4
+      },
+      "item_subclass": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item-class/4/item-subclass/4?namespace=static-11.1.7_60216-us"
+        },
+        "name": "Plate",
+        "id": 4
+      },
+      "inventory_type": {
+        "type": "HEAD",
+        "name": "Head"
+      },
+      "binding": {
+        "type": "ON_ACQUIRE",
+        "name": "Binds when picked up"
+      },
+      "armor": {
+        "value": 1584,
+        "display": {
+          "display_string": "1,584 Armor",
+          "color": {
+            "r": 255,
+            "g": 255,
+            "b": 255,
+            "a": 1.0
+          }
+        }
+      },
+      "stats": [
+        {
+          "type": {
+            "type": "STAMINA",
+            "name": "Stamina"
+          },
+          "value": 12894,
+          "display": {
+            "display_string": "+12,894 Stamina",
+            "color": {
+              "r": 255,
+              "g": 255,
+              "b": 255,
+              "a": 1.0
+            }
+          }
+        }
+      ],
+      "level": {
+        "value": 639,
+        "display_string": "Item Level 639"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/221100?namespace=static-11.1.7_60216-us"
+        },
+        "id": 221100
+      },
+      "slot": {
+        "type": "NECK",
+        "name": "Neck"
+      },
+      "quantity": 1,
+      "context": 14,
+      "quality": {
+        "type": "LEGENDARY",
+        "name": "Legendary"
+      },
+      "name": "Amulet of Earthen Craftsmanship",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/221100?namespace=static-11.1.7_60216-us"
+        },
+        "id": 221100
+      },
+      "inventory_type": {
+        "type": "NECK",
+        "name": "Neck"
+      },
+      "level": {
+        "value": 645,
+        "display_string": "Item Level 645"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/122246?namespace=static-11.1.7_60216-us"
+        },
+        "id": 122246
+      },
+      "slot": {
+        "type": "SHOULDER",
+        "name": "Shoulder"
+      },
+      "quantity": 1,
+      "context": 1,
+      "quality": {
+        "type": "HEIRLOOM",
+        "name": "Heirloom"
+      },
+      "name": "Champions Pauldrons",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/122246?namespace=static-11.1.7_60216-us"
+        },
+        "id": 122246
+      },
+      "inventory_type": {
+        "type": "SHOULDER",
+        "name": "Shoulder"
+      },
+      "level": {
+        "value": 187,
+        "display_string": "Item Level 187"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/5976?namespace=static-11.1.7_60216-us"
+        },
+        "id": 5976
+      },
+      "slot": {
+        "type": "TABARD",
+        "name": "Tabard"
+      },
+      "quantity": 1,
+      "context": 1,
+      "quality": {
+        "type": "COMMON",
+        "name": "Common"
+      },
+      "name": "Guild Tabard",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/5976?namespace=static-11.1.7_60216-us"
+        },
+        "id": 5976
+      },
+      "inventory_type": {
+        "type": "TABARD",
+        "name": "Tabard"
+      },
+      "level": {
+        "value": 1,
+        "display_string": "Item Level 1"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/6096?namespace=static-11.1.7_60216-us"
+        },
+        "id": 6096
+      },
+      "slot": {
+        "type": "SHIRT",
+        "name": "Shirt"
+      },
+      "quantity": 1,
+      "context": 1,
+      "quality": {
+        "type": "COMMON",
+        "name": "Common"
+      },
+      "name": "Rich Purple Silk Shirt",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/6096?namespace=static-11.1.7_60216-us"
+        },
+        "id": 6096
+      },
+      "inventory_type": {
+        "type": "SHIRT",
+        "name": "Shirt"
+      },
+      "level": {
+        "value": 1,
+        "display_string": "Item Level 1"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/222440?namespace=static-11.1.7_60216-us"
+        },
+        "id": 222440
+      },
+      "slot": {
+        "type": "MAIN_HAND",
+        "name": "Main Hand"
+      },
+      "quantity": 1,
+      "context": 35,
+      "bonus_list": [10389, 6652, 10353],
+      "quality": {
+        "type": "EPIC",
+        "name": "Epic"
+      },
+      "name": "Charged Slicer of the Deep",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/222440?namespace=static-11.1.7_60216-us"
+        },
+        "id": 222440
+      },
+      "inventory_type": {
+        "type": "ONE_HAND",
+        "name": "One-Hand"
+      },
+      "weapon": {
+        "damage": {
+          "min_value": 3912,
+          "max_value": 5868,
+          "display_string": "3,912 - 5,868 Damage"
+        },
+        "attack_speed": {
+          "value": 2600,
+          "display_string": "Speed 2.60"
+        },
+        "dps": {
+          "value": 1880.77,
+          "display_string": "(1880.8 damage per second)"
+        }
+      },
+      "level": {
+        "value": 639,
+        "display_string": "Item Level 639"
+      }
+    },
+    {
+      "item": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/item/159183?namespace=static-11.1.7_60216-us"
+        },
+        "id": 159183
+      },
+      "slot": {
+        "type": "OFF_HAND",
+        "name": "Off Hand"
+      },
+      "quantity": 1,
+      "context": 35,
+      "quality": {
+        "type": "RARE",
+        "name": "Rare"
+      },
+      "name": "Bulwark of the Broken Isles",
+      "media": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/media/item/159183?namespace=static-11.1.7_60216-us"
+        },
+        "id": 159183
+      },
+      "inventory_type": {
+        "type": "SHIELD",
+        "name": "Shield"
+      },
+      "level": {
+        "value": 606,
+        "display_string": "Item Level 606"
+      }
+    }
+  ],
+  "equipped_item_sets": []
+}

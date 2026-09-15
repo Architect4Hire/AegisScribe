@@ -12,10 +12,8 @@ namespace AegisScribe.Tests.Tenancy;
 // test here registers a user and drives a full code+PKCE exchange, which combined with the "AegisScribe
 // API" collection's own registrations/token mints trips the API's 20/min anonymous-IP rate-limit
 // bucket (backend.md -> "The API's public edge") when the full suite runs.
-[CollectionDefinition("AegisScribe API - Tenancy")]
-public class TenantResolutionCollection : ICollectionFixture<AegisScribeAppFixture>;
 
-[Collection("AegisScribe API - Tenancy")]
+[Collection("AegisScribe API")]
 public class TenantResolutionTests(AegisScribeAppFixture fixture)
 {
     private static async Task<string> RegisterAndGetTokenAsync(AegisScribeAppFixture fixture)

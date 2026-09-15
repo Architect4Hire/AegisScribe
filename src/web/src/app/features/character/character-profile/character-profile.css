@@ -60,3 +60,16 @@
   padding: var(--s-3);
 }
 .render-note { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); line-height: 1.7; }
+
+/* A failed claim, reported without taking the character page away — the same treatment the roster
+   uses for a failed write. Semantic state on a tinted panel, never colour alone: the message says
+   what failed. */
+.claim-error {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-3);
+}

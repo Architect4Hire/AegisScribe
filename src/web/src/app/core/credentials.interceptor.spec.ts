@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { skipSignInRedirect } from './auth-redirect.context';
 import { AuthService } from './auth.service';
 import { credentialsInterceptor } from './credentials.interceptor';
 import { CurrentUserService } from './current-user.service';
@@ -72,6 +73,17 @@ describe('credentialsInterceptor', () => {
 
     expect(clearCalls).toBe(1);
     expect(loginCalls.length).toBe(1);
+  });
+
+  it('clears the identity but does NOT redirect when the request opts out', async () => {
+    const result = firstValueFrom(http.get('/api/v1/me', { context: skipSignInRedirect() })).catch(
+      (error: unknown) => error,
+    );
+    httpMock.expectOne('/api/v1/me').flush(null, { status: 401, statusText: 'Unauthorized' });
+    await result;
+
+    expect(clearCalls).toBe(1);
+    expect(loginCalls).toEqual([]);
   });
 
   it('routes to the tenant picker on a 404 from a tenant-scoped route', async () => {

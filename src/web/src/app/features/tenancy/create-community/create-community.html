@@ -1,0 +1,157 @@
+<div class="create-community">
+  <h1 class="create-heading">Create a community</h1>
+  <p class="create-intro">
+    A community is your guild's own space in AegisScribe — its roster, ranks, calendar and
+    notifications. You will be its owner.
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="form-row">
+      <label class="label" for="community-name">Community name</label>
+      <div class="field">
+        <input
+          id="community-name"
+          type="text"
+          formControlName="name"
+          autocomplete="organization"
+          [attr.maxlength]="maxNameLength"
+          [attr.aria-invalid]="nameErrors().length > 0"
+          [attr.aria-describedby]="nameErrors().length > 0 ? 'community-name-error' : null"
+        />
+      </div>
+      @if (nameErrors().length > 0) {
+        <p class="field-error" id="community-name-error">
+          @for (message of nameErrors(); track message) {
+            <span>{{ message }}</span>
+          }
+        </p>
+      }
+    </div>
+
+    <div class="form-row">
+      <label class="label" for="community-slug">Address</label>
+
+      <!-- Read-only until the user asks to edit it: the value shown is the SERVER's derivation, and
+           a field that looks editable but is overwritten on the next keystroke is worse than one
+           that plainly is not. -->
+      <div class="field slug-field">
+        <span class="slug-prefix" aria-hidden="true">/t/</span>
+        @if (slugMode() === 'edited') {
+          <input
+            id="community-slug"
+            type="text"
+            formControlName="slug"
+            autocomplete="off"
+            spellcheck="false"
+            [attr.maxlength]="maxSlugLength"
+            [attr.aria-invalid]="slugErrors().length > 0"
+            [attr.aria-describedby]="
+              slugErrors().length > 0
+                ? 'community-slug-hint community-slug-error'
+                : 'community-slug-hint'
+            "
+          />
+        } @else {
+          <input
+            id="community-slug"
+            type="text"
+            readonly
+            [value]="previewSlug ?? ''"
+            placeholder="from your community name"
+            aria-describedby="community-slug-hint"
+          />
+        }
+
+        @if (slugMode() === 'edited') {
+          <button
+            class="btn btn-secondary btn-sm slug-action"
+            type="button"
+            (click)="useDerivedSlug()"
+          >
+            Use suggestion
+          </button>
+        } @else {
+          <button class="btn btn-secondary btn-sm slug-action" type="button" (click)="editSlug()">
+            Edit
+          </button>
+        }
+      </div>
+
+      <!-- aria-live so the availability answer is announced when it arrives: it changes without any
+           action from the user, which is exactly the case a live region exists for.
+
+           The tint is gated on 'answered', not on check() alone: check() still holds the PREVIOUS
+           answer while a new one is in flight, so binding to it directly would leave a green tint
+           under the word "Checking…" — colour disagreeing with the text it is meant to reinforce. -->
+      <p
+        class="field-hint"
+        id="community-slug-hint"
+        aria-live="polite"
+        [class.is-available]="checkState() === 'answered' && check()?.available === true"
+        [class.is-unavailable]="checkState() === 'answered' && check()?.available === false"
+      >
+        {{
+          slugMessage ??
+            'This is the web address your members will use. It cannot be changed later.'
+        }}
+      </p>
+
+      @if (slugErrors().length > 0) {
+        <p class="field-error" id="community-slug-error">
+          @for (message of slugErrors(); track message) {
+            <span>{{ message }}</span>
+          }
+        </p>
+      }
+    </div>
+
+    <div class="form-row">
+      <label class="label" for="community-timezone">Time zone</label>
+      <div class="field">
+        <select
+          id="community-timezone"
+          formControlName="timeZoneId"
+          [attr.aria-invalid]="timeZoneErrors().length > 0"
+          [attr.aria-describedby]="
+            timeZoneErrors().length > 0
+              ? 'community-timezone-hint community-timezone-error'
+              : 'community-timezone-hint'
+          "
+        >
+          @for (zone of timeZones; track zone) {
+            <option [value]="zone">{{ zone }}</option>
+          }
+        </select>
+      </div>
+      <p class="field-hint" id="community-timezone-hint">
+        Raid times are shown in this zone by default. We have guessed {{ detectedTimeZone }} from
+        your browser.
+      </p>
+      @if (timeZoneErrors().length > 0) {
+        <p class="field-error" id="community-timezone-error">
+          @for (message of timeZoneErrors(); track message) {
+            <span>{{ message }}</span>
+          }
+        </p>
+      }
+    </div>
+
+    <!-- Server messages that belong to no single field. role="alert" so it is announced when it
+         appears, which is the only way a screen-reader user learns a submit was rejected. -->
+    @if (formErrors().length > 0) {
+      <div class="form-error" role="alert">
+        @for (message of formErrors(); track message) {
+          <p>{{ message }}</p>
+        }
+      </div>
+    }
+
+    <button
+      class="btn btn-primary create-submit"
+      type="submit"
+      [disabled]="state() === 'submitting'"
+    >
+      {{ state() === 'submitting' ? 'Creating…' : 'Create community' }}
+    </button>
+  </form>
+</div>

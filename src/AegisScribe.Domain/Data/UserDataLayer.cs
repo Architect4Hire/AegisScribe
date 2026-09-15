@@ -21,7 +21,7 @@ public class UserDataLayer(IUserRepository repository) : IUserDataLayer
         ApplicationUser user, string currentPassword, string newPassword, CancellationToken ct) =>
         repository.ChangePasswordAsync(user, currentPassword, newPassword, ct);
 
-    public Task<bool> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct) =>
+    public Task<CredentialCheckResult> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct) =>
         repository.CheckPasswordSignInAsync(user, password, ct);
 
     public Task<bool> CanSignInAsync(ApplicationUser user, CancellationToken ct) =>

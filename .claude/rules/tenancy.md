@@ -25,7 +25,7 @@ subagent, `tenant-isolation-auditor`, whose only job is to look for it.
 | Zone | Carries `TenantId`? | Query filter? | Entities |
 |---|---|---|---|
 | **Global reference** | **No** | **No** | `Realm`, `Character`, `CharacterEquipment`, `EquippedItem`, `Item`, `Profession`, `Recipe`, `ReagentSlot`, `Guild`, `GuildMember`, `SyncSuppression` |
-| **Tenant-scoped** | **Yes\*** | **Yes\*** | `Tenant`\*, `TenantMembership`\*, `RosterEntry`, `TenantRank`, `CalendarEvent`, `EventSignup`, `AttendanceRecord`, `Notification`, `NotificationPreference`, `DiscordWebhook`, `DeviceRegistration`, `CharacterClaim`, `AuditLog`, `RecruitmentApplication` |
+| **Tenant-scoped** | **Yes\*** | **Yes\*** | `Tenant`\*, `TenantMembership`\*, `RosterEntry`, `TenantRank`, `CalendarEvent`, `EventSignup`, `AttendanceRecord`, `Notification`, `NotificationPreference`, `DiscordWebhook`, `DeviceRegistration`, `CharacterClaim`, `AuditLog`, `RecruitmentApplication`, `TenantGuild`, `TenantSyncBudgetWindow` |
 
 \* `Tenant` and `TenantMembership` are the two entities that *bootstrap* tenancy itself, and both are
 exceptions to this column: `Tenant` carries no `TenantId` at all (it **is** the tenant — nothing to
@@ -47,6 +47,12 @@ Use — and would mean re-embedding the same item catalogue N times.
 So the model is: **one global `Character` row, N tenant `RosterEntry` rows pointing at it.** The
 character is the fact; the roster entry is *this community's* relationship to it — rank, notes,
 main/alt link, join date.
+
+**`Guild` is global; `TenantGuild` is the link.** Same shape as `Character`/`RosterEntry`, and it
+matters for the same reason: a guild's roster and its in-game ranks are one fact about the world, so
+two communities following the same guild share one `Guild` row and one set of `GuildMember` rows. What
+is private is *which* guilds a community follows. Syncing per community instead would refetch a shared
+roster once per follower.
 
 The same split applies to guild ranks, and the two are easy to confuse:
 

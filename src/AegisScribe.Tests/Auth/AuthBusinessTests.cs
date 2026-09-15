@@ -108,23 +108,44 @@ public class AuthBusinessTests
     }
 
     [Fact]
-    public async Task ValidateCredentials_UnknownEmail_ReturnsNull()
+    public async Task ValidateCredentials_UnknownEmail_ReturnsFailedAttempt_NotLockedOut()
     {
         _dataLayer.FindByEmailAsync("a@example.com", Arg.Any<CancellationToken>()).Returns((ApplicationUser?)null);
 
-        Assert.Null(await _business.ValidateCredentialsAsync(
-            new SignInViewModel { Email = "a@example.com", Password = "x" }, CancellationToken.None));
+        var attempt = await _business.ValidateCredentialsAsync(
+            new SignInViewModel { Email = "a@example.com", Password = "x" }, CancellationToken.None);
+
+        Assert.Null(attempt.Subject);
+        Assert.False(attempt.IsLockedOut);
     }
 
     [Fact]
-    public async Task ValidateCredentials_WrongPassword_ReturnsNull_AndNeverReadsRoles()
+    public async Task ValidateCredentials_WrongPassword_ReturnsFailedAttempt_AndNeverReadsRoles()
     {
         var user = new ApplicationUser { Email = "a@example.com" };
         _dataLayer.FindByEmailAsync("a@example.com", Arg.Any<CancellationToken>()).Returns(user);
-        _dataLayer.CheckPasswordSignInAsync(user, "x", Arg.Any<CancellationToken>()).Returns(false);
+        _dataLayer.CheckPasswordSignInAsync(user, "x", Arg.Any<CancellationToken>()).Returns(CredentialCheckResult.Invalid);
 
-        Assert.Null(await _business.ValidateCredentialsAsync(
-            new SignInViewModel { Email = "a@example.com", Password = "x" }, CancellationToken.None));
+        var attempt = await _business.ValidateCredentialsAsync(
+            new SignInViewModel { Email = "a@example.com", Password = "x" }, CancellationToken.None);
+
+        Assert.Null(attempt.Subject);
+        Assert.False(attempt.IsLockedOut);
+        await _dataLayer.DidNotReceiveWithAnyArgs().GetRolesAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task ValidateCredentials_LockedOut_ReturnsFailedAttempt_WithIsLockedOutSet()
+    {
+        var user = new ApplicationUser { Email = "a@example.com" };
+        _dataLayer.FindByEmailAsync("a@example.com", Arg.Any<CancellationToken>()).Returns(user);
+        _dataLayer.CheckPasswordSignInAsync(user, "x", Arg.Any<CancellationToken>()).Returns(CredentialCheckResult.LockedOut);
+
+        var attempt = await _business.ValidateCredentialsAsync(
+            new SignInViewModel { Email = "a@example.com", Password = "x" }, CancellationToken.None);
+
+        Assert.Null(attempt.Subject);
+        Assert.True(attempt.IsLockedOut);
         await _dataLayer.DidNotReceiveWithAnyArgs().GetRolesAsync(default!, default);
     }
 
@@ -133,15 +154,16 @@ public class AuthBusinessTests
     {
         var user = new ApplicationUser { Email = "a@example.com" };
         _dataLayer.FindByEmailAsync("a@example.com", Arg.Any<CancellationToken>()).Returns(user);
-        _dataLayer.CheckPasswordSignInAsync(user, "ok", Arg.Any<CancellationToken>()).Returns(true);
+        _dataLayer.CheckPasswordSignInAsync(user, "ok", Arg.Any<CancellationToken>()).Returns(CredentialCheckResult.Success);
         _dataLayer.GetRolesAsync(user, Arg.Any<CancellationToken>()).Returns(["PlatformAdmin"]);
 
-        var subject = await _business.ValidateCredentialsAsync(
+        var attempt = await _business.ValidateCredentialsAsync(
             new SignInViewModel { Email = "a@example.com", Password = "ok" }, CancellationToken.None);
 
-        Assert.NotNull(subject);
-        Assert.Equal(user.Id, subject!.UserId);
-        Assert.Equal(["PlatformAdmin"], subject.Roles);
+        Assert.NotNull(attempt.Subject);
+        Assert.False(attempt.IsLockedOut);
+        Assert.Equal(user.Id, attempt.Subject!.UserId);
+        Assert.Equal(["PlatformAdmin"], attempt.Subject.Roles);
     }
 
     [Fact]

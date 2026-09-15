@@ -5,7 +5,7 @@ using AegisScribe.Tests.Auth;
 namespace AegisScribe.Tests.PublicEdge;
 
 [Collection("AegisScribe API - Public Edge")]
-public class PublicEdgeTests(AegisScribeAppFixture fixture) : IDisposable
+public class PublicEdgeTests(TightRateLimitAppFixture fixture) : IDisposable
 {
     // fixture.ApiClient carries ServiceDefaults' standard resilience handler, which retries
     // transient-looking responses (429 included) with backoff — great for production, but it means

@@ -1,0 +1,72 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine?namespace=profile-us"
+    }
+  },
+  "id": 213558104,
+  "name": "Delphine",
+  "gender": {
+    "type": "FEMALE",
+    "name": "Female"
+  },
+  "faction": {
+    "type": "HORDE",
+    "name": "Horde"
+  },
+  "race": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/playable-race/5?namespace=static-11.1.7_60216-us"
+    },
+    "name": "Undead",
+    "id": 5
+  },
+  "character_class": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/playable-class/5?namespace=static-11.1.7_60216-us"
+    },
+    "name": "Priest",
+    "id": 5
+  },
+  "realm": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+    },
+    "name": "Argent Dawn",
+    "id": 1092,
+    "slug": "argent-dawn"
+  },
+  "level": 7,
+  "experience": 1840,
+  "achievement_points": 0,
+  "achievements": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/achievements?namespace=profile-us"
+  },
+  "titles": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/titles?namespace=profile-us"
+  },
+  "pvp_summary": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/pvp-summary?namespace=profile-us"
+  },
+  "media": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/character-media?namespace=profile-us"
+  },
+  "last_login_timestamp": 1756814400000,
+  "average_item_level": 18,
+  "equipped_item_level": 16,
+  "specializations": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/specializations?namespace=profile-us"
+  },
+  "equipment": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/equipment?namespace=profile-us"
+  },
+  "appearance": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/appearance?namespace=profile-us"
+  },
+  "collections": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/collections?namespace=profile-us"
+  },
+  "quests": {
+    "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/quests?namespace=profile-us"
+  }
+}

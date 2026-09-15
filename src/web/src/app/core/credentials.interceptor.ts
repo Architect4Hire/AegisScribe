@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { SKIP_SIGN_IN_REDIRECT } from './auth-redirect.context';
 import { AuthService } from './auth.service';
 import { CurrentUserService } from './current-user.service';
 import { TENANT_PICKER_PATH } from './tenant.guard';
@@ -18,6 +19,10 @@ const TENANT_ROUTE_PATTERN = /\/api\/v\d+\/t\/[^/]+(\/|$)/;
 // cached identity and send the browser to sign-in); a 404 on a tenant-scoped route means "not
 // yours" -- route to the tenant picker rather than letting a component render an error, and never
 // distinguish "doesn't exist" from "not a member".
+//
+// The one exception is a request carrying SKIP_SIGN_IN_REDIRECT: the cached identity is still
+// dropped, but the browser stays where it is. That request is asking WHETHER anyone is signed in
+// rather than acting as someone who is -- see auth-redirect.context.ts.
 export const credentialsInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const currentUser = inject(CurrentUserService);
@@ -34,7 +39,9 @@ export const credentialsInterceptor: HttpInterceptorFn = (req, next) => {
       if (error instanceof HttpErrorResponse) {
         if (error.status === 401) {
           currentUser.clear();
-          authService.login(window.location.pathname + window.location.search);
+          if (!req.context.get(SKIP_SIGN_IN_REDIRECT)) {
+            authService.login(window.location.pathname + window.location.search);
+          }
         } else if (error.status === 404 && TENANT_ROUTE_PATTERN.test(req.url)) {
           void router.navigateByUrl(TENANT_PICKER_PATH);
         }

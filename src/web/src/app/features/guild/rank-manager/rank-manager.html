@@ -1,0 +1,169 @@
+<section class="rank-manager">
+  <h1 class="rm-title">Rank settings</h1>
+
+  @switch (state()) {
+    @case ('loading') {
+      <scribe-skeleton [height]="38" [count]="5" />
+    }
+    @case ('error') {
+      <scribe-empty-state
+        heading="Couldn't load rank settings"
+        body="Something went wrong reaching AegisScribe. Check your connection and try again."
+        actionLabel="Try again"
+        variant="error"
+        (action)="retry()"
+      />
+    }
+    @case ('loaded') {
+      @if (writeError(); as message) {
+        <!--
+          A failed WRITE, reported above the editor rather than replacing it. The ladder the officer
+          is halfway through editing stays on screen.
+        -->
+        <p class="rm-write-error" role="alert">{{ message }}</p>
+      }
+
+      <section class="rm-section">
+        <h2 class="rm-heading">Your ladder</h2>
+        <p class="rm-sub">
+          The ranks this community assigns. Entirely yours — unrelated to the ranks the guild uses
+          in game.
+        </p>
+
+        @if (orderedRanks().length === 0) {
+          <scribe-empty-state
+            heading="No ranks yet"
+            body="Create a rank below. Officers assign them to characters from the roster."
+          />
+        } @else {
+          <ul class="rm-list">
+            @for (rank of orderedRanks(); track rank.id; let first = $first, last = $last) {
+              <li class="rm-row">
+                <scribe-rank-pill [name]="rank.name" [colour]="rank.colour" />
+
+                <input
+                  class="field rm-name"
+                  type="text"
+                  maxlength="32"
+                  [value]="rank.name"
+                  [attr.aria-label]="'Rename ' + rank.name"
+                  (change)="rename(rank, $any($event.target).value)"
+                />
+
+                <!--
+                  A native colour input, so the value is always exactly #rrggbb — which is what the
+                  server validates and what lands in --rank-color as an inline style.
+                -->
+                <input
+                  class="rm-colour"
+                  type="color"
+                  [value]="rank.colour"
+                  [attr.aria-label]="'Colour for ' + rank.name"
+                  (change)="recolour(rank, $any($event.target).value)"
+                />
+
+                <div class="rm-actions">
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    type="button"
+                    [disabled]="first"
+                    [attr.aria-label]="'Move ' + rank.name + ' up'"
+                    (click)="move(rank, -1)"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    type="button"
+                    [disabled]="last"
+                    [attr.aria-label]="'Move ' + rank.name + ' down'"
+                    (click)="move(rank, 1)"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    type="button"
+                    [attr.aria-label]="'Delete ' + rank.name"
+                    (click)="deleteRank(rank)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="rm-create">
+          <input
+            class="field"
+            type="text"
+            maxlength="32"
+            placeholder="New rank name"
+            aria-label="New rank name"
+            [value]="newRankName()"
+            (input)="newRankName.set($any($event.target).value)"
+          />
+          <input
+            class="rm-colour"
+            type="color"
+            aria-label="New rank colour"
+            [value]="newRankColour()"
+            (input)="newRankColour.set($any($event.target).value)"
+          />
+          <button
+            class="btn btn-primary"
+            type="button"
+            [disabled]="!canCreate()"
+            (click)="createRank()"
+          >
+            Add rank
+          </button>
+        </div>
+
+        @if (duplicateName()) {
+          <p class="rm-warning">This community already has a rank with that name.</p>
+        }
+      </section>
+
+      <section class="rm-section">
+        <h2 class="rm-heading">In-game rank names</h2>
+        <p class="rm-sub">
+          Blizzard reports a guild's ranks as numbers from 0 to 9 and does not tell us what the
+          guild calls them. Name them here and the roster shows the name instead of the number. Rank
+          0 is always the guild master.
+        </p>
+
+        @if (guildGroups().length === 0) {
+          <scribe-empty-state
+            heading="No guilds linked"
+            body="Link a guild to this community and its ten in-game ranks appear here to name."
+          />
+        } @else {
+          @for (group of guildGroups(); track group.guildId) {
+            <article class="rm-guild">
+              <h3 class="rm-guild-name">{{ group.guildName }}</h3>
+              <ul class="rm-ranks">
+                @for (row of group.ranks; track row.rank) {
+                  <li class="rm-rank-row">
+                    <span class="rm-rank-number">{{ row.rank }}</span>
+                    <input
+                      class="field"
+                      type="text"
+                      maxlength="32"
+                      [value]="row.name ?? ''"
+                      [placeholder]="'Rank ' + row.rank"
+                      [attr.aria-label]="'Name for ' + group.guildName + ' rank ' + row.rank"
+                      (change)="setGuildRankName(row, $any($event.target).value)"
+                    />
+                  </li>
+                }
+              </ul>
+            </article>
+          }
+        }
+      </section>
+    }
+  }
+</section>

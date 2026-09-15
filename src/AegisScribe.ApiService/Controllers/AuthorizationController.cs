@@ -48,13 +48,13 @@ public class AuthorizationController(
 
         if (HttpMethods.IsPost(Request.Method))
         {
-            var subject = await authFacade.ValidateCredentialsAsync(new SignInViewModel
+            var attempt = await authFacade.ValidateCredentialsAsync(new SignInViewModel
             {
                 Email = Request.Form["identifier"].ToString(),
                 Password = Request.Form["credential"].ToString(),
             }, ct);
 
-            if (subject is not null)
+            if (attempt.Subject is { } subject)
             {
                 var identity = new ClaimsIdentity(
                     authenticationType: TokenValidationParameters.DefaultAuthenticationType,
@@ -84,7 +84,9 @@ public class AuthorizationController(
                 return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
-            error = "Incorrect email or password.";
+            error = attempt.IsLockedOut
+                ? "Too many failed attempts. This account is temporarily locked — try again in a few minutes."
+                : "Incorrect email or password.";
         }
 
         return Content(RenderLoginForm(request, error), "text/html");
@@ -209,20 +211,38 @@ public class AuthorizationController(
             .Where(kv => !string.IsNullOrEmpty(kv.Value))
             .Select(kv => $"""<input type="hidden" name="{Encode(kv.Key)}" value="{Encode(kv.Value!)}" />"""));
 
-        var errorHtml = error is null ? "" : $"""<p class="error">{Encode(error)}</p>""";
+        var errorHtml = error is null ? "" : $"""<p class="form-error">{Encode(error)}</p>""";
 
+        // Plain server-rendered HTML/CSS, no client-side framework or build step — this page sits in
+        // the middle of an OAuth redirect chain and has to work with JavaScript off (1B.4d). The two
+        // stylesheets are a transcription of design/aegisscribe-armory.html's tokens and primitives,
+        // living under this project's own wwwroot since it can't reach into src/web's SCSS pipeline.
         return $"""
             <!doctype html>
-            <html>
-            <head><title>Sign in — AegisScribe</title></head>
+            <html lang="en">
+            <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <title>Sign in — AegisScribe</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600&display=swap" />
+                <link rel="stylesheet" href="/css/tokens.css" />
+                <link rel="stylesheet" href="/css/sign-in.css" />
+            </head>
             <body>
-                <form method="post" action="/connect/authorize">
-                    {hiddenInputs}
+                <main class="sign-in-card">
+                    <img class="wordmark" src="/fulllogo.png" alt="AegisScribe" width="1254" height="1254" />
                     {errorHtml}
-                    <label>Email <input type="email" name="identifier" required /></label>
-                    <label>Password <input type="password" name="credential" required /></label>
-                    <button type="submit">Sign in</button>
-                </form>
+                    <form method="post" action="/connect/authorize">
+                        {hiddenInputs}
+                        <label class="label" for="identifier">Email</label>
+                        <div class="field"><input id="identifier" type="email" name="identifier" required autocomplete="username" /></div>
+                        <label class="label" for="credential">Password</label>
+                        <div class="field"><input id="credential" type="password" name="credential" required autocomplete="current-password" /></div>
+                        <button class="btn btn-primary" type="submit">Sign in</button>
+                    </form>
+                </main>
             </body>
             </html>
             """;

@@ -1,0 +1,40 @@
+// Copied from design/aegisscribe-armory.html §04 "Space & form" (the reference's `/* input */`
+// block) and its `.label`. Shared via @use for the same reason as _buttons.scss: the register form
+// is the first screen with real inputs and it will not be the last, and a second transcription is
+// how the focus ring drifts apart between two forms.
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  padding: 0 10px;
+}
+.field:focus-within {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 2px var(--brass-dim);
+}
+.field input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  padding: 8px 0;
+  width: 100%;
+  min-width: 0;
+}
+.field input::placeholder { color: var(--ink-3); }
+.field .icon { color: var(--ink-3); flex: none; }
+
+.label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+  margin-bottom: 5px;
+}

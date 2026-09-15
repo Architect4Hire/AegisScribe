@@ -1,0 +1,224 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/fields';
+
+/* Copied from design/aegisscribe-armory.html screen S3. Every value is a token; the only non-token
+   colours on this screen are --class-color and --rank-color, both tenant/game data set inline. */
+.roster {
+  padding: var(--s-5) var(--s-4);
+}
+
+.roster-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.roster-title {
+  font-family: var(--font-ui);
+  font-size: var(--t-h1);
+  color: var(--ink);
+  margin: 0;
+  margin-right: auto;
+}
+
+.roster-sorts {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.sort-btn {
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.sort-btn.is-active {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+/* Wide content scrolls in its own container so the page body never scrolls sideways. */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  min-width: 680px;
+}
+
+table.data th {
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-3);
+  font-weight: 600;
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+
+table.data th.num,
+table.data td.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+table.data td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+}
+
+table.data tr:last-child td {
+  border-bottom: 0;
+}
+
+table.data tbody tr:hover {
+  background: var(--surface-2);
+}
+
+th.sorted::after {
+  content: ' ▾';
+  color: var(--brass);
+}
+
+/* The class colour reaches the name and the dot by inheritance from the row, which is the only place
+   it is ever set. */
+.class-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 7px;
+  vertical-align: middle;
+  flex: none;
+  background: var(--class-color, var(--ink-3));
+}
+
+.char-name {
+  color: var(--class-color, var(--ink));
+  font-weight: 600;
+}
+
+/* The game's rank. Mono and muted, deliberately unlike the community's pill beside it — the visual
+   difference is what stops the two columns reading as one derived from the other. */
+.rank-blizz {
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+.rank-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.rank-picker {
+  font-size: var(--t-xs);
+  padding: 2px 6px;
+  max-width: 140px;
+}
+
+.unset {
+  color: var(--ink-3);
+}
+
+/* alt grouping in the roster — one level deep, so one indent. */
+.alt-row td:first-child {
+  padding-left: var(--s-6);
+  position: relative;
+}
+
+.alt-row td:first-child::before {
+  content: '↳';
+  position: absolute;
+  left: var(--s-4);
+  color: var(--ink-3);
+}
+
+.claim-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  white-space: nowrap;
+}
+
+.claimed-by {
+  color: var(--ink-2);
+}
+
+.note-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 220px;
+}
+
+.note-input {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.note-edit {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--ink-2);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted var(--line-strong);
+}
+
+.note-edit:hover {
+  color: var(--ink);
+}
+
+/* A failed write, reported without taking the table away. Semantic state on a tinted panel — never
+   on an item border, and never colour alone: the message itself says what failed. */
+.write-error {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-3);
+}
+
+.officer-hint {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  margin: var(--s-3) 0 0;
+}
+
+.officer-hint a {
+  color: var(--brass);
+}
+
+.roster-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--s-4);
+}

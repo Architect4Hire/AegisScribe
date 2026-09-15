@@ -5,7 +5,7 @@ using AegisScribe.Tests.Auth;
 
 namespace AegisScribe.Tests.Gateway;
 
-[Collection("AegisScribe API - Header Sanitisation")]
+[Collection("AegisScribe API")]
 public class HeaderSanitisationTests(AegisScribeAppFixture fixture)
 {
     // THE strip test (gateway.md → "Header sanitisation", the RESTRICTION calls this "the single

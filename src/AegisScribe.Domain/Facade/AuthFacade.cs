@@ -25,7 +25,7 @@ public class AuthFacade(
         await business.ChangePasswordAsync(viewModel, ct);
     }
 
-    public Task<SignInSubjectServiceModel?> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct) =>
+    public Task<SignInAttemptServiceModel> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct) =>
         business.ValidateCredentialsAsync(viewModel, ct);
 
     public Task<SignInSubjectServiceModel?> GetSignInSubjectAsync(string userId, CancellationToken ct) =>

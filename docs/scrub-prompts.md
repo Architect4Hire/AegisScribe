@@ -9,7 +9,7 @@ read, and a wrong turn costs one prompt instead of a phase.
 
 Two parts:
 
-- **Part 1 — Build sequence:** 17 phases, 108 microprompts, run in order.
+- **Part 1 — Build sequence:** 17 phases, 112 microprompts, run in order.
 - **Part 2 — Operational templates:** reusable prompts for the recurring, high-stakes moments the
   agent won't self-guard.
 
@@ -57,10 +57,13 @@ Everything before Phase 6 runs on seeded data in seeded tenants.
 | **2.9** | Prove isolation: two tenants, and B cannot see A |
 | **4.6** | `curl` a character and get a ServiceModel |
 | **5.6b** | Register a new account from the landing page and sign in |
+| **5.6c** | Create a community in the browser and land in its own chrome |
 | **5.7** | Open the browser and use the armory |
 | **6.4** | Watch a never-synced character arrive from Blizzard |
 | **7.5** | Run a real roster with your own ranks |
 | **7.5b** | Claim a character and see it marked yours, on the roster and the profile |
+| **8.3b** | Join a community from an invite link, in a second browser |
+| **8.5** | Take a brand-new community from empty to a working roster |
 | **9.7** | Sign up for a raid, as the character that's actually yours |
 | **10.5** | Get a Discord message |
 | **13.3** | Schedule six weeks of raids by typing a sentence |
@@ -297,7 +300,7 @@ BEHAVIOR: Explain in one line why this is worth doing before the first real endp
 implement and show me a versioned route responding.
 ```
 
-### 1B.4d Styling the sign-in page
+### 1B.4d Styling the sign-in page - done
 ```
 SCOPE: Restyle the connect/* controller's sign-in form (1B.4) — the page OpenIddict's authorization
 endpoint renders when the caller isn't authenticated — to match the AegisScribe design system: colour,
@@ -469,6 +472,30 @@ diagnostic TenantPingController and point the 2.3 tenant-resolution tests at the
 BEHAVIOR: Plan the layer stack, wait for approval, implement with per-layer tests.
 ```
 
+### 2.7b Community identity — slug and time zone - done
+```
+SCOPE: Make a community nameable by a person rather than by a curl. Extend 2.7's stack (ITenantsFacade
+→ ITenantBusiness → ITenantDataLayer → ITenantRepository) with: slug derivation from the display name
+in Business (lowercase, ASCII-folded, non-alphanumerics to hyphens, collapsed, trimmed, 3–48 chars);
+a reserved-slug list; GET /api/v1/tenants/slug-available?slug=... so a form can ask before it submits;
+and TimeZoneId validated at the edge.
+CONSTRAINT: add-endpoint skill — the availability check is an endpoint like any other and owes the full
+layer stack; .claude/rules/tenancy.md.
+RESTRICTION: 2.7 is done — this is ADDITIVE. Do not rewrite the create path; extend it. The slug is the
+community's URL forever, so derivation and the reserved list are Business rules with tests, NOT a
+TypeScript helper — the mobile app creates communities too (13B) and must not reimplement them. Reserve
+at least: new, create, edit, admin, api, auth, platform, t, tenants, me, assets, static, and every
+single-character slug. Availability is a HINT, not a reservation: the unique index stays the authority
+and a lost race surfaces as 409 from create, never as a silently renamed second tenant. The endpoint
+requires an authenticated caller and is rate-limited — it answers "is this free" and nothing else,
+never who holds a taken slug, or it becomes a community-enumeration oracle on a public host. TimeZoneId
+is validated against TimeZoneInfo and refused with a 400 at the edge; an unparseable zone must not
+survive to the first calendar render (9.1).
+BEHAVIOR: Plan the derivation rules and the reserved list, wait for approval, implement with per-layer
+tests covering the fold cases (accents, punctuation, doubled and trailing hyphens, an all-punctuation
+name, a name that folds to nothing), the reserved rejection, the 409 race, and a rejected zone id.
+```
+
 ### 2.8 Tenant cache keys - done
 ```
 SCOPE: Establish the cache key convention in the facade base (AegisScribe.Domain/Facade/):
@@ -604,7 +631,7 @@ every later feature copies, so it is worth the extra pass.
 
 ## Phase 5 — Frontend foundation
 
-### 5.1 Angular strictness and structure
+### 5.1 Angular strictness and structure - done
 ```
 SCOPE: Enable strict TypeScript, set up src/web/src/app/models/, core/, shared/, features/, and
 provideHttpClient with functional interceptors.
@@ -613,7 +640,7 @@ RESTRICTION: No `any`. No class-based interceptors or guards.
 BEHAVIOR: Implement and confirm `ng build` clean.
 ```
 
-### 5.2 Design tokens
+### 5.2 Design tokens - done
 ```
 SCOPE: Transcribe the token set into src/web/src/styles/_tokens.scss and load the four fonts.
 CONSTRAINT: aegisscribe-design-system skill; references/tokens.md is the transcription target.
@@ -622,7 +649,7 @@ a decision. After this, a literal hex anywhere under src/web/src/app/ is a defec
 BEHAVIOR: Show me the transcription diff against the reference before committing.
 ```
 
-### 5.3 Shared primitives, part 1
+### 5.3 Shared primitives, part 1 - done
 ```
 SCOPE: scribe-item-cell, scribe-stat-tile, scribe-status-pill.
 CONSTRAINT: aegisscribe-design-system skill; §06 and §05 of the design reference.
@@ -632,7 +659,7 @@ tints its background and adds a word — it does NOT repaint the quality border.
 BEHAVIOR: Implement with render tests, then run @design-review.
 ```
 
-### 5.4 Shared primitives, part 2
+### 5.4 Shared primitives, part 2 - done
 ```
 SCOPE: scribe-filter-chip, scribe-meter, scribe-empty-state, scribe-skeleton, scribe-ai-badge,
 scribe-local-time.
@@ -642,7 +669,7 @@ ALWAYS labels which is which. Skeletons are shape-matched, never spinners.
 BEHAVIOR: Implement with render tests, run @design-review.
 ```
 
-### 5.5 Auth interceptor and guards
+### 5.5 Auth interceptor and guards - done
 ```
 SCOPE: Functional interceptor setting withCredentials centrally and handling 401 once; functional auth
 guard and tenant guard.
@@ -653,7 +680,7 @@ yours" — route to the tenant picker, never render an error, and never distingu
 BEHAVIOR: Plan the interceptor's 401 and 404 handling, wait for approval, implement.
 ```
 
-### 5.6 Tenant chrome
+### 5.6 Tenant chrome - done
 ```
 SCOPE: The app header with scribe-tenant-switcher, and the tenant-picker route. Routes take the shape
 /t/:tenantSlug/...
@@ -664,7 +691,7 @@ never mutates hidden state.
 BEHAVIOR: Plan the routing and the URL construction, wait for approval, implement, run @design-review.
 ```
 
-### 5.6b Landing page ⚑
+### 5.6b Landing page ⚑ - done
 ```
 SCOPE: The app's FIRST route, at '/' — a signed-out hero with "Register" and "Log in" calls to action,
 plus the registration form itself (display name, email, password → POST /api/v1/auth/register through
@@ -683,7 +710,28 @@ BEHAVIOR: Plan the routing (where Angular hands off to a full navigation) and th
 validation, wait for approval, implement, run `ng test`, @design-review.
 ```
 
-### 5.7 Character profile screen
+### 5.6c Create a community - done
+```
+SCOPE: The screen that turns a signed-in account into an Owner. A create-community route, reached from
+the tenant-picker's empty state and its header (5.6): community name, the slug the server derived shown
+read-only with an "Edit" affordance, and a time zone defaulted from the browser. POST /api/v1/tenants
+through the gateway; on success navigate to /t/:slug.
+CONSTRAINT: aegisscribe-design-system skill; .claude/rules/frontend.md; the 5.3/5.4 primitives; 2.7's
+create endpoint and 2.7b's availability check.
+RESTRICTION: 5.6 and 5.6b are done — this is ADDITIVE; the only edit to existing code is the picker's
+empty state. That state currently reads "Ask an officer for an invite, or create one of your own" with
+no way to do it (tenant-picker.html) — that dead end is the bug this prompt closes. This screen is NOT
+drawn in design/aegisscribe-armory.html: compose it from §05's primitives and §07's chrome and invent
+nothing — a literal hex under src/web/src/app/ is a defect here as everywhere. The slug rendered is the
+SERVER's answer, debounced, never a TypeScript port of 2.7b's derivation. A 409 on submit re-renders
+the form with the taken slug flagged and every other field intact. Creating does not set a stored
+"current tenant" — there is no such variable (5.6) — it navigates. All four states, including the
+submit-in-flight one.
+BEHAVIOR: Plan the route, the debounce, and the 409 path, wait for approval, implement, run `ng test`,
+then @design-review and @api-contract-checker.
+```
+
+### 5.7 Character profile screen - done
 ```
 SCOPE: character-profile with character-banner, two equipment-rails, the weapons row, tabs, and the
 progression / profession / provenance panels.
@@ -696,7 +744,7 @@ BEHAVIOR: Implement, run `ng test`, then @design-review and @api-contract-checke
 
 ## Phase 6 — Blizzard
 
-### 6.1 Gateway and OAuth
+### 6.1 Gateway and OAuth - done
 ```
 SCOPE: AegisScribe.Domain/Integration/Blizzard/ — IBlizzardGateway, typed HttpClient, client-credentials OAuth against the
 REGIONAL token endpoint, token cached and refreshed once under a lock. Credentials as Aspire parameters.
@@ -707,7 +755,7 @@ BEHAVIOR: Plan the token lifecycle, wait for approval, implement, and show me wh
 credentials configured.
 ```
 
-### 6.2 Rate limiter
+### 6.2 Rate limiter - done
 ```
 SCOPE: A shared rate limiter in front of the gateway, sized under the documented caps, with 429 backoff
 using the response's retry hint.
@@ -716,7 +764,7 @@ RESTRICTION: Every gateway method takes a lease. 36,000/hour is contractual, not
 BEHAVIOR: Implement with tests for lease acquisition and 429 backoff.
 ```
 
-### 6.3 Character fetch
+### 6.3 Character fetch - done
 ```
 SCOPE: FetchCharacterAsync and FetchEquipmentAsync, returning DOMAIN ENTITIES.
 CONSTRAINT: add-external-sync skill; references/blizzard-endpoints.md — read it, don't guess the path.
@@ -726,7 +774,7 @@ BEHAVIOR: Implement with tests using CAPTURED REAL response bodies as fixtures, 
 namespace, the bearer header, the 404-returns-null path, and the 429 backoff.
 ```
 
-### 6.4 Cache-first reads ⚑
+### 6.4 Cache-first reads ⚑ - done
 ```
 SCOPE: Wire IBlizzardGateway into CharacterDataLayer: local first, fetch only when missing or stale,
 persist what comes back, fall back to the stale row when Blizzard is unreachable. Staleness policy as
@@ -739,7 +787,28 @@ BEHAVIOR: Implement the full matrix under test — fresh, stale, gateway-failure
 plus the ≤30-day config assertion. Then show me a never-synced character arriving from Blizzard.
 ```
 
-### 6.5 Sync worker: stale refresh
+### 6.4b Realm catalogue ⚑ - done
+```
+SCOPE: A global sync that fills Realm for every realm in each configured region, connected-realm
+grouping included, so realms stop being discovered one at a time by whoever happens to look up a
+character on one. It is also what a realm picker reads.
+CONSTRAINT: add-external-sync skill; references/blizzard-endpoints.md. Go via
+/data/wow/connected-realm/index and then each connected realm — that document carries its own id AND
+every realm in the group, so one pass fills BlizzardConnectedRealmId in ~1+N calls per region.
+/data/wow/realm/index looks cheaper and is not: it omits connected_realm, costing a call per realm.
+RESTRICTION: dynamic- namespace, never static-. Runs GLOBALLY, once, outside any tenant — realm data
+is identical for every community, so per-tenant would multiply calls by tenant count. Bounded
+concurrency over the connected-realm list; never Task.WhenAll over it. Idempotent and resumable from
+the store: an interrupted pass re-runs without duplicating a realm. Realm carries LastSyncedAt and the
+same 30-day obligation as everything else Blizzard-derived. The lazy FetchRealmAsync from 6.4 stays —
+it is the fallback for a realm that appears between passes, not dead code.
+BEHAVIOR: Plan the concurrency bound and the upsert key, wait for approval, implement, test that a
+second run produces no duplicate rows — same count, same row ids, LastSyncedAt advanced. It must
+advance: that column is the 30-day compliance clock, so "writes nothing" would be the wrong assertion.
+Then show me the realm count per region.
+```
+
+### 6.5 Sync worker: stale refresh - done
 ```
 SCOPE: A worker job that finds rows approaching the refresh deadline and re-fetches them, with bounded
 concurrency and a per-run budget, idempotent and resumable from the store.
@@ -750,7 +819,7 @@ multiplies API calls by tenant count.
 BEHAVIOR: Plan the selection query and concurrency bound, wait for approval, implement, test idempotency.
 ```
 
-### 6.6 Per-tenant sync budget
+### 6.6 Per-tenant sync budget - done
 ```
 SCOPE: ITenantSyncBudget, drawn on by any tenant-triggered sync, returning 429 with a retry hint when
 exhausted. Expose remaining budget to tenant Owners.
@@ -761,16 +830,67 @@ queue.
 BEHAVIOR: Implement with a two-tenant test proving A cannot consume B's budget.
 ```
 
-### 6.7 Compliance pass
+### 6.6b Guild roster ⚑ - done (also completes 8.1)
 ```
-SCOPE: Audit everything Blizzard-related built so far.
+SCOPE: Guild and GuildMember filled from /data/wow/guild/{realmSlug}/{nameSlug}/roster — the one
+Blizzard endpoint that genuinely batches. An officer links their community's guild and triggers a
+sync; the worker keeps linked guilds inside the 30-day window afterwards.
+CONSTRAINT: add-external-sync skill; references/blizzard-endpoints.md → "Batching" and the guild
+namespace trap (the path is /data/wow/ but the namespace is profile-). Tenant-triggered, so it draws
+on ITenantSyncBudget (6.6).
+RESTRICTION: Guild and GuildMember are GLOBAL (tenancy.md) — no TenantId, no query filter. Which guild
+a community claims is tenant-scoped and belongs on the tenant, not on the guild. The roster carries NO
+item level and NO equipment: do NOT fan out to a character fetch per member to fill them in — that
+turns a one-call sync into 800 and is exactly what the budget exists to stop. A member who has left
+must disappear from GuildMember, or the roster only ever grows. BlizzardRank is what the GAME says;
+it never derives from, and never writes to, TenantRank.
+BEHAVIOR: Plan the diff — joins, leaves and rank changes — and the budget cost of one sync, wait for
+approval, implement, test that a departed member is removed, that a second sync over identical data
+changes nothing but LastSyncedAt, and that no character fetch is triggered.
+```
+
+### 6.7 Compliance pass ⚑
+```
+SCOPE: Audit what Phase 6 actually built — the Blizzard gateway, the realm catalogue, the cache-first
+read, both refresh workers, the per-tenant budget and the guild roster. NOT WarcraftLogs (Phase 11)
+and NOT Discord (Phase 10): auditing an integration that does not exist yet produces findings nobody
+can act on, which is how a compliance pass becomes noise people learn to skip.
 UTILIZATION: @external-compliance, then @tenant-isolation-auditor.
-BEHAVIOR: Report all sections, fix the blockers, re-run.
+CONSTRAINT: .claude/rules/external.md and references/blizzard-terms-and-limits.md are the rule source;
+CLAUDE.md → Restrictions is the tiebreaker. Read them rather than auditing from memory.
+RESTRICTION: Triage every finding into exactly one of three buckets before fixing anything, because
+"fix the blockers" is otherwise an instruction to build Phase 14 early:
+  (1) LIVE VIOLATION — fix it in this pass. Two kinds, and the second is the one a narrow reading
+      misses:
+      (a) We are storing or fetching Blizzard data in a way that breaches a term RIGHT NOW: a refresh
+          interval over 30 days, an unbounded fan-out, a missing namespace, a token in a query
+          string, a per-tenant sync of global data, a server-side Wowhead request, missing
+          attribution.
+      (b) A RULE FILE ASSERTS A CONTROL EXISTS AND IT DOES NOT. These have no owning phase, so they
+          are not bucket (2), and the rule is not wrong, so they are not bucket (3) — left untriaged
+          they survive every pass forever while the rule file quietly lies. The first run of this
+          prompt found exactly one: external.md said "there is a test that pins a handful of known
+          ids" for the Wowhead id-space assumption, and there was not.
+  (2) DEFERRED BY PLAN — a real obligation whose implementing phase has not run. Record it, do not
+      build it. Known set as of this prompt: the deletion path and the SyncSuppression tombstone are
+      14.1; WarcraftLogs is 11; Discord is 10. For each, assert the WEAKER claim that Phase 6 has not
+      made it harder — every Blizzard-derived entity still carries a stable source id the erasure
+      routine will be able to target, and no sync bypasses the seam it will hook into.
+  (3) FALSE POSITIVE — the checklist and the code disagree because the code is better. The known one:
+      "every gateway method takes a rate-limiter lease" is satisfied structurally by
+      BlizzardRateLimitHandler sitting innermost on the typed client, so NO gateway method calls
+      AcquireAsync and none should. Fix the CHECKLIST, not the code, and say so in the report.
+A finding demoted to (2) or (3) must carry the reason in one line. Silent demotion is how a real
+violation gets filed as "known".
+BEHAVIOR: Run both agents, triage, fix only bucket (1), re-run to confirm those are gone, and leave
+buckets (2) and (3) written down where the next phase will find them — deferred items as a note on
+the prompt that owns them, checklist corrections in the agent file itself. Then tell me the count in
+each bucket and what changed.
 ```
 
 ## Phase 7 — Roster and ranks
 
-### 7.1 TenantRank
+### 7.1 TenantRank - done
 ```
 SCOPE: TenantRank (TenantId, Name, SortOrder, Colour) with officer-only CRUD.
 CONSTRAINT: add-tenant-entity and add-endpoint skills.
@@ -779,7 +899,7 @@ tenant config surfaced as --rank-color, not a design token.
 BEHAVIOR: Plan, approve, implement, two-tenant test.
 ```
 
-### 7.2 RosterEntry
+### 7.2 RosterEntry - done
 ```
 SCOPE: RosterEntry (TenantId, CharacterId → global Character, TenantRankId, OfficerNote, JoinedAt).
 CONSTRAINT: add-tenant-entity skill.
@@ -866,8 +986,16 @@ BEHAVIOR: Report and fix.
 
 ## Phase 8 — Guild sync and membership
 
-### 8.1 Guild roster sync
+### 8.1 Guild roster sync - done (built early, as 6.6b)
 ```
+Built out of order. 6.6b needed a tenant-triggered sync with a real budget cost, and the guild roster
+is the one Blizzard endpoint that batches — so the gateway method, the profile- namespace assertion,
+the bounded-concurrency worker and the join/leave/rank diff all landed there instead. Nothing remains
+here; see 6.6b for what was built and IBlizzardGateway.FetchGuildRosterAsync for the seam.
+
+Left as a marker rather than deleted: the ordering is the useful part of the record, and a reader
+arriving from 8.2 should find out here that the sync already exists rather than building a second one.
+
 SCOPE: Gateway methods and a worker job to sync a guild and its roster from Blizzard.
 CONSTRAINT: add-external-sync skill; references/blizzard-endpoints.md.
 RESTRICTION: Guild endpoints live under /data/wow/ but take the profile-{region} namespace — getting
@@ -876,16 +1004,23 @@ classic unbounded fan-out; bound the concurrency.
 BEHAVIOR: Implement, test the namespace assertion explicitly.
 ```
 
-### 8.2 Linking a guild to a tenant
+### 8.2 Importing a linked guild's roster
 ```
-SCOPE: Let an Owner link one or more guilds to their community, and offer to import the guild roster
-into RosterEntry rows.
+SCOPE: Import a linked guild's members into RosterEntry rows. Linking itself is already built (6.6b:
+TenantGuild, and the Officer-gated link/unlink/re-sync endpoints) — this is only the import, which had
+to wait because RosterEntry does not exist until 7.2.
 CONSTRAINT: add-tenant-entity and add-endpoint skills.
-RESTRICTION: The link is tenant-scoped; the Guild itself is global and shared. Importing creates
-RosterEntry rows; it must NOT copy character data. Import does NOT create CharacterClaim rows —
-Blizzard has no notion of which of your members plays which character; every imported row starts
-unclaimed and each member claims their own via 7.2b. Two communities may link the same guild.
-BEHAVIOR: Plan the import, wait for approval, implement, two-tenant test on the same guild.
+RESTRICTION: Officer, not Owner — linking and importing are roster upkeep, the same class of act as
+re-syncing, and the per-tenant budget rather than the policy is what bounds abuse. Import creates
+RosterEntry rows and must NOT copy character data: the Character is global and already stored by the
+guild sync, so a RosterEntry holds an FK to it and nothing else. Import does NOT create CharacterClaim
+rows — Blizzard has no notion of which of your members plays which character; every imported row
+starts unclaimed and each member claims their own via 7.2b. Two communities may link and import the
+same guild, and neither import may touch the other's rows. Import is idempotent: running it twice
+must not double the roster, and a member already on the roster keeps their existing rank and note.
+BEHAVIOR: Plan the import — in particular what happens to a RosterEntry whose character has since left
+the guild, which is a judgement call rather than an obvious delete — wait for approval, implement,
+two-tenant test on the SAME guild.
 ```
 
 ### 8.3 Membership lifecycle
@@ -899,6 +1034,32 @@ as a Business rule. Every one of these writes an AuditLog row.
 BEHAVIOR: Plan the state transitions, wait for approval, implement, test every refusal.
 ```
 
+### 8.3b Accepting an invite ⚑
+```
+SCOPE: The invitee's half of 8.3. POST /api/v1/invitations/{token}/accept — tenant-less on purpose, the
+caller is not a member yet so there is no /t/{slug} to resolve into — plus GET for a preview, and the
+SPA's /join/:token route: name the community and the role the token grants, accept, land in /t/:slug.
+Arriving signed out, the route survives register-and-sign-in (5.6b) and returns to itself.
+CONSTRAINT: .claude/rules/auth.md → "Membership lifecycle"; add-endpoint and add-tenant-entity skills;
+aegisscribe-design-system skill; the 5.3/5.4 primitives.
+RESTRICTION: The token is the ONLY thing that names the tenant. Never accept a tenant id or slug from
+the client beside it, or the token for community A becomes a membership in community B — that is the
+tenancy rule wearing a friendly hat. Acceptance is single-use and atomic: two concurrent accepts leave
+exactly one membership. Expired, consumed and revoked are each refused distinctly, and none of them
+reveals the community's name to someone holding a dead token; only a live token's preview names it. An
+accept creates a TenantMembership at the token's role and NOTHING else — no RosterEntry, no
+CharacterClaim (7.2b is the member's own act, per 8.2's rule). Accepting when already a member is a
+no-op that lands them in the community — never a second row, never a silent role change, in either
+direction. The token round-trips through the sign-in redirect without being written to localStorage, to
+a cookie the SPA sets, or to a log line: it is a bearer secret that grants membership. This screen is
+not in design/aegisscribe-armory.html — compose from §05 and §07, invent no tokens. Every accept and
+every refusal writes an AuditLog row.
+BEHAVIOR: Plan the token's round-trip through register → sign-in → back, and the four refusal
+responses, wait for approval, implement, and test: happy path, expired, consumed, revoked,
+already-a-member, concurrent double-accept, signed-out arrival, and the two-tenant test — a token for
+A grants nothing whatsoever in B.
+```
+
 ### 8.4 Member management UI
 ```
 SCOPE: member-management screen — invite, review requests, change roles, remove; each member's claimed
@@ -906,6 +1067,24 @@ character(s) from 7.2b, so officers can see who hasn't claimed one yet.
 CONSTRAINT: aegisscribe-design-system skill.
 RESTRICTION: Role-conditional UI hides; it never enforces. Destructive actions are outlined, not filled.
 BEHAVIOR: Implement, `ng test`, @design-review.
+```
+
+### 8.5 First run — the empty community
+```
+SCOPE: The "you just created this, here's what's next" panel on a community with no guild, no ranks, no
+roster and one member: link a guild (8.2) → import the roster → name your ranks (7.1) → invite people
+(8.3). Leave the seam for connecting Discord (10.4) without faking the step before it exists.
+CONSTRAINT: aegisscribe-design-system skill; §07 chrome; the 5.3/5.4 primitives; .claude/rules/frontend.md.
+RESTRICTION: Derive each step's state by asking what the community actually HAS — a persisted
+"onboarding step 3 of 4" column drifts the first time an officer deletes a rank, and then lies forever.
+It is a checklist, not a wizard: every step is reachable from ordinary navigation and nothing is gated
+behind finishing the one before it. Dismissible, and Owner/Officer-only — a plain Member landing in a
+fresh community sees the ordinary per-screen empty states, not somebody else's setup list. No step is a
+dead end: with no Blizzard credentials the gateways no-op by design (CLAUDE.md → Usage), so the
+guild-link step says so plainly instead of failing, and the manual path (7.4's add-a-character) stays
+reachable. Not in design/aegisscribe-armory.html — compose from §05 and §07, invent no tokens.
+BEHAVIOR: Implement, run `ng test`, @design-review, plus one two-tenant assertion: the panel's state
+comes from the ACTIVE community, never from the user's other one.
 ```
 
 ## Phase 9 — Calendar
@@ -1353,6 +1532,20 @@ CONSTRAINT: .claude/rules/external.md → "The deletion path, concretely"; add-e
 RESTRICTION: This is ONE OF THE TWO sanctioned IgnoreQueryFilters uses — comment it as such. A plain
 DELETE without a tombstone is undone by the next sync. Enumerate tables explicitly; reflection gives
 false assurance.
+
+The tombstone only works if the sync paths CHECK it, and those already exist. Every one of these has
+to learn about SyncSuppression, and 6.7's compliance pass recorded them here so they are not
+rediscovered by grep:
+  - CharacterRepository.FindStaleAsync — the worker's stale-row query (6.5) must exclude suppressed
+    source ids, or the next pass re-fetches the character an hour after erasure.
+  - CharacterDataLayer.GetCharacterAsync / RefreshCharacterAsync — the cache-first and forced reads
+    (6.4, 6.6) must refuse a suppressed character rather than fetching it, and return "not available"
+    rather than an empty profile.
+  - GuildSyncDataLayer.SyncAsync — a roster contains its members, so a guild sync (6.6b) will happily
+    recreate a suppressed character's row from the roster alone. Skip suppressed members.
+  - GuildRepository.FindStaleAsync — the guild refresh pass (6.6b) reaches the same path.
+Entities carrying a Blizzard source id at the time of writing: Character, CharacterEquipment and
+EquippedItem (via CharacterId), Realm, Guild, GuildMember (via CharacterId), Item.
 BEHAVIOR: Implement, and write the test that every entity with a source id appears in the routine.
 ```
 

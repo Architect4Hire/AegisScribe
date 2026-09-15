@@ -1,5 +1,12 @@
 <div class="tenant-picker">
-  <h1 class="tenant-picker-heading">Your communities</h1>
+  <div class="tenant-picker-head">
+    <h1 class="tenant-picker-heading">Your communities</h1>
+    <!-- Only alongside a list: with none, the empty state below carries the same action, and two
+         offers of it on one screen would read as two different things. -->
+    @if (state() === 'loaded' && memberships().length > 0) {
+      <a class="btn btn-secondary btn-sm" routerLink="/tenants/new">Create a community</a>
+    }
+  </div>
 
   @switch (state()) {
     @case ('loading') {
@@ -27,9 +34,13 @@
           }
         </ul>
       } @else {
+        <!-- This state used to name creating a community with no way to do it (5.6c); the action is
+             what closes that dead end. -->
         <scribe-empty-state
           heading="You're not in any communities yet"
           body="Ask an officer for an invite, or create one of your own."
+          actionLabel="Create a community"
+          (action)="createCommunity()"
         />
       }
     }

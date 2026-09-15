@@ -17,7 +17,7 @@ public interface IUserRepository
         ApplicationUser user, string currentPassword, string newPassword, CancellationToken ct);
 
     // Lockout-aware: a failure counts towards lockout, exactly as the interactive sign-in always has.
-    Task<bool> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct);
+    Task<CredentialCheckResult> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct);
 
     Task<bool> CanSignInAsync(ApplicationUser user, CancellationToken ct);
 

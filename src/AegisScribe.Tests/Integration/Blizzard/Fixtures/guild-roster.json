@@ -1,0 +1,164 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/data/wow/guild/argent-dawn/aegis-vigil/roster?namespace=profile-us"
+    }
+  },
+  "guild": {
+    "key": {
+      "href": "https://us.api.blizzard.com/data/wow/guild/argent-dawn/aegis-vigil?namespace=profile-us"
+    },
+    "name": "Aegis Vigil",
+    "id": 88213714,
+    "realm": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "id": 1092,
+      "slug": "argent-dawn"
+    },
+    "faction": {
+      "type": "ALLIANCE",
+      "name": "Alliance"
+    }
+  },
+  "members": [
+    {
+      "character": {
+        "key": {
+          "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric?namespace=profile-us"
+        },
+        "name": "Aldric",
+        "id": 176946929,
+        "realm": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+          },
+          "name": "Argent Dawn",
+          "id": 1092,
+          "slug": "argent-dawn"
+        },
+        "level": 80,
+        "playable_class": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-class/1?namespace=static-us"
+          },
+          "id": 1
+        },
+        "playable_race": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-race/1?namespace=static-us"
+          },
+          "id": 1
+        },
+        "faction": {
+          "type": "ALLIANCE"
+        }
+      },
+      "rank": 0
+    },
+    {
+      "character": {
+        "key": {
+          "href": "https://us.api.blizzard.com/profile/wow/character/bleeding-hollow/brynhild?namespace=profile-us"
+        },
+        "name": "Brynhild",
+        "id": 176946930,
+        "realm": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/realm/1175?namespace=dynamic-us"
+          },
+          "name": "Bleeding Hollow",
+          "id": 1175,
+          "slug": "bleeding-hollow"
+        },
+        "level": 80,
+        "playable_class": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-class/2?namespace=static-us"
+          },
+          "id": 2
+        },
+        "playable_race": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-race/3?namespace=static-us"
+          },
+          "id": 3
+        },
+        "faction": {
+          "type": "ALLIANCE"
+        }
+      },
+      "rank": 1
+    },
+    {
+      "character": {
+        "key": {
+          "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/corvin?namespace=profile-us"
+        },
+        "name": "Corvin",
+        "id": 176946931,
+        "realm": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+          },
+          "name": "Argent Dawn",
+          "id": 1092,
+          "slug": "argent-dawn"
+        },
+        "level": 79,
+        "playable_class": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-class/4?namespace=static-us"
+          },
+          "id": 4
+        },
+        "playable_race": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-race/1?namespace=static-us"
+          },
+          "id": 1
+        },
+        "faction": {
+          "type": "ALLIANCE"
+        }
+      },
+      "rank": 4
+    },
+    {
+      "character": {
+        "key": {
+          "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/tinkerer?namespace=profile-us"
+        },
+        "name": "Tinkerer",
+        "id": 176946932,
+        "realm": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+          },
+          "name": "Argent Dawn",
+          "id": 1092,
+          "slug": "argent-dawn"
+        },
+        "level": 80,
+        "playable_class": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-class/99?namespace=static-us"
+          },
+          "id": 99
+        },
+        "playable_race": {
+          "key": {
+            "href": "https://us.api.blizzard.com/data/wow/playable-race/1?namespace=static-us"
+          },
+          "id": 1
+        },
+        "faction": {
+          "type": "ALLIANCE"
+        }
+      },
+      "rank": 5
+    }
+  ]
+}

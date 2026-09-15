@@ -53,8 +53,8 @@ public class CharacterBusinessTests
                 ],
             },
         };
-        _dataLayer.FindByRealmAndNameAsync("us", "emberfall", "thrall", Arg.Any<CancellationToken>())
-            .Returns(character);
+        _dataLayer.GetCharacterAsync("us", "emberfall", "thrall", Arg.Any<CancellationToken>())
+            .Returns(CharacterReadResult.Current(character));
 
         var result = await _business.GetCharacterAsync("us", "emberfall", "thrall", CancellationToken.None);
 
@@ -79,8 +79,8 @@ public class CharacterBusinessTests
     [Fact]
     public async Task GetCharacter_ReturnsNull_WhenTheDataLayerFindsNothing()
     {
-        _dataLayer.FindByRealmAndNameAsync("us", "emberfall", "nobody", Arg.Any<CancellationToken>())
-            .Returns((Domain.Managers.Models.Domain.Character?)null);
+        _dataLayer.GetCharacterAsync("us", "emberfall", "nobody", Arg.Any<CancellationToken>())
+            .Returns(CharacterReadResult.NotFound);
 
         var result = await _business.GetCharacterAsync("us", "emberfall", "nobody", CancellationToken.None);
 
@@ -98,13 +98,37 @@ public class CharacterBusinessTests
             Realm = new Realm { Slug = "emberfall", Name = "Emberfall", Region = "us" },
             Equipment = null,
         };
-        _dataLayer.FindByRealmAndNameAsync("us", "emberfall", "jaina", Arg.Any<CancellationToken>())
-            .Returns(character);
+        _dataLayer.GetCharacterAsync("us", "emberfall", "jaina", Arg.Any<CancellationToken>())
+            .Returns(CharacterReadResult.Current(character));
 
         var result = await _business.GetCharacterAsync("us", "emberfall", "jaina", CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.Empty(result!.Equipment);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetCharacter_CarriesTheDataLayersDegradedFlagToTheServiceModel(bool isDegraded)
+    {
+        // The flag exists so the character screen can say "this is what we have, and it is old"
+        // instead of rendering stale gear as current (5.7). Business is where it crosses from a
+        // persistence fact into the outbound shape, so this is the only place it can be dropped.
+        var character = new Domain.Managers.Models.Domain.Character
+        {
+            Id = Guid.NewGuid(),
+            Name = "Thrall",
+            NameLower = "thrall",
+            Realm = new Realm { Slug = "emberfall", Name = "Emberfall", Region = "us" },
+        };
+
+        _dataLayer.GetCharacterAsync("us", "emberfall", "thrall", Arg.Any<CancellationToken>())
+            .Returns(new CharacterReadResult(character, isDegraded));
+
+        var result = await _business.GetCharacterAsync("us", "emberfall", "thrall", CancellationToken.None);
+
+        Assert.Equal(isDegraded, result!.IsDegraded);
     }
 
     [Fact]

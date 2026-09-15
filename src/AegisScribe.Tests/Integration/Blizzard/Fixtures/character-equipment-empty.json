@@ -1,0 +1,24 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine/equipment?namespace=profile-us"
+    }
+  },
+  "character": {
+    "key": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/delphine?namespace=profile-us"
+    },
+    "name": "Delphine",
+    "id": 213558104,
+    "realm": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/realm/1092?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "id": 1092,
+      "slug": "argent-dawn"
+    }
+  },
+  "equipped_items": [],
+  "equipped_item_sets": []
+}

@@ -11,8 +11,19 @@ namespace AegisScribe.Domain.Facade;
 public class TenantFacade(
     ITenantBusiness business,
     IValidator<CreateTenantViewModel> createValidator,
-    IValidator<RenameTenantViewModel> renameValidator) : ITenantFacade
+    IValidator<RenameTenantViewModel> renameValidator,
+    IValidator<SlugCheckViewModel> slugCheckValidator) : ITenantFacade
 {
+    // Deliberately NOT cached. The answer is "is this slug free right now", and a cached "available"
+    // is exactly the stale read that turns into a 409 at submit time — a few milliseconds saved for a
+    // worse failure later. The Redis ServiceModel cache is for things that stay true for minutes
+    // (add-endpoint skill); this is not one of them.
+    public async Task<SlugCheckServiceModel> CheckSlugAsync(SlugCheckViewModel viewModel, CancellationToken ct)
+    {
+        await slugCheckValidator.ValidateAndThrowAsync(viewModel, ct);
+        return await business.CheckSlugAsync(viewModel, ct);
+    }
+
     public async Task<TenantServiceModel> CreateAsync(CreateTenantViewModel viewModel, CancellationToken ct)
     {
         await createValidator.ValidateAndThrowAsync(viewModel, ct);

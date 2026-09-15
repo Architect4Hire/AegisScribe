@@ -16,13 +16,36 @@ var cache = builder.AddRedis("cache", password: redisPassword)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
+// Blizzard credentials are optional on purpose: with neither configured the gateway degrades to a no-op
+// and the app runs on seeded data (external.md -> "Missing credentials are a no-op, not a crash"). Hence
+// the callback with an empty fallback rather than a bare AddParameter — an unresolved parameter makes
+// Aspire prompt for a value, which would block an offline `aspire run` on something that is allowed to be
+// missing. Set them for real with user secrets on this project (Parameters:blizzard-client-id and its
+// secret counterpart), never as a literal here.
+var blizzardId = builder.AddParameter(
+    "blizzard-client-id",
+    () => builder.Configuration["Parameters:blizzard-client-id"] ?? string.Empty);
+var blizzardSecret = builder.AddParameter(
+    "blizzard-client-secret",
+    () => builder.Configuration["Parameters:blizzard-client-secret"] ?? string.Empty,
+    secret: true);
+
 var api = builder.AddProject<Projects.AegisScribe_ApiService>("api")
     .WithReference(db)
     .WithReference(cache)
+    .WithEnvironment("Blizzard__ClientId", blizzardId)
+    .WithEnvironment("Blizzard__ClientSecret", blizzardSecret)
     .WaitForCompletion(migrations)
     .WithExternalHttpEndpoints();
 
-var sync = builder.AddProject<Projects.AegisScribe_SyncWorker>("sync");
+// Gets the same credentials because the background refresh that keeps stored rows inside Blizzard's
+// 30-day window is the worker's job. It writes the realm catalogue (6.4b) and will take on the stale-row
+// refresh in 6.5, so it needs the database — and the schema before it starts, hence WaitForCompletion.
+var sync = builder.AddProject<Projects.AegisScribe_SyncWorker>("sync")
+    .WithReference(db)
+    .WithEnvironment("Blizzard__ClientId", blizzardId)
+    .WithEnvironment("Blizzard__ClientSecret", blizzardSecret)
+    .WaitForCompletion(migrations);
 
 var gateway = builder.AddProject<Projects.AegisScribe_Gateway>("gateway")
     .WithReference(api)

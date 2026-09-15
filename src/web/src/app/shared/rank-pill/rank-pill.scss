@@ -1,0 +1,28 @@
+/* Copied from design/aegisscribe-armory.html's .rank rule. --rank-color is set inline by the
+   component from the community's own config; everything else is a token. */
+.rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-1);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+/* The colour swatch, and the reason state is never colour alone: the rank's NAME sits beside it, so
+   the pill still reads correctly to anyone who cannot distinguish the hue. */
+.rank i {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--rank-color, var(--ink-3));
+  display: block;
+  flex: none;
+}

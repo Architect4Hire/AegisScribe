@@ -70,10 +70,12 @@ public class AuthFacadeTests
     {
         // A malformed credential is a failed sign-in (form re-renders), never a 400 — so no validator.
         var viewModel = new SignInViewModel { Email = "", Password = "" };
+        var expected = new SignInAttemptServiceModel();
+        _business.ValidateCredentialsAsync(viewModel, Arg.Any<CancellationToken>()).Returns(expected);
 
         var result = await _facade.ValidateCredentialsAsync(viewModel, CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.Same(expected, result);
         await _business.Received(1).ValidateCredentialsAsync(viewModel, Arg.Any<CancellationToken>());
     }
 

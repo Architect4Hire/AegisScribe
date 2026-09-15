@@ -91,7 +91,7 @@
      Monospace with tabular figures wherever digits sit in a column. */
   --font-display:  "Cinzel", "Iowan Old Style", Georgia, serif;          /* wordmark only */
   --font-ui:       "Barlow Semi Condensed", "Helvetica Neue", Arial, sans-serif;
-  --font-body:     "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --font-body:     "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono:     "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   --t-h1:   1.75rem;      /* 28px — page heading            */
@@ -124,10 +124,10 @@ failed font request degrades rather than reflows into something unreadable:
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Cinzel:wght@600&family=JetBrains+Mono:wght@400;500;700&display=swap">
 ```
 
-Weights actually used: Barlow 400/500/600 · Barlow Semi Condensed 400/500/600/700 · Cinzel 600 ·
+Weights actually used: Noto Sans 400/500/600 · Barlow Semi Condensed 400/500/600/700 · Cinzel 600 ·
 JetBrains Mono 400/500/700. Don't request the rest.
 
 ## Two rules that are easy to lose in transcription

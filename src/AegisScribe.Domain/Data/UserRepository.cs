@@ -34,11 +34,13 @@ public class UserRepository(
         return userManager.ChangePasswordAsync(user, currentPassword, newPassword);
     }
 
-    public async Task<bool> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct)
+    public async Task<CredentialCheckResult> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true);
-        return result.Succeeded;
+        return result.Succeeded ? CredentialCheckResult.Success
+            : result.IsLockedOut ? CredentialCheckResult.LockedOut
+            : CredentialCheckResult.Invalid;
     }
 
     public Task<bool> CanSignInAsync(ApplicationUser user, CancellationToken ct)

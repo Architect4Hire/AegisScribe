@@ -22,6 +22,53 @@ namespace AegisScribe.Domain.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ActorUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("After")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Before")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("SubjectUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OccurredAt");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Character", b =>
                 {
                     b.Property<Guid>("Id")
@@ -68,10 +115,45 @@ namespace AegisScribe.Domain.Migrations
                     b.HasIndex("BlizzardCharacterId")
                         .IsUnique();
 
+                    b.HasIndex("LastSyncedAt");
+
                     b.HasIndex("RealmId", "NameLower")
                         .IsUnique();
 
                     b.ToTable("Characters");
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.CharacterClaim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ClaimedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "CharacterId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "UserId");
+
+                    b.ToTable("CharacterClaims");
                 });
 
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.CharacterEquipment", b =>
@@ -193,6 +275,36 @@ namespace AegisScribe.Domain.Migrations
                     b.ToTable("GuildMembers");
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.GuildRankName", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("TenantId", "GuildId", "Rank")
+                        .IsUnique();
+
+                    b.ToTable("GuildRankNames");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Item", b =>
                 {
                     b.Property<Guid>("Id")
@@ -291,6 +403,9 @@ namespace AegisScribe.Domain.Migrations
                     b.Property<long>("BlizzardConnectedRealmId")
                         .HasColumnType("bigint");
 
+                    b.Property<long>("BlizzardRealmId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTimeOffset>("LastSyncedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -310,6 +425,10 @@ namespace AegisScribe.Domain.Migrations
                         .HasColumnType("nvarchar(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BlizzardRealmId")
+                        .IsUnique()
+                        .HasFilter("[BlizzardRealmId] <> 0");
 
                     b.HasIndex("Region", "Slug")
                         .IsUnique();
@@ -352,6 +471,49 @@ namespace AegisScribe.Domain.Migrations
                     b.ToTable("Recipes");
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.RosterEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CharacterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("MainRosterEntryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OfficerNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TenantRankId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId");
+
+                    b.HasIndex("MainRosterEntryId");
+
+                    b.HasIndex("TenantRankId");
+
+                    b.HasIndex("TenantId", "CharacterId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "MainRosterEntryId");
+
+                    b.HasIndex("TenantId", "TenantRankId");
+
+                    b.ToTable("RosterEntries");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -381,6 +543,31 @@ namespace AegisScribe.Domain.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantGuild", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GuildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("LinkedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("TenantId", "GuildId")
+                        .IsUnique();
+
+                    b.ToTable("TenantGuilds");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantMembership", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -400,6 +587,59 @@ namespace AegisScribe.Domain.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("TenantMemberships");
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantRank", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Colour")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("TenantRanks");
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantSyncBudgetWindow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CallsConsumed")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("WindowStartedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique();
+
+                    b.ToTable("TenantSyncBudgetWindows");
                 });
 
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Identity.ApplicationUser", b =>
@@ -820,6 +1060,15 @@ namespace AegisScribe.Domain.Migrations
                     b.ToTable("OpenIddictTokens", (string)null);
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.AuditLog", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.Character", b =>
                 {
                     b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Realm", "Realm")
@@ -829,6 +1078,29 @@ namespace AegisScribe.Domain.Migrations
                         .IsRequired();
 
                     b.Navigation("Realm");
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.CharacterClaim", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Character");
                 });
 
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.CharacterEquipment", b =>
@@ -883,6 +1155,23 @@ namespace AegisScribe.Domain.Migrations
                     b.Navigation("Guild");
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.GuildRankName", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Guild", "Guild")
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.ReagentSlot", b =>
                 {
                     b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Item", "Item")
@@ -920,6 +1209,54 @@ namespace AegisScribe.Domain.Migrations
                     b.Navigation("Profession");
                 });
 
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.RosterEntry", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Character", "Character")
+                        .WithMany()
+                        .HasForeignKey("CharacterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.RosterEntry", "MainRosterEntry")
+                        .WithMany()
+                        .HasForeignKey("MainRosterEntryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.TenantRank", "TenantRank")
+                        .WithMany()
+                        .HasForeignKey("TenantRankId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Character");
+
+                    b.Navigation("MainRosterEntry");
+
+                    b.Navigation("TenantRank");
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantGuild", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Guild", "Guild")
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantMembership", b =>
                 {
                     b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
@@ -932,6 +1269,24 @@ namespace AegisScribe.Domain.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantRank", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AegisScribe.Domain.Managers.Models.Domain.TenantSyncBudgetWindow", b =>
+                {
+                    b.HasOne("AegisScribe.Domain.Managers.Models.Domain.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

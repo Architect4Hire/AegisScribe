@@ -3,7 +3,7 @@ using AegisScribe.Tests.Auth;
 
 namespace AegisScribe.Tests.Gateway;
 
-[Collection("AegisScribe API - Gateway")]
+[Collection("AegisScribe API")]
 public class GatewayOAuthTests(AegisScribeAppFixture fixture)
 {
     [Fact]

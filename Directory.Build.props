@@ -1,0 +1,23 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Fail fast when a build hits a file locked by the running app.
+
+      `aspire run` holds AegisScribe.ApiService, .Gateway, .Web and .SyncWorker open, so any
+      `dotnet build` or `dotnet test` while it is running cannot copy those assemblies. MSBuild's
+      default is to retry each locked file ten times at one second apart — across the handful of
+      files involved that is a minute or more of apparent hang, followed by an MSB3027 that buries
+      the one useful line: the name of the process holding the lock.
+
+      Two retries at 300ms keeps the genuine case this exists for — a virus scanner or indexer
+      holding a file open for a moment — while turning "the build hung" into "the build failed in a
+      second and told me to stop the app".
+
+      The fix for the lock itself is `aspire stop`; this only makes the diagnosis immediate.
+    -->
+    <CopyRetryCount>2</CopyRetryCount>
+    <CopyRetryDelayMilliseconds>300</CopyRetryDelayMilliseconds>
+  </PropertyGroup>
+
+</Project>

@@ -7,10 +7,18 @@ public class CreateTenantViewModelValidator : AbstractValidator<CreateTenantView
 {
     public CreateTenantViewModelValidator()
     {
-        // Lengths mirror the HasMaxLength values in OnModelCreating so the validator and the DB
-        // constraint never disagree. The slug is the route key (/api/v1/t/{slug}/...), so it's
-        // restricted to what's safe unencoded in a URL segment.
-        RuleFor(x => x.Slug).NotEmpty().MaximumLength(64).Matches("^[a-z0-9]+(-[a-z0-9]+)*$");
+        // Slug is optional (2.7b): omit it and Business derives one from Name via TenantSlugRules, so a
+        // client — the MAUI app included — never has to reimplement the derivation. Relaxing a rule is
+        // additive (api-contract.md); the shape rules below still apply to any slug that IS supplied.
+        RuleFor(x => x.Slug).SlugFormat().When(x => x.Slug is not null);
+
+        // The one case where omitting the slug is still a 400: a name that folds to nothing leaves
+        // nothing to derive, and inventing a slug for someone is not on (TenantSlugRules.Derive).
+        RuleFor(x => x.Slug)
+            .Must((viewModel, _) => TenantSlugRules.Derive(viewModel.Name) is not null)
+            .When(x => x.Slug is null)
+            .WithMessage("'Name' contains no characters usable in a URL — supply a slug as well.");
+
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.TimeZoneId)
             .NotEmpty()

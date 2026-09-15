@@ -12,7 +12,7 @@ namespace AegisScribe.Tests.Auth;
 // Repository: against the real SQL Server the AppHost runs, with Identity wired the way the API wires
 // it — so a broken lookup fails here, at the layer that owns it, not three layers up in an endpoint
 // test. No HTTP at all, so this costs the collection's anonymous rate-limit budget nothing.
-[Collection("AegisScribe API - Me")]
+[Collection("AegisScribe API")]
 public class UserRepositoryTests(AegisScribeAppFixture fixture) : IAsyncLifetime
 {
     // Satisfies Identity's default policy; deliberately not a realistic credential.
@@ -91,10 +91,30 @@ public class UserRepositoryTests(AegisScribeAppFixture fixture) : IAsyncLifetime
         var user = NewUser();
         await _repository.CreateAsync(user, Pw, CancellationToken.None);
 
-        Assert.True(await _repository.CheckPasswordSignInAsync(user, Pw, CancellationToken.None));
-        Assert.False(await _repository.CheckPasswordSignInAsync(user, "wrong", CancellationToken.None));
+        Assert.Equal(CredentialCheckResult.Success, await _repository.CheckPasswordSignInAsync(user, Pw, CancellationToken.None));
+        Assert.Equal(CredentialCheckResult.Invalid, await _repository.CheckPasswordSignInAsync(user, "wrong", CancellationToken.None));
         Assert.True(await _repository.CanSignInAsync(user, CancellationToken.None));
         Assert.Empty(await _repository.GetRolesAsync(user, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SignInChecks_ReportsLockedOut_AfterTooManyWrongPasswords()
+    {
+        var user = NewUser();
+        await _repository.CreateAsync(user, Pw, CancellationToken.None);
+
+        // Default IdentityOptions.Lockout: 5 failed attempts locks the account. The final failing
+        // attempt is the one that reports LockedOut, not a sixth call.
+        CredentialCheckResult result = CredentialCheckResult.Success;
+        for (var i = 0; i < 5; i++)
+        {
+            result = await _repository.CheckPasswordSignInAsync(user, "wrong", CancellationToken.None);
+        }
+
+        Assert.Equal(CredentialCheckResult.LockedOut, result);
+
+        // Even the right password is refused while locked out.
+        Assert.Equal(CredentialCheckResult.LockedOut, await _repository.CheckPasswordSignInAsync(user, Pw, CancellationToken.None));
     }
 
     [Fact]

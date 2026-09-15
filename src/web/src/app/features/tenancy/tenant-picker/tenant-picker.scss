@@ -1,3 +1,5 @@
+@use '../../../../styles/buttons';
+
 /* No mockup exists for this screen in design/aegisscribe-armory.html -- built fresh from existing
    tokens only. .tenant-name/.tenant-role reuse the same typography as the switcher (§07) so a
    community reads the same way here as it does in the header. */
@@ -32,7 +34,10 @@
   padding: var(--s-3) var(--s-4);
   text-decoration: none;
 }
-.tenant-card:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.tenant-card:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
 
 .tenant-name {
   font-family: var(--font-ui);
@@ -42,8 +47,30 @@
 }
 .tenant-role {
   font-family: var(--font-ui);
+  /* 10px has no token, and that is the reference's own practice rather than an invented value: §06's
+     .item-meta and §01's .scale-label both set it bare, because --t-xs (11px) is the smallest size in
+     the type scale and these micro-labels sit below it. Promoting this to --t-xs would diverge from
+     the reference, so it stays literal and documented. */
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: var(--brass);
+}
+
+/* The heading and the create action share a row; at narrow widths the action drops beneath rather
+   than squeezing the heading. */
+.tenant-picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-5);
+}
+.tenant-picker-head .tenant-picker-heading {
+  margin-bottom: 0;
+}
+.tenant-picker-head .btn {
+  text-decoration: none;
+  flex: none;
 }

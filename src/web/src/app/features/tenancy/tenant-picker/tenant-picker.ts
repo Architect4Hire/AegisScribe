@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CurrentUserService } from '../../../core/current-user.service';
 import { UserServiceModel } from '../../../models/auth.models';
 import { EmptyState } from '../../../shared/empty-state/empty-state';
@@ -13,11 +13,12 @@ type LoadState = 'loading' | 'loaded' | 'error';
 @Component({
   imports: [EmptyState, RouterLink, Skeleton],
   selector: 'scribe-tenant-picker',
-  styleUrl: './tenant-picker.css',
+  styleUrl: './tenant-picker.scss',
   templateUrl: './tenant-picker.html',
 })
 export class TenantPicker {
   private readonly currentUser = inject(CurrentUserService);
+  private readonly router = inject(Router);
 
   readonly state = signal<LoadState>('loading');
   private readonly user = signal<UserServiceModel | null>(null);
@@ -31,6 +32,12 @@ export class TenantPicker {
   retry(): void {
     this.state.set('loading');
     void this.load();
+  }
+
+  // scribe-empty-state emits an action rather than exposing a link, so this navigates. The header
+  // offer beside a non-empty list is a plain routerLink.
+  createCommunity(): void {
+    void this.router.navigate(['/tenants/new']);
   }
 
   private async load(): Promise<void> {

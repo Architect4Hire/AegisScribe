@@ -8,7 +8,7 @@ namespace AegisScribe.Tests.Gateway;
 // 1B.9: proves the auth/gateway boundary end to end. Items 1 (the strip test) and 3 (unlisted CORS
 // origin rejected) already have dedicated tests — HeaderSanitisationTests.ForgedAuthorizationHeader_IsStripped
 // and CorsTests.Preflight_FromUnlistedOrigin_IsRejected — and aren't repeated here.
-[Collection("AegisScribe API - Edge Verification")]
+[Collection("AegisScribe API")]
 public class EdgeVerificationTests(AegisScribeAppFixture fixture)
 {
     // Item 2: no gateway response leaks a JWT — the base64 prefix every JWT starts with — in its

@@ -5,7 +5,7 @@ namespace AegisScribe.Tests.Gateway;
 // Preflight OPTIONS requests are handled entirely by the CORS middleware inside the gateway and
 // never reach the proxy or the API, so these add no load to this collection's anonymous
 // rate-limit budget the way a full login flow would (1B.7).
-[Collection("AegisScribe API - Gateway")]
+[Collection("AegisScribe API")]
 public class CorsTests(AegisScribeAppFixture fixture)
 {
     private static HttpRequestMessage PreflightRequest(string origin) =>

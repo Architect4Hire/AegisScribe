@@ -41,17 +41,27 @@ public class AuthBusiness(IUserDataLayer dataLayer, TimeProvider timeProvider) :
         }
     }
 
-    // Null for an unknown email and for a wrong password alike — the sign-in form shows one message
-    // for both. A wrong password still counts towards lockout (the repository asks for that).
-    public async Task<SignInSubjectServiceModel?> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct)
+    // Unknown email and wrong password both come back as a bare failed attempt — the sign-in form
+    // shows one generic message for either, so neither confirms an email is registered. LockedOut is
+    // the one exception: it can only ever be reported for an account that exists (Identity has
+    // nothing to lock otherwise), so it is a narrow, deliberate leak of "this account exists",
+    // accepted so a locked-out member sees why they can't get in instead of re-guessing their
+    // password into a longer lockout.
+    public async Task<SignInAttemptServiceModel> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct)
     {
         var user = await dataLayer.FindByEmailAsync(viewModel.Email, ct);
-        if (user is null || !await dataLayer.CheckPasswordSignInAsync(user, viewModel.Password, ct))
+        if (user is null)
         {
-            return null;
+            return new SignInAttemptServiceModel();
         }
 
-        return await ToSubjectAsync(user, ct);
+        var outcome = await dataLayer.CheckPasswordSignInAsync(user, viewModel.Password, ct);
+        if (outcome != CredentialCheckResult.Success)
+        {
+            return new SignInAttemptServiceModel { IsLockedOut = outcome == CredentialCheckResult.LockedOut };
+        }
+
+        return new SignInAttemptServiceModel { Subject = await ToSubjectAsync(user, ct) };
     }
 
     // Re-read on every code redemption and refresh, so a deleted/locked user or a revoked PlatformAdmin

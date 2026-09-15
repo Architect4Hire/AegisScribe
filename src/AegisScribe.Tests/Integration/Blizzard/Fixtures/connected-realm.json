@@ -1,0 +1,71 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092?namespace=dynamic-us"
+    }
+  },
+  "id": 1092,
+  "has_queue": false,
+  "status": {
+    "type": "UP",
+    "name": "Up"
+  },
+  "population": {
+    "type": "FULL",
+    "name": "Full"
+  },
+  "realms": [
+    {
+      "id": 1092,
+      "region": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/region/1?namespace=dynamic-us"
+        },
+        "name": "North America",
+        "id": 1
+      },
+      "connected_realm": {
+        "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "category": "United States",
+      "locale": "enUS",
+      "timezone": "America/New_York",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "argent-dawn"
+    },
+    {
+      "id": 1175,
+      "region": {
+        "key": {
+          "href": "https://us.api.blizzard.com/data/wow/region/1?namespace=dynamic-us"
+        },
+        "name": "North America",
+        "id": 1
+      },
+      "connected_realm": {
+        "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092?namespace=dynamic-us"
+      },
+      "name": "Bleeding Hollow",
+      "category": "United States",
+      "locale": "enUS",
+      "timezone": "America/New_York",
+      "type": {
+        "type": "NORMAL",
+        "name": "Normal"
+      },
+      "is_tournament": false,
+      "slug": "bleeding-hollow"
+    }
+  ],
+  "mythic_leaderboards": {
+    "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092/mythic-leaderboard/index?namespace=dynamic-us"
+  },
+  "auctions": {
+    "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092/auctions?namespace=dynamic-us"
+  }
+}

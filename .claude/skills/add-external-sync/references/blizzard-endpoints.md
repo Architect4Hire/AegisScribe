@@ -64,6 +64,66 @@ a missing guild.
 Locales: `en_US`, `en_GB`, `de_DE`, `fr_FR`, `es_ES`, `es_MX`, `pt_BR`, `it_IT`, `ru_RU`, `ko_KR`,
 `zh_TW`, `zh_CN`.
 
+## Batching — what actually batches, and what never will
+
+**There is no batch endpoint.** No GraphQL, no `/batch`, no multi-id fetch, no way to ask for twenty
+characters at once. Plain REST, one document per request. Design for that first and treat everything
+below as the exceptions it allows, not as a general capability.
+
+**Character profiles are the expensive path and they are the ones that cannot be batched.** A
+character's summary is one call and its equipment is another, per character, forever. Every saving
+available is therefore about *not asking* rather than *asking in bulk* — which is why cache-first reads
+and a staleness window are worth more than any of this: a character costs two calls per refresh window
+rather than two per page view.
+
+What does batch, in rough order of how much it saves:
+
+| Instead of | Use | Cost |
+|---|---|---|
+| One call per guild member to learn membership | `/data/wow/guild/{realm}/{guild}/roster` | **1** |
+| One call per connected realm's member realms | `/data/wow/connected-realm/{id}` | 1 per group, not per realm |
+| One call per class/profession/race | the matching `/index` endpoint | 1 |
+| One call per item in a catalogue sweep | `/data/wow/search/item`, paged | 1 per page |
+| One media call per item | dedupe by icon NAME first | far fewer than items |
+
+### The guild roster is the big one
+
+`/data/wow/guild/{realmSlug}/{nameSlug}/roster` returns **every member in a single call**: character
+name, id, realm, level, playable class, playable race, faction, and the in-game guild rank (0–9).
+
+It carries **no item level and no equipment**. So a roster is cheap and a roster's *gear* is not:
+
+- "who is in this guild, and at what in-game rank" — **1 call**
+- "refresh everyone's gear" — 1 + 2N calls, and no endpoint will ever make that cheaper
+
+Design around that asymmetry. Refreshing membership is cheap enough to do often; refreshing gear is
+what the per-tenant budget (`ITenantSyncBudget`) exists to bound. It is also the only source of
+`GuildMember.BlizzardRank` — the game's rank, which the roster UI shows *alongside* the community's own
+`TenantRank` and never derives from it.
+
+Same namespace trap as the rest of the guild endpoints: it lives under `/data/wow/` and takes
+**`profile-{region}`**.
+
+### Search endpoints — check before you size anything on them
+
+`/data/wow/search/item`, `/data/wow/search/realm`, `/data/wow/search/media` and friends are paged and
+field-filtered, which is the difference between one call per item and one call per page for a
+catalogue sweep.
+
+**The maximum page size and the exact field-selection syntax are NOT verified here.** Community client
+libraries confirm the search endpoints exist with filtering, ordering and paging; Blizzard's own
+documentation portal is a JavaScript application that cannot be read without a browser. Confirm both
+with one real credentialed call before designing a sync around a page size — guessing it wrong turns a
+one-call-per-page plan back into one call per item without anything failing.
+
+Two other things worth one credentialed call, for the same reason:
+
+- whether Blizzard honours **`If-Modified-Since` / `ETag`** on Game Data endpoints, and
+- whether a **304 counts against the 36,000/hour cap**.
+
+If both hold, the sync worker's refresh of unchanged rows gets much cheaper. Neither is assumed
+anywhere in this codebase, and neither should be until somebody checks.
+
 ## Character profile — `namespace=profile-{region}`
 
 Realm is a **slug** (`argent-dawn`), character name is **lowercased**.

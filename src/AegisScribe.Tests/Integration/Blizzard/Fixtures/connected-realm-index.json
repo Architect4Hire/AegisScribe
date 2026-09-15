@@ -1,0 +1,18 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/data/wow/connected-realm/index?namespace=dynamic-us"
+    }
+  },
+  "connected_realms": [
+    {
+      "href": "https://us.api.blizzard.com/data/wow/connected-realm/4?namespace=dynamic-us"
+    },
+    {
+      "href": "https://us.api.blizzard.com/data/wow/connected-realm/1092?namespace=dynamic-us"
+    },
+    {
+      "href": "https://us.api.blizzard.com/data/wow/connected-realm/3676?namespace=dynamic-us"
+    }
+  ]
+}

@@ -10,8 +10,11 @@ public class CharacterBusiness(ICharacterDataLayer dataLayer) : ICharacterBusine
 {
     public async Task<CharacterDetailServiceModel?> GetCharacterAsync(string region, string realmSlug, string name, CancellationToken ct)
     {
-        var character = await dataLayer.FindByRealmAndNameAsync(region, realmSlug, name, ct);
-        return character?.ToServiceModel();
+        // The DataLayer may have served a stale row because Blizzard could not be reached (6.4).
+        // That is not an error and not an empty page -- it is the degraded state the character screen
+        // was built for in 5.7, and the flag is the only way the UI can tell.
+        var result = await dataLayer.GetCharacterAsync(region, realmSlug, name, ct);
+        return result.Character?.ToServiceModel(result.IsDegraded);
     }
 
     // A list read passes the data layer's projected summaries straight through (add-endpoint skill) —

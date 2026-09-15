@@ -10,7 +10,9 @@ public static class CharacterMappers
     // -> "Images and media".
     private const string ItemIconBaseUrl = "https://render.worldofwarcraft.com/icons/56";
 
-    public static CharacterDetailServiceModel ToServiceModel(this Character character) => new()
+    // isDegraded comes from the DataLayer's CharacterReadResult, never from anything on the entity —
+    // "this row is stale AND we could not refresh it" is not a fact LastSyncedAt can express.
+    public static CharacterDetailServiceModel ToServiceModel(this Character character, bool isDegraded = false) => new()
     {
         Id = character.Id,
         RealmSlug = character.Realm.Slug,
@@ -27,12 +29,16 @@ public static class CharacterMappers
             .ToList()
             ?? [],
         ClassColor = ClassColorHex(character.Class),
-        IsDegraded = false,
+        IsDegraded = isDegraded,
     };
 
     // Exact hex match to src/web/src/styles/_tokens.scss's --c-* tokens -- one mapping, kept in
     // sync deliberately, so the frontend never re-derives it.
-    private static string ClassColorHex(CharacterClass characterClass) => characterClass switch
+    //
+    // Internal rather than private since 7.5: the roster's list projection needs the same value, and a
+    // second copy of this table is a second thing to get wrong when Blizzard adds a class. It is
+    // applied after materialization there, because a C# switch cannot run inside a SQL projection.
+    internal static string ClassColorHex(CharacterClass characterClass) => characterClass switch
     {
         CharacterClass.DeathKnight => "#C41E3A",
         CharacterClass.DemonHunter => "#A330C9",

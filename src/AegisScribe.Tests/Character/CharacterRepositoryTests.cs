@@ -7,7 +7,7 @@ namespace AegisScribe.Tests.Character;
 // Reuses the Tenancy collection's AppHost instance (Tenancy/TenantRepositoryTests does the same) —
 // this is pure database work with no HTTP calls, so it adds nothing to any collection's anonymous
 // rate-limit budget and doesn't need its own AppHost boot.
-[Collection("AegisScribe API - Tenancy")]
+[Collection("AegisScribe API")]
 public class CharacterRepositoryTests(AegisScribeAppFixture fixture)
 {
     [Fact]

@@ -29,7 +29,21 @@
   @case ('loaded') {
     @if (character(); as char) {
       <div class="character-profile" [style.--class-color]="char.classColor">
-        <scribe-character-banner [character]="char" [region]="region()" />
+        @if (claimError(); as message) {
+          <!-- A failed claim, reported without taking the character page away. -->
+          <p class="claim-error" role="alert">{{ message }}</p>
+        }
+
+        <scribe-character-banner
+          [character]="char"
+          [region]="region()"
+          [claim]="claim()"
+          [currentUserId]="currentUserId()"
+          [canClear]="canClear()"
+          (claimed)="claimCharacter()"
+          (released)="releaseClaim()"
+          (cleared)="clearHolder()"
+        />
 
         <div class="tabs">
           @for (tab of tabs; track tab.id) {
@@ -38,7 +52,9 @@
               type="button"
               [class.is-active]="activeTab() === tab.id"
               (click)="selectTab(tab.id)"
-            >{{ tab.label }}</button>
+            >
+              {{ tab.label }}
+            </button>
           }
         </div>
 
@@ -48,10 +64,16 @@
               <scribe-equipment-rail [slots]="leftSlots" [equipment]="char.equipment" side="left" />
               <div class="armory-centre">
                 <div class="render">
-                  <p class="render-note">Character render<br />coming with the Blizzard media sync</p>
+                  <p class="render-note">
+                    Character render<br />coming with the Blizzard media sync
+                  </p>
                 </div>
               </div>
-              <scribe-equipment-rail [slots]="rightSlots" [equipment]="char.equipment" side="right" />
+              <scribe-equipment-rail
+                [slots]="rightSlots"
+                [equipment]="char.equipment"
+                side="right"
+              />
             </div>
             <div class="weapon-row">
               <scribe-item-cell slot="MainHand" [item]="mainHand()" />

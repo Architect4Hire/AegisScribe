@@ -1,0 +1,230 @@
+<section class="roster">
+  <header class="roster-head">
+    <h1 class="roster-title">Roster</h1>
+    <div class="roster-sorts" role="group" aria-label="Sort the roster">
+      @for (option of sorts; track option.id) {
+        <button
+          class="sort-btn"
+          type="button"
+          [class.is-active]="sort() === option.id"
+          [attr.aria-pressed]="sort() === option.id"
+          (click)="selectSort(option.id)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <!-- Shaped like the content, not a spinner: eight roster rows' worth of bar. -->
+      <scribe-skeleton [height]="38" [count]="8" />
+    }
+    @case ('empty') {
+      <scribe-empty-state
+        heading="Nobody is on this roster yet"
+        body="Officers add characters to the roster. Once somebody is here, their community rank and their in-game rank both show up in this table."
+      />
+    }
+    @case ('error') {
+      <scribe-empty-state
+        heading="Couldn't load this roster"
+        body="Something went wrong reaching AegisScribe. Check your connection and try again."
+        actionLabel="Try again"
+        variant="error"
+        (action)="retry()"
+      />
+    }
+    @case ('loaded') {
+      @if (writeError(); as message) {
+        <!--
+          A failed WRITE, reported above the table rather than replacing it. The roster we already
+          loaded stays on screen — a blank error page over data we still hold is the mistake this
+          app is most prone to.
+        -->
+        <p class="write-error" role="alert">{{ message }}</p>
+      }
+
+      <!-- Wide content scrolls inside its own container; the page body never scrolls sideways. -->
+      <div class="table-wrap">
+        <table class="data">
+          <thead>
+            <tr>
+              <th>Character</th>
+              <!--
+                TWO rank columns, and they stay two. The community's ladder and the game's rank are
+                different facts and neither derives from the other, so they never share a column, a
+                header, or a visual treatment.
+              -->
+              <th>Rank</th>
+              <th>In-game</th>
+              <th class="num">Level</th>
+              <th class="num" [class.sorted]="sort() === 'ItemLevel'">Item level</th>
+              <th>Claimed by</th>
+              @if (isOfficer()) {
+                <th>Note</th>
+              }
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of rows(); track entry.id) {
+              <!--
+                One --class-color per row, set at the boundary. Descendants inherit it; nothing in
+                TypeScript maps a class name to a hex.
+              -->
+              <tr
+                [class.alt-row]="entry.mainRosterEntryId !== null"
+                [style.--class-color]="entry.classColor"
+              >
+                <td>
+                  <span class="class-dot" aria-hidden="true"></span
+                  ><span class="char-name">{{ entry.characterName }}</span>
+                </td>
+                <td class="rank-cell">
+                  @if (entry.rankName; as rankName) {
+                    <scribe-rank-pill [name]="rankName" [colour]="entry.rankColour" />
+                  } @else {
+                    <span class="unset">—</span>
+                  }
+                  @if (isOfficer()) {
+                    <!--
+                      The pill stays, so an officer sees the same thing a member does and the colour
+                      they chose. The picker sits beside it rather than replacing it.
+                    -->
+                    <select
+                      class="field rank-picker"
+                      [value]="entry.rankId ?? ''"
+                      [attr.aria-label]="'Community rank for ' + entry.characterName"
+                      (change)="assignRank(entry, $any($event.target).value)"
+                    >
+                      <option value="">No rank</option>
+                      @for (rank of ranks(); track rank.id) {
+                        <option [value]="rank.id" [selected]="rank.id === entry.rankId">
+                          {{ rank.name }}
+                        </option>
+                      }
+                    </select>
+                  }
+                </td>
+                <!--
+                  Plain mono text rather than a second pill: the visual difference is what stops the
+                  two columns reading as one derived from the other. The guild is on the title so a
+                  community following several is never left guessing which guild this means.
+                -->
+                <td class="rank-blizz" [attr.title]="inGameRankTitle(entry)">
+                  {{ inGameRankLabel(entry) ?? '—' }}
+                </td>
+                <td class="num">{{ entry.level }}</td>
+                <td class="num">{{ entry.itemLevel }}</td>
+                <td class="claim-cell">
+                  @if (claimedByMe(entry)) {
+                    <span class="claimed-by">You</span>
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      type="button"
+                      (click)="releaseClaim(entry)"
+                    >
+                      Unclaim
+                    </button>
+                  } @else if (claimedBySomebodyElse(entry)) {
+                    <!--
+                      Who holds it is shown to every member; the ACTION is not. A non-officer gets no
+                      control on somebody else's claim, and an officer gets one that frees it rather
+                      than one that takes it.
+                    -->
+                    <span class="claimed-by">{{ claimedByLabel(entry) }}</span>
+                    @if (isOfficer()) {
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        type="button"
+                        (click)="clearClaim(entry)"
+                      >
+                        Clear
+                      </button>
+                    }
+                  } @else {
+                    <!-- Unclaimed: offered to everyone who can see the roster, per the restriction. -->
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      type="button"
+                      (click)="claimCharacter(entry)"
+                    >
+                      Claim
+                    </button>
+                  }
+                </td>
+                @if (isOfficer()) {
+                  <td class="note-cell">
+                    @if (editingNoteFor() === entry.id) {
+                      <input
+                        class="field note-input"
+                        type="text"
+                        maxlength="1000"
+                        [value]="entry.officerNote ?? ''"
+                        aria-label="Officer note"
+                        #noteInput
+                      />
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        type="button"
+                        (click)="saveNote(entry, noteInput.value)"
+                      >
+                        Save
+                      </button>
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        type="button"
+                        (click)="cancelEditingNote()"
+                      >
+                        Cancel
+                      </button>
+                    } @else {
+                      <button
+                        class="note-edit"
+                        type="button"
+                        [attr.aria-label]="'Edit note for ' + entry.characterName"
+                        (click)="startEditingNote(entry)"
+                      >
+                        {{ entry.officerNote ?? 'Add note' }}
+                      </button>
+                    }
+                  </td>
+                }
+                <td>
+                  <!--
+                    The degraded state, per row: stale data is SHOWN with its age rather than hidden
+                    behind an error. The pill pairs a dot with a word, so the state is never colour
+                    alone.
+                  -->
+                  <scribe-status-pill [state]="syncState(entry)" [label]="syncLabel(entry)" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (isOfficer()) {
+        <p class="officer-hint">
+          Create, reorder and recolour the ladder in
+          <a [routerLink]="['/t', tenantSlug(), 'ranks']">rank settings</a>.
+        </p>
+      }
+
+      @if (nextCursor()) {
+        <div class="roster-more">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            [disabled]="loadingMore()"
+            (click)="loadMore()"
+          >
+            {{ loadingMore() ? 'Loading…' : 'Load more' }}
+          </button>
+        </div>
+      }
+    }
+  }
+</section>

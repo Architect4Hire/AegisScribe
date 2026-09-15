@@ -67,6 +67,128 @@ public class TenantBusinessTests
         Assert.Equal(TenantRole.Officer, await _business.GetRoleForCurrentUserAsync(Tenant.Id, CancellationToken.None));
     }
 
+    // The hole the api-contract-checker found: the validator can only vet a slug the caller sent, so a
+    // name that DERIVES onto a reserved word bypassed it entirely and took a reserved route.
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("New")]
+    [InlineData("API")]
+    [InlineData("Tenants")]
+    public async Task Create_NameDerivingOntoAReservedSlug_IsRejected(string name)
+    {
+        var viewModel = new CreateTenantViewModel { Slug = null, Name = name, TimeZoneId = "UTC" };
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() => _business.CreateAsync(viewModel, CancellationToken.None));
+
+        Assert.Contains("Slug", ex.Errors.Keys);
+        await _dataLayer.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Create_ReservedSlugSuppliedDirectly_IsRejectedInBusinessToo()
+    {
+        // Belt and braces: the validator refuses this at the edge, but Business is the last gate before
+        // the write and the only one both paths pass through.
+        var viewModel = new CreateTenantViewModel { Slug = "admin", Name = "Anything", TimeZoneId = "UTC" };
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() => _business.CreateAsync(viewModel, CancellationToken.None));
+
+        Assert.Contains("Slug", ex.Errors.Keys);
+        await _dataLayer.DidNotReceiveWithAnyArgs().SlugExistsAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task CheckSlug_FreeSlug_IsAvailable()
+    {
+        _dataLayer.SlugExistsAsync("ashes-of-dawn", Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Slug = "ashes-of-dawn" }, CancellationToken.None);
+
+        Assert.True(result.Available);
+        Assert.Equal(SlugCheckReason.Available, result.Reason);
+        Assert.Equal("ashes-of-dawn", result.Slug);
+    }
+
+    [Fact]
+    public async Task CheckSlug_FromAName_DerivesBeforeChecking()
+    {
+        _dataLayer.SlugExistsAsync("ashes-of-dawn", Arg.Any<CancellationToken>()).Returns(false);
+
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Name = "Ashes of Dawn" }, CancellationToken.None);
+
+        Assert.True(result.Available);
+        Assert.Equal("ashes-of-dawn", result.Slug);
+    }
+
+    [Fact]
+    public async Task CheckSlug_TakenSlug_SaysTakenAndNothingElse()
+    {
+        _dataLayer.SlugExistsAsync("ashes-of-dawn", Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Slug = "ashes-of-dawn" }, CancellationToken.None);
+
+        Assert.False(result.Available);
+        Assert.Equal(SlugCheckReason.Taken, result.Reason);
+        // The answer carries the slug that was asked about and nothing identifying the holder — this
+        // endpoint is reachable by any authenticated caller (2.7b).
+        Assert.Equal("ashes-of-dawn", result.Slug);
+    }
+
+    [Fact]
+    public async Task CheckSlug_ReservedSlug_NeverReachesTheStore()
+    {
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Slug = "admin" }, CancellationToken.None);
+
+        Assert.False(result.Available);
+        Assert.Equal(SlugCheckReason.Reserved, result.Reason);
+        await _dataLayer.DidNotReceiveWithAnyArgs().SlugExistsAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task CheckSlug_MalformedSlug_IsAnAnswerNotAFailure()
+    {
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Slug = "Not A Slug!" }, CancellationToken.None);
+
+        Assert.False(result.Available);
+        Assert.Equal(SlugCheckReason.Invalid, result.Reason);
+        await _dataLayer.DidNotReceiveWithAnyArgs().SlugExistsAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task CheckSlug_NameThatFoldsToNothing_OffersNoSuggestion()
+    {
+        var result = await _business.CheckSlugAsync(new SlugCheckViewModel { Name = "잿빛 여명" }, CancellationToken.None);
+
+        Assert.False(result.Available);
+        Assert.Equal(SlugCheckReason.NotDerivable, result.Reason);
+        Assert.Null(result.Slug);
+        await _dataLayer.DidNotReceiveWithAnyArgs().SlugExistsAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task Create_NoSlugSupplied_DerivesOneFromTheName()
+    {
+        var viewModel = new CreateTenantViewModel { Slug = null, Name = "Ashes of Dawn", TimeZoneId = "UTC" };
+        _dataLayer.SlugExistsAsync("ashes-of-dawn", Arg.Any<CancellationToken>()).Returns(false);
+        _dataLayer.CreateAsync(Arg.Any<Tenant>(), Arg.Any<TenantMembership>(), Arg.Any<CancellationToken>())
+            .Returns(ci => ci.Arg<Tenant>());
+
+        var result = await _business.CreateAsync(viewModel, CancellationToken.None);
+
+        Assert.Equal("ashes-of-dawn", result.Slug);
+    }
+
+    [Fact]
+    public async Task Create_NoSlugAndAnUnderivableName_IsRejected()
+    {
+        var viewModel = new CreateTenantViewModel { Slug = null, Name = "!!!", TimeZoneId = "UTC" };
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() => _business.CreateAsync(viewModel, CancellationToken.None));
+
+        Assert.Contains("Slug", ex.Errors.Keys);
+        await _dataLayer.DidNotReceiveWithAnyArgs().CreateAsync(default!, default!, default);
+    }
+
     [Fact]
     public async Task GetRoleForCurrentUser_NonMember_ReturnsNull()
     {
@@ -88,7 +210,7 @@ public class TenantBusinessTests
     public async Task Create_SlugAlreadyTaken_ThrowsDomainValidation()
     {
         var viewModel = new CreateTenantViewModel { Slug = "emberwatch", Name = "Emberwatch", TimeZoneId = "UTC" };
-        _dataLayer.FindBySlugAsync("emberwatch", Arg.Any<CancellationToken>()).Returns(Tenant);
+        _dataLayer.SlugExistsAsync("emberwatch", Arg.Any<CancellationToken>()).Returns(true);
 
         var ex = await Assert.ThrowsAsync<DomainValidationException>(() => _business.CreateAsync(viewModel, CancellationToken.None));
         Assert.Contains("Slug", ex.Errors.Keys);
@@ -99,7 +221,7 @@ public class TenantBusinessTests
     public async Task Create_NewSlug_CreatesTheTenantWithTheCallerAsOwner()
     {
         var viewModel = new CreateTenantViewModel { Slug = "newguild", Name = "New Guild", TimeZoneId = "UTC" };
-        _dataLayer.FindBySlugAsync("newguild", Arg.Any<CancellationToken>()).Returns((Tenant?)null);
+        _dataLayer.SlugExistsAsync("newguild", Arg.Any<CancellationToken>()).Returns(false);
         _dataLayer.CreateAsync(Arg.Any<Tenant>(), Arg.Any<TenantMembership>(), Arg.Any<CancellationToken>())
             .Returns(ci => ci.Arg<Tenant>());
 

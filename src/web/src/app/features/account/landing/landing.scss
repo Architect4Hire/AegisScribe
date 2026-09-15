@@ -1,0 +1,105 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/panel';
+
+/* No S-numbered mockup exists for this screen in design/aegisscribe-armory.html. Built from the
+   foundations directly -- §01 colour, §03 typography, §04 space & form, §05 buttons -- and from
+   §07's wordmark, which is the same lockup the app header uses so the product reads the same way
+   before and after sign-in. Every value here is a token. */
+.landing {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: var(--s-8);
+  align-items: start;
+  max-width: 1040px;
+  margin: var(--s-8) auto;
+  padding: 0 var(--s-4);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-4);
+}
+
+/* Same treatment as the appbar's brand (§07), one step larger -- this is the only place the
+   wordmark carries the page rather than labelling the chrome. */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--t-h2);
+  letter-spacing: 0.18em;
+  color: var(--brass);
+}
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex: none;
+}
+
+.hero-heading {
+  font-size: var(--t-h1);
+  color: var(--ink);
+  max-width: 16ch;
+}
+
+.hero-body {
+  font-size: var(--t-body);
+  color: var(--ink-2);
+  max-width: 60ch;
+}
+
+.hero-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  max-width: 60ch;
+}
+.hero-points li {
+  padding-left: var(--s-3);
+  border-left: 2px solid var(--brass-line);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+/* An <a> styled as a button: it jumps to the form below rather than acting. .btn's own colour
+   would otherwise be overridden by the global anchor rule. */
+.hero-cta {
+  text-decoration: none;
+  color: var(--brass-ink);
+}
+.hero-cta:hover { color: var(--brass-ink); }
+
+/* The shared .panel shell (styles/_panel.scss) -- border, radius and surface -- rather than a
+   fourth transcription of the same three declarations. Its top margin exists for panels stacked
+   down a profile page; here the card is a grid column and sets its own position. */
+.register-card {
+  margin-top: 0;
+}
+
+.register-heading {
+  font-size: var(--t-h2);
+  color: var(--ink);
+  margin-bottom: var(--s-4);
+}
+
+/* One column on a phone, hero first. The anchor CTA still works — it scrolls to the card. */
+@media (max-width: 760px) {
+  .landing {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-6);
+    margin: var(--s-5) auto;
+  }
+}

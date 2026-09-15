@@ -47,11 +47,11 @@ public class UserDataLayerTests
     [Fact]
     public async Task SignInChecks_Delegate()
     {
-        _repository.CheckPasswordSignInAsync(_user, "pwd", Arg.Any<CancellationToken>()).Returns(true);
+        _repository.CheckPasswordSignInAsync(_user, "pwd", Arg.Any<CancellationToken>()).Returns(CredentialCheckResult.Success);
         _repository.CanSignInAsync(_user, Arg.Any<CancellationToken>()).Returns(true);
         _repository.GetRolesAsync(_user, Arg.Any<CancellationToken>()).Returns(["PlatformAdmin"]);
 
-        Assert.True(await _dataLayer.CheckPasswordSignInAsync(_user, "pwd", CancellationToken.None));
+        Assert.Equal(CredentialCheckResult.Success, await _dataLayer.CheckPasswordSignInAsync(_user, "pwd", CancellationToken.None));
         Assert.True(await _dataLayer.CanSignInAsync(_user, CancellationToken.None));
         Assert.Equal(["PlatformAdmin"], await _dataLayer.GetRolesAsync(_user, CancellationToken.None));
     }

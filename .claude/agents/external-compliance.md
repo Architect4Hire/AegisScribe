@@ -89,7 +89,17 @@ once**, not once per tenant.
 
 ### 3. Rate limiting
 
-- Every gateway method must take a **rate-limiter lease**. A method that doesn't → Blocker.
+- Every outbound call must be covered by a **rate-limiter lease** — but check the PIPELINE, not the
+  method. In this repo the lease is taken by `BlizzardRateLimitHandler`, registered as the innermost
+  `DelegatingHandler` on the typed client, so **no gateway method calls `AcquireAsync` and none
+  should**: a lease taken in a method would count one call and spend four, because the standard
+  resilience handler retries above it. What to verify instead:
+  - `BlizzardRateLimitHandler` is still registered, and still LAST in the `AddHttpMessageHandler`
+    chain (last registered = innermost = closest to the wire). If it moves above the resilience
+    handler → Blocker; retries would escape the limiter.
+  - No second `HttpClient` reaches Blizzard outside that registration → Blocker.
+  A gateway method that calls `AcquireAsync` itself is a **Suggestion**, not a fix: it is double
+  accounting.
 - **Unbounded fan-out** — `Task.WhenAll` or `Parallel.ForEachAsync` without a
   `MaxDegreeOfParallelism`, over a collection whose size isn't statically small, anywhere that
   reaches the gateway → Blocker. This is the single most likely way this app gets its API key
@@ -109,6 +119,16 @@ once**, not once per tenant.
   leaves untouched rows to age past the deadline → Blocker.
 
 ### 5. The deletion path
+
+**Before reporting anything here, check whether `ICharacterDataDeletionFacade` exists at all.** It is
+built in Phase 14.1, so on a repo that has not reached it, every table is trivially "not in the
+routine" and reporting each one is noise that buries the real findings.
+
+When the routine does not exist, report **one** Suggestion naming the phase, and audit the weaker
+claim instead: that every Blizzard-derived entity carries a **stable source id** the routine will be
+able to target when it arrives. An entity synced from Blizzard with no source id is a genuine Blocker
+even now — it is the thing that would make erasure impossible later, and it is cheap to fix today and
+expensive to fix once rows exist.
 
 - Every Blizzard-derived table must be reachable by the deletion routine, **by Blizzard source id**.
   Enumerate the domain entities with a source id, then check each appears in the deletion path. A

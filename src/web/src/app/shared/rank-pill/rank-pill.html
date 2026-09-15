@@ -1,0 +1,5 @@
+@if (colour(); as rankColour) {
+  <span class="rank" [style.--rank-color]="rankColour"><i></i>{{ name() }}</span>
+} @else {
+  <span class="rank"><i></i>{{ name() }}</span>
+}

@@ -1,12 +1,10 @@
-using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using AegisScribe.ApiService.Infrastructure;
 using AegisScribe.Domain.Facade;
 using AegisScribe.Domain.Managers.Models.ServiceModels;
 using AegisScribe.Domain.Managers.Models.ViewModels;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 
 namespace AegisScribe.ApiService.Controllers;
 
@@ -29,7 +27,7 @@ public class CharactersController(ICharacterFacade characterFacade) : Controller
             return NotFound();
         }
 
-        return ConditionalOk(character);
+        return this.ConditionalOk(character);
     }
 
     [HttpGet]
@@ -58,35 +56,12 @@ public class CharactersController(ICharacterFacade characterFacade) : Controller
         // which isn't worth it for how cursor pagination is consumed (the client just asks again and
         // gets an empty page at the true end).
         var hasMore = items.Count == viewModel.Limit;
-        return ConditionalOk(new CursorPageServiceModel<CharacterSummaryServiceModel>
+        return this.ConditionalOk(new CursorPageServiceModel<CharacterSummaryServiceModel>
         {
             Items = items,
             NextCursor = hasMore ? EncodeCursor(items[^1]) : null,
             HasMore = hasMore,
         });
-    }
-
-    // ETag + If-None-Match on collection and detail GETs (api-contract.md): a 304 costs a few bytes
-    // where the body costs kilobytes. The ETag is a hash of the serialized body rather than, say,
-    // LastSyncedAt, because CharacterEquipment tracks its own staleness independently of Character
-    // (CharacterEquipment.cs) — hashing the body is correct regardless of which part changed.
-    private ActionResult<T> ConditionalOk<T>(T body)
-    {
-        var etag = ComputeETag(body);
-        if (Request.Headers.TryGetValue(HeaderNames.IfNoneMatch, out var ifNoneMatch) && ifNoneMatch == etag)
-        {
-            return StatusCode(StatusCodes.Status304NotModified);
-        }
-
-        Response.Headers.ETag = etag;
-        return Ok(body);
-    }
-
-    private static string ComputeETag<T>(T value)
-    {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
-        var hash = SHA256.HashData(bytes);
-        return $"\"{Convert.ToHexString(hash)}\"";
     }
 
     private static string EncodeCursor(CharacterSummaryServiceModel last) =>

@@ -17,6 +17,7 @@ public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
+    private const string ExternalHealthEndpointPath = "/health/external";
 
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -101,7 +102,7 @@ public static class Extensions
     {
         builder.Services.AddHealthChecks()
             // Add a default liveness check to ensure app is responsive
-            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+            .AddCheck("self", () => HealthCheckResult.Healthy(), [HealthCheckTags.Live]);
 
         return builder;
     }
@@ -112,13 +113,26 @@ public static class Extensions
         // See https://aka.ms/aspire/healthchecks for details before enabling these endpoints in non-development environments.
         if (app.Environment.IsDevelopment())
         {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
-            app.MapHealthChecks(HealthEndpointPath);
+            // All health checks must pass for app to be considered ready to accept traffic after
+            // starting — except the external-dependency ones, which report separately below. Aspire
+            // gates resource readiness on this endpoint, and a third-party API we degrade gracefully
+            // without has no business deciding whether this service is ready.
+            app.MapHealthChecks(HealthEndpointPath, new HealthCheckOptions
+            {
+                Predicate = r => !r.Tags.Contains(HealthCheckTags.External)
+            });
+
+            // Reachability of the third-party services this app runs without: expect Degraded here on a
+            // machine with no external credentials configured, and a healthy /health alongside it.
+            app.MapHealthChecks(ExternalHealthEndpointPath, new HealthCheckOptions
+            {
+                Predicate = r => r.Tags.Contains(HealthCheckTags.External)
+            });
 
             // Only health checks tagged with the "live" tag must pass for app to be considered alive
             app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
             {
-                Predicate = r => r.Tags.Contains("live")
+                Predicate = r => r.Tags.Contains(HealthCheckTags.Live)
             });
         }
 

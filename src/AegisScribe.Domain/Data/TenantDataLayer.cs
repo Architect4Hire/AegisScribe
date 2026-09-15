@@ -9,6 +9,9 @@ public class TenantDataLayer(ITenantRepository repository) : ITenantDataLayer
     public Task<Tenant?> FindBySlugAsync(string slug, CancellationToken ct) =>
         repository.FindBySlugAsync(slug, ct);
 
+    public Task<bool> SlugExistsAsync(string slug, CancellationToken ct) =>
+        repository.SlugExistsAsync(slug, ct);
+
     public Task<bool> IsMemberAsync(Guid tenantId, string userId, CancellationToken ct) =>
         repository.IsMemberAsync(tenantId, userId, ct);
 

@@ -4,6 +4,7 @@ using AegisScribe.Domain.Managers.Mappers;
 using AegisScribe.Domain.Managers.Models.Domain;
 using AegisScribe.Domain.Managers.Models.ServiceModels;
 using AegisScribe.Domain.Managers.Models.ViewModels;
+using AegisScribe.Domain.Managers.Validators;
 
 namespace AegisScribe.Domain.Business;
 
@@ -40,14 +41,73 @@ public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser
             : dataLayer.GetRoleAsync(tenantId, userId, ct);
     }
 
+    // Answers the create form's per-keystroke question (5.6c) without making it a 400 factory: a
+    // malformed or reserved slug is a normal answer here, not a validation failure. The reason never
+    // names who holds a taken slug — any authenticated caller can reach this, and naming the holder
+    // would turn it into a community-enumeration oracle (2.7b).
+    public async Task<SlugCheckServiceModel> CheckSlugAsync(SlugCheckViewModel viewModel, CancellationToken ct)
+    {
+        // Exactly one of the two is set; the validator already enforced that.
+        var slug = viewModel.Slug ?? TenantSlugRules.Derive(viewModel.Name);
+
+        if (slug is null)
+        {
+            return Unavailable(null, SlugCheckReason.NotDerivable);
+        }
+
+        // Only reachable via an explicit ?slug= — a derived slug is well-formed by construction.
+        if (!TenantSlugRules.IsWellFormed(slug))
+        {
+            return Unavailable(slug, SlugCheckReason.Invalid);
+        }
+
+        if (TenantSlugRules.IsReserved(slug))
+        {
+            return Unavailable(slug, SlugCheckReason.Reserved);
+        }
+
+        if (await dataLayer.SlugExistsAsync(slug, ct))
+        {
+            return Unavailable(slug, SlugCheckReason.Taken);
+        }
+
+        return new SlugCheckServiceModel { Slug = slug, Available = true, Reason = SlugCheckReason.Available };
+    }
+
+    private static SlugCheckServiceModel Unavailable(string? slug, SlugCheckReason reason) =>
+        new() { Slug = slug, Available = false, Reason = reason };
+
     // Slug uniqueness is checked here rather than left to the DB's unique index alone, so a taken slug
     // reads as a normal domain rejection (the same DomainValidationException shape RegisterAsync uses
-    // for a duplicate email) instead of a raw constraint-violation 500.
+    // for a duplicate email) instead of a raw constraint-violation 500. The index is still the
+    // authority: two callers can pass this check before either writes, and the repository translates
+    // that race into a 409 (SlugTakenException). Two conditions, two answers, on purpose.
     public async Task<TenantServiceModel> CreateAsync(CreateTenantViewModel viewModel, CancellationToken ct)
     {
         var userId = currentUser.UserId ?? throw new AuthenticationRequiredException();
 
-        if (await dataLayer.FindBySlugAsync(viewModel.Slug, ct) is not null)
+        // Derived when the caller omitted one (2.7b), so no client carries a copy of the rules. The
+        // validator has already established that a null slug leaves a derivable name behind it.
+        var slug = viewModel.Slug
+            ?? TenantSlugRules.Derive(viewModel.Name)
+            ?? throw new DomainValidationException(new Dictionary<string, string[]>
+            {
+                ["Slug"] = ["'Name' contains no characters usable in a URL — supply a slug as well."],
+            });
+
+        // Checked on the RESOLVED slug, which is the only place both paths meet. The validator can only
+        // vet a slug the caller actually sent, so without this a community named "Admin" derives to
+        // "admin" and takes a reserved route, while a caller who types slug=admin is refused — the hole
+        // being in the derive path, which is the one the create screen defaults to (5.6c).
+        if (TenantSlugRules.IsReserved(slug))
+        {
+            throw new DomainValidationException(new Dictionary<string, string[]>
+            {
+                ["Slug"] = ["This address is reserved — supply a different slug."],
+            });
+        }
+
+        if (await dataLayer.SlugExistsAsync(slug, ct))
         {
             throw new DomainValidationException(new Dictionary<string, string[]>
             {
@@ -55,7 +115,7 @@ public class TenantBusiness(ITenantDataLayer dataLayer, ICurrentUser currentUser
             });
         }
 
-        var tenant = viewModel.ToEntity(Guid.NewGuid());
+        var tenant = viewModel.ToEntity(Guid.NewGuid(), slug);
         var ownerMembership = new TenantMembership
         {
             TenantId = tenant.Id,

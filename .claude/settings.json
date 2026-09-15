@@ -1,4 +1,34 @@
 {
+  "permissions": {
+    "allow": [
+      "PowerShell(dotnet ef database update --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService 2>&1)",
+      "PowerShell(dotnet build src/AegisScribe.Tests/AegisScribe.Tests.csproj -v q --nologo)",
+      "PowerShell(Remove-Item contract/openapi.v1.json -Confirm:$false)",
+      "PowerShell(dotnet test src/AegisScribe.Tests/AegisScribe.Tests.csproj --filter \"FullyQualifiedName~OpenApiContractTests\" --nologo -v q 2>&1)",
+      "PowerShell(dotnet test --nologo -v q 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~GatewayOAuthTests\" 2>&1)",
+      "PowerShell(dotnet ef migrations has-pending-model-changes --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~TenantRank\" 2>&1)",
+      "PowerShell(dotnet ef migrations add AddRosterEntry --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService 2>&1)",
+      "PowerShell(dotnet ef migrations add AddCharacterClaimAndAuditLog --project src/AegisScribe.Domain --startup-project src/AegisScribe.ApiService 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~TwoOppositeLinksRacing\" 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~AltLinking\" 2>&1)",
+      "PowerShell(1..3 | ForEach-Object { dotnet test --nologo -v q --filter \"FullyQualifiedName~TwoOppositeLinksRacing\" 2>&1 | Select-String -Pattern \"Passed!|Failed!\" })",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~Roster\" 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~Roster|FullyQualifiedName~AltLinking\" 2>&1)",
+      "Bash(python3 -c ' *)",
+      "Bash(jq --version)",
+      "Bash(node -e ' *)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~Roster|FullyQualifiedName~AltLinking|FullyQualifiedName~Tenant|FullyQualifiedName~CharacterClaim\" 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~GuildRankName|FullyQualifiedName~RosterEndpointTests\" 2>&1)",
+      "PowerShell(npx ng test --watch=false 2>&1)",
+      "Bash(echo \"--- exit: $? \\(no output = entity does not exist\\) ---\")",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~PublicEdgeTests\" 2>&1)",
+      "PowerShell(dotnet test --nologo -v q --filter \"FullyQualifiedName~GuildRankName\" 2>&1)",
+      "Bash(sed -i \"s|  private readonly rosterService = inject\\(RosterService\\);|  private readonly rosterService = inject\\(RosterService\\);\\\\n  // Every subscription below is piped through takeUntilDestroyed\\(this.destroyRef\\). These are one-shot\\\\n  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting\\\\n  // signals on a component the user has already navigated away from \\(frontend.md\\).\\\\n  private readonly destroyRef = inject\\(DestroyRef\\);|\" src/app/features/guild/rank-manager/rank-manager.ts)",
+      "Bash(sed -i \"s|  private readonly currentUser = inject\\(CurrentUserService\\);|  private readonly currentUser = inject\\(CurrentUserService\\);\\\\n  // Every subscription below is piped through takeUntilDestroyed\\(this.destroyRef\\). These are one-shot\\\\n  // HttpClient observables, so this is not about a classic leak — it is about a late callback setting\\\\n  // signals on a component the user has already navigated away from \\(frontend.md\\).\\\\n  private readonly destroyRef = inject\\(DestroyRef\\);|\" src/app/features/roster/roster-table/roster-table.ts src/app/features/character/character-profile/character-profile.ts)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

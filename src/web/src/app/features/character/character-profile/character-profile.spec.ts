@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Observable, of, throwError } from 'rxjs';
 import { CharacterService } from '../../../core/character.service';
+import { ClaimService } from '../../../core/claim.service';
+import { CurrentUserService } from '../../../core/current-user.service';
 import { CharacterDetailServiceModel } from '../../../models/character.models';
 import { CharacterProfile } from './character-profile';
 
@@ -114,5 +116,121 @@ describe('CharacterProfile', () => {
     fixture.detectChanges();
 
     expect(host.querySelector('scribe-empty-state')?.textContent).toContain("aren't built yet");
+  });
+});
+
+// 7.5b. The same component serves two routes, and this is the seam between them: with no community in
+// context it must not even ASK about claims, and with one it loads claim state and hands it to the
+// banner. The tenant-less case is the restriction's actual subject.
+describe('CharacterProfile claim state', () => {
+  function createWithTenant(
+    tenantSlug: string | undefined,
+    claimState: Partial<{
+      getClaim: ReturnType<typeof vi.fn>;
+      claim: ReturnType<typeof vi.fn>;
+      release: ReturnType<typeof vi.fn>;
+      clearHolder: ReturnType<typeof vi.fn>;
+    }> = {},
+    role: 'Member' | 'Officer' = 'Member',
+  ) {
+    const claims = {
+      getClaim:
+        claimState.getClaim ??
+        vi.fn(() =>
+          of({ characterId: 'c1', claimedByUserId: null, claimedByDisplayName: null, claimedAt: null }),
+        ),
+      claim:
+        claimState.claim ??
+        vi.fn(() =>
+          of({
+            characterId: 'c1',
+            claimedByUserId: 'u1',
+            claimedByDisplayName: 'Me',
+            claimedAt: new Date().toISOString(),
+          }),
+        ),
+      release: claimState.release ?? vi.fn(() => of(void 0)),
+      clearHolder: claimState.clearHolder ?? vi.fn(() => of(void 0)),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [CharacterProfile],
+      providers: [
+        { provide: CharacterService, useValue: { getCharacter: () => of(character()) } },
+        { provide: ClaimService, useValue: claims },
+        {
+          provide: CurrentUserService,
+          useValue: {
+            user: () => ({
+              id: 'u1',
+              memberships: [
+                { tenantId: 't', tenantSlug: 'emberfall', tenantName: 'Emberfall', role, joinedAt: '' },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(CharacterProfile);
+    fixture.componentRef.setInput('region', 'eu');
+    fixture.componentRef.setInput('realmSlug', 'argent-dawn');
+    fixture.componentRef.setInput('name', 'thornwake');
+    if (tenantSlug !== undefined) {
+      fixture.componentRef.setInput('tenantSlug', tenantSlug);
+    }
+    fixture.detectChanges();
+
+    return { fixture, claims, host: fixture.nativeElement as HTMLElement };
+  }
+
+  it('never asks about claims with no community in context', () => {
+    const { claims, host } = createWithTenant(undefined);
+
+    // Not merely hidden — never requested. This route has to work for a visitor with no session, and
+    // the claims endpoint requires membership.
+    expect(claims.getClaim).not.toHaveBeenCalled();
+    expect(host.textContent).not.toContain('Claim character');
+    // The page itself still renders.
+    expect(host.querySelector('.char-name')?.textContent).toContain('Thornwake');
+  });
+
+  it('loads claim state and offers Claim inside a community', () => {
+    const { claims, host } = createWithTenant('emberfall');
+
+    expect(claims.getClaim).toHaveBeenCalledWith('emberfall', 'c1');
+    expect(host.textContent).toContain('Claim character');
+  });
+
+  it('keeps the character page when the claim lookup fails', () => {
+    // A character page that loaded is worth more than the claim strip on it.
+    const { host } = createWithTenant('emberfall', {
+      getClaim: vi.fn(() => throwError(() => new Error('offline'))),
+    });
+
+    expect(host.querySelector('.char-name')?.textContent).toContain('Thornwake');
+    expect(host.textContent).not.toContain("Couldn't load this character");
+  });
+
+  it('keeps the character page when the claim itself fails, reporting inline', () => {
+    const { host, fixture } = createWithTenant('emberfall', {
+      claim: vi.fn(() => throwError(() => new Error('conflict'))),
+    });
+
+    fixture.componentInstance.claimCharacter();
+    fixture.detectChanges();
+
+    expect(host.querySelector('.char-name')?.textContent).toContain('Thornwake');
+    expect(host.querySelector('.claim-error')?.textContent).toContain('Somebody else may have');
+  });
+
+  it('shows the pill and Unclaim once claimed', () => {
+    const { host, fixture } = createWithTenant('emberfall');
+
+    fixture.componentInstance.claimCharacter();
+    fixture.detectChanges();
+
+    expect(host.textContent).toContain('Claimed by you');
+    expect(host.textContent).toContain('Unclaim');
   });
 });

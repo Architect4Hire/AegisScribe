@@ -9,7 +9,7 @@ public interface IAuthBusiness
 
     Task ChangePasswordAsync(ChangePasswordViewModel viewModel, CancellationToken ct);
 
-    Task<SignInSubjectServiceModel?> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct);
+    Task<SignInAttemptServiceModel> ValidateCredentialsAsync(SignInViewModel viewModel, CancellationToken ct);
 
     Task<SignInSubjectServiceModel?> GetSignInSubjectAsync(string userId, CancellationToken ct);
 }

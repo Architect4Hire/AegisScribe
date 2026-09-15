@@ -1,0 +1,65 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/fields';
+
+/* No S-numbered mockup exists for this screen in design/aegisscribe-armory.html -- like the
+   sign-in page, it is composed from the foundations directly: §04 (space & form) for the field and
+   label, §05 for the button. Every value below is a token. */
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.optional {
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* --ink-2, not --ink-3: this states the password rule the user has to satisfy, which makes it
+   content rather than a label. --ink-3 is for labels only. */
+.field-hint {
+  margin-top: var(--s-1);
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}
+
+/* Never colour alone: the message itself says what is wrong, and the field keeps its own
+   aria-invalid. The tint is the semantic system, which is allowed here because nothing on this
+   screen encodes item quality. */
+.field-error {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--s-1);
+  font-size: var(--t-xs);
+  color: var(--critical);
+}
+
+.form-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  border: 1px solid var(--critical-border);
+  border-radius: var(--r-1);
+  background: var(--critical-bg);
+  color: var(--ink);
+  font-size: var(--t-sm);
+}
+
+.register-submit {
+  margin-top: var(--s-1);
+  padding: var(--s-2) var(--s-4);
+}
+
+/* Content, not a label -- it tells the user what happens after they submit. */
+.register-note {
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}

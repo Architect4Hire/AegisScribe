@@ -1,5 +1,7 @@
 <div class="char-banner">
-  <div class="portrait"><span>{{ portraitInitial() }}</span></div>
+  <div class="portrait">
+    <span>{{ portraitInitial() }}</span>
+  </div>
   <div class="char-id">
     <div class="char-name">{{ character().name }}</div>
     <div class="char-sub">
@@ -11,13 +13,60 @@
     <div class="char-sub">{{ realmLabel() }} ({{ region().toUpperCase() }})</div>
     <div class="char-pills">
       <scribe-status-pill [state]="syncPillState()" [label]="syncLabel()" />
+      @if (claimedByMe() || claimedBySomebodyElse()) {
+        <!--
+          S1 draws this beside the sync pill, neutral rather than semantic: a claim is not a health
+          state, and giving it an ok/attention colour would put it in the wrong colour system.
+        -->
+        <scribe-status-pill state="neutral" [label]="claimedByLabel()" />
+      }
     </div>
   </div>
   <div class="char-stats">
     <scribe-stat-tile label="Item level" [value]="character().itemLevel" sub="equipped" />
   </div>
   <div class="char-actions">
-    <button class="btn btn-secondary btn-sm" type="button" disabled title="Coming with Blizzard sync">Re-sync</button>
-    <button class="btn btn-primary btn-sm" type="button" disabled title="Coming with the crafting advisor">Ask the advisor</button>
+    <!--
+      Absent entirely with no community in context — the tenant-less front door shows neither a pill
+      nor a button, because there is nothing to claim a character FOR.
+    -->
+    @if (isUnclaimed()) {
+      <button class="btn btn-primary btn-sm" type="button" (click)="claimed.emit()">
+        Claim character
+      </button>
+    } @else if (claimedByMe()) {
+      <button class="btn btn-secondary btn-sm" type="button" (click)="released.emit()">
+        Unclaim
+      </button>
+    } @else if (claimedBySomebodyElse() && canClear()) {
+      <!--
+        Officers only, and it FREES the claim rather than taking it — the endpoint refuses to
+        reassign, so the label says what actually happens.
+      -->
+      <button class="btn btn-secondary btn-sm" type="button" (click)="cleared.emit()">
+        Clear claim
+      </button>
+    }
+    <button
+      class="btn btn-secondary btn-sm"
+      type="button"
+      disabled
+      title="Coming with Blizzard sync"
+    >
+      Re-sync
+    </button>
+    <!--
+      Secondary, not primary: §05 allows one primary per view, and "Claim character" is now a live
+      one in this same row. A DISABLED primary competing with an actionable one is the worse half of
+      that pair — this goes back to primary when the advisor ships and the claim button has moved on.
+    -->
+    <button
+      class="btn btn-secondary btn-sm"
+      type="button"
+      disabled
+      title="Coming with the crafting advisor"
+    >
+      Ask the advisor
+    </button>
   </div>
 </div>

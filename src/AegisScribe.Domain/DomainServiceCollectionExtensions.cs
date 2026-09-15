@@ -43,10 +43,64 @@ public static class DomainServiceCollectionExtensions
         services.AddScoped<ITenantResolutionFacade, TenantResolutionFacade>();
         services.AddScoped<ITenantFacade, TenantFacade>();
 
+        // Scoped alongside ICharacterRepository, and that matters: both resolve the same scoped
+        // AegisScribeDbContext, which is what lets CharacterDataLayer stage a realm write and a
+        // character write inside one repository's transaction callback.
+        services.AddScoped<IRealmRepository, RealmRepository>();
+
         services.AddScoped<ICharacterRepository, CharacterRepository>();
         services.AddScoped<ICharacterDataLayer, CharacterDataLayer>();
         services.AddScoped<ICharacterBusiness, CharacterBusiness>();
         services.AddScoped<ICharacterFacade, CharacterFacade>();
+
+        // The per-tenant sync budget (6.6) and its first caller. Scoped like everything else in the
+        // request stack: ITenantSyncBudget reads the tenant id from its caller, never from ambient
+        // state, so a background job could use it too without a resolved tenant context.
+        // Guilds (6.6b). Two repositories because two zones: IGuildRepository writes the global Guild
+        // and GuildMember, ITenantGuildRepository writes the tenant-scoped link between them.
+        services.AddScoped<IGuildRepository, GuildRepository>();
+        services.AddScoped<ITenantGuildRepository, TenantGuildRepository>();
+        services.AddScoped<IGuildSyncDataLayer, GuildSyncDataLayer>();
+        services.AddScoped<IGuildBusiness, GuildBusiness>();
+        services.AddScoped<IGuildFacade, GuildFacade>();
+
+        // Ranks (7.1) — the community's own rank ladder, and the first caller of the tenant-prefixed
+        // cache key convention.
+        services.AddScoped<ITenantRankRepository, TenantRankRepository>();
+        services.AddScoped<ITenantRankDataLayer, TenantRankDataLayer>();
+        services.AddScoped<ITenantRankBusiness, TenantRankBusiness>();
+        services.AddScoped<ITenantRankFacade, TenantRankFacade>();
+
+        // The roster (7.2). IRosterEntryRepository has two consumers: its own data layer, and
+        // TenantRankDataLayer — which is what lets a rank deletion ask how many entries still hold the
+        // rank without TenantRankRepository querying a table it doesn't own.
+        services.AddScoped<IRosterEntryRepository, RosterEntryRepository>();
+        services.AddScoped<IRosterEntryDataLayer, RosterEntryDataLayer>();
+        services.AddScoped<IRosterBusiness, RosterBusiness>();
+        services.AddScoped<IRosterFacade, RosterFacade>();
+
+        // Character claims (7.2b). IAuditLogRepository is registered alongside rather than in its own
+        // vertical because it has no vertical: it is write-only, it stages into whichever operation is
+        // being audited, and its reader arrives in 14.2. Scoped like everything else here, which is
+        // what lets an audit row and the action it records share one SaveChanges.
+        // What this community calls the guilds' in-game ranks (7.5). Its own vertical because it is
+        // its own tenant-scoped entity, even though the roster read is its busiest consumer.
+        services.AddScoped<IGuildRankNameRepository, GuildRankNameRepository>();
+        services.AddScoped<IGuildRankNameDataLayer, GuildRankNameDataLayer>();
+        services.AddScoped<IGuildRankNameBusiness, GuildRankNameBusiness>();
+        services.AddScoped<IGuildRankNameFacade, GuildRankNameFacade>();
+
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<ICharacterClaimRepository, CharacterClaimRepository>();
+        services.AddScoped<ICharacterClaimDataLayer, CharacterClaimDataLayer>();
+        services.AddScoped<ICharacterClaimBusiness, CharacterClaimBusiness>();
+        services.AddScoped<ICharacterClaimFacade, CharacterClaimFacade>();
+
+        services.AddScoped<ISyncBudgetRepository, SyncBudgetRepository>();
+        services.AddScoped<ISyncBudgetDataLayer, SyncBudgetDataLayer>();
+        services.AddScoped<ITenantSyncBudget, TenantSyncBudget>();
+        services.AddScoped<ISyncBusiness, SyncBusiness>();
+        services.AddScoped<ISyncFacade, SyncFacade>();
 
         services.AddValidatorsFromAssembly(typeof(DomainServiceCollectionExtensions).Assembly);
 

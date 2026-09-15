@@ -50,9 +50,25 @@ public sealed class TenantSide
 
     internal static async Task<TenantSide> CreateAsync(AegisScribeAppFixture fixture, string tenantName, TenantRole role)
     {
+        var tenant = await TenantSeeding.CreateTenantAsync(fixture, name: tenantName);
+
+        return await JoinAsync(fixture, tenant, role);
+    }
+
+    /// <summary>
+    /// A second (third, fourth) person inside an EXISTING community — a fresh user and token, joined
+    /// to the tenant at <paramref name="role"/>.
+    /// </summary>
+    /// <remarks>
+    /// Isolation tests need two tenants; plenty of rules need two people in ONE tenant instead — "you
+    /// may not release somebody else's claim", an officer acting on a member, 7.4's officer writes.
+    /// Those are a different axis from <see cref="TwoTenantFixture"/> and this is the door to them.
+    /// </remarks>
+    internal static async Task<TenantSide> JoinAsync(
+        AegisScribeAppFixture fixture, Tenant tenant, TenantRole role)
+    {
         var (email, userId) = await GatewayLoginFlow.RegisterUserWithIdAsync(fixture);
         var (accessToken, _) = await DirectOAuthFlow.LoginAsBffClientAsync(fixture, email);
-        var tenant = await TenantSeeding.CreateTenantAsync(fixture, name: tenantName);
         await TenantSeeding.AddMembershipAsync(fixture, tenant.Id, userId, role);
 
         return new TenantSide

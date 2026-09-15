@@ -14,7 +14,7 @@ public interface IUserDataLayer
     Task<IdentityResult> ChangePasswordAsync(
         ApplicationUser user, string currentPassword, string newPassword, CancellationToken ct);
 
-    Task<bool> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct);
+    Task<CredentialCheckResult> CheckPasswordSignInAsync(ApplicationUser user, string password, CancellationToken ct);
 
     Task<bool> CanSignInAsync(ApplicationUser user, CancellationToken ct);
 

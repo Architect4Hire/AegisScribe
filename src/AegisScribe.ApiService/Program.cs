@@ -7,6 +7,8 @@ using AegisScribe.ApiService.Tenancy;
 using AegisScribe.Domain;
 using AegisScribe.Domain.Context;
 using AegisScribe.Domain.Data;
+using AegisScribe.Domain.Integration;
+using AegisScribe.Domain.Integration.Blizzard;
 using AegisScribe.Domain.Managers.Models.Domain;
 using AegisScribe.Domain.Managers.Models.Identity;
 using Asp.Versioning;
@@ -184,6 +186,29 @@ builder.Services.AddAuthorizationBuilder()
 // projects, one direction"). The host supplies what is host-shaped: the DbContext and Identity above,
 // and the caller, read from the validated token.
 builder.Services.AddAegisScribeDomain();
+
+// Registered on its own rather than from AddAegisScribeDomain: the Blizzard integration brings its own
+// typed client and token lifecycle, and the sync worker will want it without the request stack (6.5).
+// Credentials arrive as Blizzard__ClientId / Blizzard__ClientSecret from the AppHost, and their absence
+// is a supported state — the gateway degrades and this host still starts (external.md).
+builder.Services.AddBlizzardIntegration();
+
+// The per-tenant fairness budget (6.6). Separate from the Blizzard section because it limits a
+// different thing: that one is the contractual cap on the whole process, this one is one community's
+// share of tenant-triggered work.
+builder.Services.AddOptions<TenantSyncBudgetOptions>()
+    .BindConfiguration(TenantSyncBudgetOptions.SectionName)
+    .Validate(
+        options => options.IsValid,
+        "TenantSyncBudget:CallsPerWindow and Window must both be positive — a non-positive budget " +
+        "refuses every tenant-triggered sync rather than removing the limit.")
+    .ValidateOnStart();
+
+// Tagged external so it reports at /health/external and stays out of /health: no Blizzard credentials is
+// normal locally, and it must not make the API look unready.
+builder.Services.AddHealthChecks()
+    .AddCheck<BlizzardGatewayHealthCheck>("blizzard", tags: [HealthCheckTags.External]);
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddScoped<IAuthorizationHandler, TenantRoleAuthorizationHandler>();
@@ -203,6 +228,20 @@ builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 // Fixed window, not sliding: System.Threading.RateLimiting's SlidingWindowRateLimiter doesn't
 // reliably populate the RetryAfter lease metadata when QueueLimit is 0 (dotnet/runtime#131175),
 // and a 429 without Retry-After fails the one thing this is required to do.
+// Read once at startup rather than per request: the partitioners below run on every request, and an
+// IOptions resolution inside one would be overhead for a value that cannot change without a restart.
+// Absent configuration these are exactly the literals this block used to carry — see RateLimitOptions.
+var rateLimits = builder.Configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>()
+    ?? new RateLimitOptions();
+
+if (!rateLimits.IsValid)
+{
+    // Fails startup rather than serving traffic with a broken edge. A non-positive permit limit does
+    // not relax the limiter, it rejects everything — and a zero window divides by nothing.
+    throw new InvalidOperationException(
+        "RateLimits configuration is invalid: every permit limit and the window must be positive.");
+}
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -217,6 +256,23 @@ builder.Services.AddRateLimiter(options =>
         return ValueTask.CompletedTask;
     };
 
+    // Stacks on top of the global limiter above. The slug-check endpoint is authenticated, so `sub` is
+    // normally present; the IP fallback is there so a misconfiguration degrades to a bucket rather
+    // than to no limit at all.
+    options.AddPolicy(RateLimiterPolicies.SlugCheck, httpContext =>
+    {
+        var partition = httpContext.User.FindFirst("sub")?.Value
+            ?? $"ip:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+        return RateLimitPartition.GetFixedWindowLimiter($"slug-check:{partition}", _ =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimits.SlugCheckPermitLimit,
+                Window = rateLimits.Window,
+                QueueLimit = 0,
+            });
+    });
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
         var sub = httpContext.User.FindFirst("sub")?.Value;
@@ -225,8 +281,8 @@ builder.Services.AddRateLimiter(options =>
             return RateLimitPartition.GetFixedWindowLimiter($"sub:{sub}", _ =>
                 new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 100,
-                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = rateLimits.AuthenticatedPermitLimit,
+                    Window = rateLimits.Window,
                     QueueLimit = 0,
                 });
         }
@@ -237,8 +293,8 @@ builder.Services.AddRateLimiter(options =>
             return RateLimitPartition.GetFixedWindowLimiter($"client:{clientId}", _ =>
                 new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 1000,
-                    Window = TimeSpan.FromMinutes(1),
+                    PermitLimit = rateLimits.ClientPermitLimit,
+                    Window = rateLimits.Window,
                     QueueLimit = 0,
                 });
         }
@@ -247,8 +303,8 @@ builder.Services.AddRateLimiter(options =>
         return RateLimitPartition.GetFixedWindowLimiter($"ip:{ip}", _ =>
             new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 20,
-                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = rateLimits.AnonymousPermitLimit,
+                Window = rateLimits.Window,
                 QueueLimit = 0,
             });
     });
@@ -288,6 +344,12 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+
+// Serves wwwroot/css/{tokens,sign-in}.css for the connect/authorize sign-in page (1B.4d) — the one
+// screen in the app that's server-rendered HTML instead of the Angular bundle, so it needs its own
+// static assets. Anonymous and unauthenticated by nature; placed before UseAuthentication so a request
+// for these two files never runs through the pipeline built for API routes.
+app.UseStaticFiles();
 
 app.UseAuthentication();
 // After authentication so HttpContext.User carries whatever claims a token has — even one that
