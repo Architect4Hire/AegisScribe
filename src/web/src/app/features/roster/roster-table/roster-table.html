@@ -1,4 +1,11 @@
 <section class="roster">
+  <!--
+    8.5's first-run panel. It decides for itself whether to render at all — officer-only, hidden once
+    every step is done or the viewer has dismissed it for this community — so there is no condition
+    here. A plain member sees the roster's own empty state below and nothing else.
+  -->
+  <scribe-first-run-checklist [tenantSlug]="tenantSlug()" />
+
   <header class="roster-head">
     <h1 class="roster-title">Roster</h1>
     <div class="roster-sorts" role="group" aria-label="Sort the roster">

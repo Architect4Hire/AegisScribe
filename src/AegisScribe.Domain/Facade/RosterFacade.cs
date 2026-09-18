@@ -1,5 +1,6 @@
 using AegisScribe.Domain.Business;
 using AegisScribe.Domain.Data;
+using AegisScribe.Domain.Managers.Models.ServiceModels;
 using AegisScribe.Domain.Managers.Models.ViewModels;
 using FluentValidation;
 
@@ -19,6 +20,7 @@ public class RosterFacade(
     IValidator<ListRosterViewModel> listValidator,
     IValidator<LinkAltViewModel> linkAltValidator,
     IValidator<AddRosterEntryViewModel> addValidator,
+    IValidator<ImportGuildRosterViewModel> importValidator,
     IValidator<SetRosterRankViewModel> rankValidator,
     IValidator<SetOfficerNoteViewModel> noteValidator) : IRosterFacade
 {
@@ -34,6 +36,16 @@ public class RosterFacade(
         await addValidator.ValidateAndThrowAsync(viewModel, ct);
 
         return await business.AddAsync(viewModel, ct);
+    }
+
+    // Not cached, and nothing to invalidate either: the roster read below is uncached for the reasons
+    // at the top of this file, so an import has no stale page to leave behind.
+    public async Task<RosterImportServiceModel?> ImportFromGuildAsync(
+        ImportGuildRosterViewModel viewModel, CancellationToken ct)
+    {
+        await importValidator.ValidateAndThrowAsync(viewModel, ct);
+
+        return await business.ImportFromGuildAsync(viewModel, ct);
     }
 
     public async Task<bool> SetRankAsync(

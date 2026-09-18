@@ -9,6 +9,7 @@ import {
   RosterSort,
   TenantRankServiceModel,
 } from '../../../models/roster.models';
+import { FirstRunChecklist } from '../../tenancy/first-run-checklist/first-run-checklist';
 import { EmptyState } from '../../../shared/empty-state/empty-state';
 import { RankPill } from '../../../shared/rank-pill/rank-pill';
 import { Skeleton } from '../../../shared/skeleton/skeleton';
@@ -41,8 +42,12 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // rank the game reports are different facts, and neither derives from the other (tenancy.md). They are
 // rendered differently on purpose — a pill for the community's, plain mono text for the game's — so
 // nothing implies one is computed from the other.
+//
+// It also hosts the first-run checklist (8.5), which is why this screen is where /t/{slug} redirects:
+// the roster is a community's landing page, and the checklist is an aside above it that hides itself
+// for a plain member, for a set-up community, and for anyone who has dismissed it.
 @Component({
-  imports: [EmptyState, RankPill, RouterLink, Skeleton, StatusPill],
+  imports: [EmptyState, FirstRunChecklist, RankPill, RouterLink, Skeleton, StatusPill],
   selector: 'scribe-roster-table',
   styleUrl: './roster-table.scss',
   templateUrl: './roster-table.html',

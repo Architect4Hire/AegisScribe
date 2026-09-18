@@ -12,6 +12,8 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
+    public DbSet<TenantInvitation> TenantInvitations => Set<TenantInvitation>();
+    public DbSet<TenantJoinRequest> TenantJoinRequests => Set<TenantJoinRequest>();
     public DbSet<TenantSyncBudgetWindow> TenantSyncBudgetWindows => Set<TenantSyncBudgetWindow>();
     public DbSet<TenantGuild> TenantGuilds => Set<TenantGuild>();
     public DbSet<TenantRank> TenantRanks => Set<TenantRank>();
@@ -65,6 +67,59 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
 
             // Serves "list my tenants" (GET /api/v1/me), which isn't filtered by tenant first.
             entity.HasIndex(m => m.UserId);
+        });
+
+        // The two membership-lifecycle tables. Both carry TenantId and neither is ITenantScoped, for
+        // the reason spelled out on each entity: the person on the other side of both is NOT a member
+        // yet, so there is no resolved tenant to filter by or stamp from.
+        modelBuilder.Entity<TenantInvitation>(entity =>
+        {
+            entity.Property(i => i.TokenHash).HasMaxLength(32).IsRequired();
+            entity.Property(i => i.Note).HasMaxLength(100);
+            entity.Property(i => i.CreatedByUserId).IsRequired();
+
+            entity.HasOne<Tenant>()
+                .WithMany()
+                .HasForeignKey(i => i.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // NOT TenantId-first, and that is the exception the whole design rests on: acceptance
+            // looks a row up by token alone, with no tenant in hand, and the tenant it lands in is
+            // whatever this row says. Unique across every community, so one token can never name two.
+            entity.HasIndex(i => i.TokenHash).IsUnique();
+
+            // The officer-facing list, which does have a tenant.
+            entity.HasIndex(i => new { i.TenantId, i.CreatedAt });
+        });
+
+        modelBuilder.Entity<TenantJoinRequest>(entity =>
+        {
+            entity.Property(r => r.UserId).IsRequired();
+            entity.Property(r => r.Message).HasMaxLength(500);
+
+            // Stored as the NAME, so inserting an enum member never rewrites decided history.
+            entity.Property(r => r.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+
+            entity.HasOne<Tenant>()
+                .WithMany()
+                .HasForeignKey(r => r.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One PENDING request per person per community — filtered, so a declined request stays as
+            // history and the same person may ask again later. The filter is what makes this a rule
+            // about outstanding requests rather than a one-shot-forever ban, and it is the authority
+            // under a race: Business pre-checks for the readable answer, this decides it.
+            entity.HasIndex(r => new { r.TenantId, r.UserId })
+                .IsUnique()
+                .HasFilter($"[{nameof(TenantJoinRequest.Status)}] = '{nameof(JoinRequestStatus.Pending)}'");
+
+            // The officer's queue.
+            entity.HasIndex(r => new { r.TenantId, r.Status, r.RequestedAt });
         });
 
         modelBuilder.Entity<TenantSyncBudgetWindow>(entity =>

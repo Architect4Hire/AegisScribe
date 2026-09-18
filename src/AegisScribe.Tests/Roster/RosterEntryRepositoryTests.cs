@@ -1,3 +1,4 @@
+using AegisScribe.Domain.Context;
 using AegisScribe.Domain.Data;
 using AegisScribe.Domain.Managers.Models.Domain;
 using AegisScribe.Domain.Managers.Models.ServiceModels;
@@ -149,11 +150,11 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
 
         await using (var aDb = await TenantSeeding.OpenDbContextAsync(fixture, tenantA.Id))
         {
-            Assert.Equal(2, await new RosterEntryRepository(aDb).CountByRankAsync(aRank, CancellationToken.None));
+            Assert.Equal(2, await RepositoryFor(aDb, tenantA.Id).CountByRankAsync(aRank, CancellationToken.None));
         }
 
         await using var bDb = await TenantSeeding.OpenDbContextAsync(fixture, tenantB.Id);
-        Assert.Equal(0, await new RosterEntryRepository(bDb).CountByRankAsync(aRank, CancellationToken.None));
+        Assert.Equal(0, await RepositoryFor(bDb, tenantB.Id).CountByRankAsync(aRank, CancellationToken.None));
     }
 
     [Fact]
@@ -170,11 +171,11 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
 
         await using (var aDb = await TenantSeeding.OpenDbContextAsync(fixture, tenantA.Id))
         {
-            Assert.True(await new RosterEntryRepository(aDb).HasAltsAsync(mainInA, CancellationToken.None));
+            Assert.True(await RepositoryFor(aDb, tenantA.Id).HasAltsAsync(mainInA, CancellationToken.None));
         }
 
         await using var bDb = await TenantSeeding.OpenDbContextAsync(fixture, tenantB.Id);
-        Assert.False(await new RosterEntryRepository(bDb).HasAltsAsync(mainInA, CancellationToken.None));
+        Assert.False(await RepositoryFor(bDb, tenantB.Id).HasAltsAsync(mainInA, CancellationToken.None));
     }
 
     [Fact]
@@ -202,6 +203,18 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
         await Assert.ThrowsAsync<TenantStampMismatchException>(() => db.SaveChangesAsync());
     }
 
+    // The repository takes ITenantContext for one thing only — naming the community TryLinkAltAsync
+    // locks. Every read below still leans on the ambient query filter, which is what the isolation
+    // assertions in this file are actually testing, so this must match the tenant the DbContext was
+    // opened for or those assertions would be testing the wrong thing.
+    private static RosterEntryRepository RepositoryFor(AegisScribeDbContext db, Guid tenantId)
+    {
+        var tenantContext = new TenantContext();
+        tenantContext.SetTenant(tenantId);
+
+        return new RosterEntryRepository(db, tenantContext);
+    }
+
     private async Task<IReadOnlyList<RosterEntryServiceModel>> ListAsync(
         Guid tenantId,
         RosterSort sort,
@@ -211,7 +224,7 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
         bool includeOfficerNote = false)
     {
         await using var db = await TenantSeeding.OpenDbContextAsync(fixture, tenantId);
-        var repository = new RosterEntryRepository(db);
+        var repository = RepositoryFor(db, tenantId);
 
         var mainIds = await repository.ListMainIdsAsync(sort, afterKey, afterId, take, CancellationToken.None);
 

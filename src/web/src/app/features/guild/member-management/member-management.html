@@ -1,0 +1,304 @@
+<section class="member-management">
+  <h1 class="mm-title">Members</h1>
+
+  @switch (state()) {
+    @case ('loading') {
+      <scribe-skeleton [height]="52" [count]="5" />
+    }
+    @case ('error') {
+      <scribe-empty-state
+        heading="Couldn't load this community's members"
+        body="Something went wrong reaching AegisScribe. Check your connection and try again."
+        actionLabel="Try again"
+        variant="error"
+        (action)="retry()"
+      />
+    }
+    @case ('loaded') {
+      @if (writeError(); as message) {
+        <!--
+          A failed write, reported above the panels rather than replacing them. The people on screen
+          stay on screen; only the one action failed.
+        -->
+        <p class="mm-write-error" role="alert">{{ message }}</p>
+      }
+
+      @if (isOfficer()) {
+        <section class="mm-section">
+          <h2 class="mm-heading">Requests to join</h2>
+          <p class="mm-sub">
+            People who have asked to join this community. Approving admits them at the role you
+            choose; declining closes the request without telling them anything more.
+          </p>
+
+          @if (pendingRequests().length === 0) {
+            <scribe-empty-state
+              heading="No requests waiting"
+              body="When somebody asks to join, they appear here for an officer to approve or decline. An owner controls whether this community accepts requests at all."
+            />
+          } @else {
+            <ul class="mm-list">
+              @for (request of pendingRequests(); track request.id) {
+                <li class="mm-request">
+                  <div class="mm-person">
+                    <span class="mm-name">{{ displayNameOf(request) }}</span>
+                    <span class="mm-meta">asked {{ asDate(request.requestedAt) }}</span>
+                  </div>
+
+                  @if (request.message) {
+                    <!--
+                      The applicant's own words, written by somebody outside this community. Rendered
+                      as text through interpolation and never as markup.
+                    -->
+                    <p class="mm-message">{{ request.message }}</p>
+                  }
+
+                  <div class="mm-actions">
+                    <label class="mm-inline-label" [attr.for]="'approve-as-' + request.id">
+                      Admit as
+                    </label>
+                    <select
+                      #approveAs
+                      class="field mm-role"
+                      [id]="'approve-as-' + request.id"
+                      [value]="'Member'"
+                    >
+                      @for (role of grantableRoles(); track role) {
+                        <option [value]="role">{{ role }}</option>
+                      }
+                    </select>
+                    <button
+                      class="btn btn-primary btn-sm"
+                      type="button"
+                      (click)="approve(request, approveAs.value)"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      class="btn btn-danger btn-sm"
+                      type="button"
+                      [attr.aria-label]="'Decline ' + displayNameOf(request)"
+                      (click)="decline(request)"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="mm-section">
+          <h2 class="mm-heading">Invitations</h2>
+          <p class="mm-sub">
+            A single-use link that grants one role in this community. We don't send these — copy the
+            link and pass it on yourself.
+          </p>
+
+          @if (joinLink(); as link) {
+            <!--
+              The one and only time this token is readable. The server kept a hash, so nothing can
+              show it again, and this app writes it nowhere.
+            -->
+            <div class="mm-token" role="status">
+              <p class="mm-token-warning">
+                Copy this link now — it is shown once and cannot be retrieved again. Anyone holding
+                it can join this community.
+              </p>
+              <div class="mm-token-row">
+                <input
+                  class="field mm-token-link"
+                  type="text"
+                  readonly
+                  aria-label="Invitation link"
+                  [value]="link"
+                />
+                <button class="btn btn-secondary btn-sm" type="button" (click)="copyJoinLink()">
+                  {{ copied() ? 'Copied' : 'Copy' }}
+                </button>
+                <button class="btn btn-ghost btn-sm" type="button" (click)="dismissToken()">
+                  Done
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="mm-create">
+            <div class="mm-field">
+              <label class="label" for="invite-role">Role</label>
+              <select
+                id="invite-role"
+                class="field"
+                [value]="newInvitationRole()"
+                (change)="newInvitationRole.set($any($event.target).value)"
+              >
+                @for (role of grantableRoles(); track role) {
+                  <option [value]="role">{{ role }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="mm-field mm-field-grow">
+              <label class="label" for="invite-note">Note</label>
+              <input
+                id="invite-note"
+                class="field"
+                type="text"
+                maxlength="80"
+                placeholder="Who is this for?"
+                [value]="newInvitationNote()"
+                (input)="newInvitationNote.set($any($event.target).value)"
+              />
+            </div>
+
+            <div class="mm-field">
+              <label class="label" for="invite-expiry">Expires in (days)</label>
+              <input
+                id="invite-expiry"
+                class="field mm-expiry"
+                type="number"
+                min="1"
+                max="30"
+                [value]="newInvitationExpiryDays()"
+                (input)="newInvitationExpiryDays.set(+$any($event.target).value)"
+              />
+            </div>
+
+            <button class="btn btn-primary" type="button" (click)="createInvitation()">
+              Create invitation
+            </button>
+          </div>
+
+          @if (orderedInvitations().length === 0) {
+            <scribe-empty-state
+              heading="No invitations yet"
+              body="Create one above and pass the link to the person you want to bring in."
+            />
+          } @else {
+            <ul class="mm-list">
+              @for (invitation of orderedInvitations(); track invitation.id) {
+                <li class="mm-invitation">
+                  <scribe-status-pill
+                    [state]="statusStateOf(invitation.status)"
+                    [label]="invitation.status"
+                  />
+                  <span class="mm-invite-role">{{ invitation.role }}</span>
+                  <span class="mm-invite-note">{{ invitation.note || 'No note' }}</span>
+                  <span class="mm-meta">expires {{ asDate(invitation.expiresAt) }}</span>
+
+                  @if (invitation.status === 'Pending') {
+                    <button
+                      class="btn btn-danger btn-sm mm-push-right"
+                      type="button"
+                      [attr.aria-label]="'Revoke the invitation for ' + invitation.role"
+                      (click)="revokeInvitation(invitation)"
+                    >
+                      Revoke
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      <section class="mm-section">
+        <h2 class="mm-heading">People</h2>
+        <p class="mm-sub">
+          Everybody in this community, and the characters each of them has claimed here. A member
+          with nothing claimed has not told the community which character is theirs yet.
+        </p>
+
+        @if (members().length === 0) {
+          <scribe-empty-state
+            heading="Nobody here yet"
+            body="Invite somebody above, and they appear here once they accept."
+          />
+        } @else {
+          <ul class="mm-list">
+            @for (member of members(); track member.userId) {
+              <li class="mm-member">
+                <div class="mm-person">
+                  <span class="mm-name">{{ displayNameOf(member) }}</span>
+                  <span class="mm-meta">joined {{ asDate(member.joinedAt) }}</span>
+                </div>
+
+                <div class="mm-claims">
+                  @if (member.claimedCharacters.length === 0) {
+                    <span class="mm-unclaimed">No character claimed</span>
+                  } @else {
+                    @for (character of member.claimedCharacters; track character.characterId) {
+                      <!--
+                        The class colour is set once here, as a custom property on the chip, and
+                        inherited by the name inside it. Never a class→hex map in TypeScript.
+                      -->
+                      <a
+                        class="mm-claim"
+                        [style.--class-color]="character.classColor"
+                        [routerLink]="[
+                          '/t',
+                          tenantSlug(),
+                          'characters',
+                          character.region,
+                          character.realmSlug,
+                          character.name,
+                        ]"
+                      >
+                        <span class="mm-claim-name">{{ character.name }}</span>
+                        <span class="mm-claim-realm">{{ character.realmSlug }}</span>
+                      </a>
+                    }
+                  }
+                </div>
+
+                @if (canActOn(member)) {
+                  <div class="mm-actions mm-push-right">
+                    <label class="mm-inline-label" [attr.for]="'role-' + member.userId">Role</label>
+                    <select
+                      class="field mm-role"
+                      [id]="'role-' + member.userId"
+                      [value]="member.role"
+                      (change)="changeRole(member, $any($event.target).value)"
+                    >
+                      @for (role of grantableRoles(); track role) {
+                        <option [value]="role">{{ role }}</option>
+                      }
+                    </select>
+                    <button
+                      class="btn btn-danger btn-sm"
+                      type="button"
+                      [attr.aria-label]="'Remove ' + displayNameOf(member)"
+                      (click)="remove(member)"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                } @else {
+                  <!--
+                    Read-only for everybody else: a plain member, the actor themselves, and anybody an
+                    officer does not outrank. The role still shows — who holds what is not a secret
+                    inside a community.
+                  -->
+                  <scribe-status-pill class="mm-push-right" state="neutral" [label]="member.role" />
+                }
+              </li>
+            }
+          </ul>
+
+          @if (nextCursor()) {
+            <button
+              class="btn btn-secondary mm-more"
+              type="button"
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              {{ loadingMore() ? 'Loading…' : 'Load more' }}
+            </button>
+          }
+        }
+      </section>
+    }
+  }
+</section>

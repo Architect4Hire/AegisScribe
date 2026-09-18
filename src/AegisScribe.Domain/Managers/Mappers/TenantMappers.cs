@@ -23,5 +23,6 @@ public static class TenantMappers
         Slug = tenant.Slug,
         Name = tenant.Name,
         TimeZoneId = tenant.TimeZoneId,
+        AcceptsJoinRequests = tenant.AcceptsJoinRequests,
     };
 }

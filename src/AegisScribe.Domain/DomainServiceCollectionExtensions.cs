@@ -90,6 +90,23 @@ public static class DomainServiceCollectionExtensions
         services.AddScoped<ICharacterClaimBusiness, CharacterClaimBusiness>();
         services.AddScoped<ICharacterClaimFacade, CharacterClaimFacade>();
 
+        // The membership lifecycle. Three repositories rather than one because they are three tables
+        // with three lifetimes; the data layer is what composes them, and it also borrows the claim and
+        // roster repositories so removing a member can take that member's rows with it.
+        services.AddScoped<ITenantMembershipRepository, TenantMembershipRepository>();
+        services.AddScoped<ITenantInvitationRepository, TenantInvitationRepository>();
+        services.AddScoped<ITenantJoinRequestRepository, TenantJoinRequestRepository>();
+        services.AddScoped<IMembershipDataLayer, MembershipDataLayer>();
+        services.AddScoped<IMembershipBusiness, MembershipBusiness>();
+        services.AddScoped<IMembershipFacade, MembershipFacade>();
+
+        // The first-run checklist's one read. It owns no repository of its own — it borrows the four
+        // that already own those tables, which is the whole reason it is a data layer rather than a
+        // fifth repository counting other people's rows.
+        services.AddScoped<ITenantOverviewDataLayer, TenantOverviewDataLayer>();
+        services.AddScoped<ITenantOverviewBusiness, TenantOverviewBusiness>();
+        services.AddScoped<ITenantOverviewFacade, TenantOverviewFacade>();
+
         // ITenantSyncBudget reads the tenant id from its caller, never from ambient state, so a
         // background job could use it without a resolved tenant context.
         services.AddScoped<ISyncBudgetRepository, SyncBudgetRepository>();

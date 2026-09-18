@@ -25,5 +25,9 @@ public interface ITenantRepository
 
     Task UpdateNameAsync(Tenant tenant, CancellationToken ct);
 
+    // One column, set directly rather than through a read-modify-write of the whole row, so a
+    // concurrent rename cannot be clobbered by a policy change that loaded the tenant first.
+    Task SetJoinPolicyAsync(Guid tenantId, bool acceptsJoinRequests, CancellationToken ct);
+
     Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct);
 }

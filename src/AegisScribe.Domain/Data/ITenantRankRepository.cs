@@ -11,6 +11,10 @@ public interface ITenantRankRepository
     // A list read projects straight to the outbound ServiceModel in SQL (add-endpoint skill).
     Task<IReadOnlyList<TenantRankServiceModel>> ListAsync(CancellationToken ct);
 
+    // How many ranks this community has named — counted in SQL, because the first-run checklist wants
+    // the number and not the ladder.
+    Task<int> CountAsync(CancellationToken ct);
+
     Task<TenantRank?> FindAsync(Guid id, CancellationToken ct);
 
     // excludingId is how an update keeps its own name: without it, saving a rank unchanged would

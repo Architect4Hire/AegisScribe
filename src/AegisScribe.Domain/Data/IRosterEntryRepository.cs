@@ -35,6 +35,10 @@ public interface IRosterEntryRepository
     // count towards nor protect it.
     Task<int> CountByRankAsync(Guid rankId, CancellationToken ct);
 
+    // Every entry this community holds, mains and alts alike — the first-run checklist only asks
+    // whether the roster has anything on it at all.
+    Task<int> CountAsync(CancellationToken ct);
+
     // Null for an id belonging to another community, which is what makes every cross-tenant roster
     // write a 404.
     Task<RosterEntry?> FindEntityAsync(Guid rosterEntryId, CancellationToken ct);
@@ -49,6 +53,45 @@ public interface IRosterEntryRepository
     Task<bool> RankExistsAsync(Guid rankId, CancellationToken ct);
 
     Task<bool> IsOnRosterAsync(Guid characterId, CancellationToken ct);
+
+    /// <summary>
+    /// Which of <paramref name="characterIds"/> are already on this community's roster.
+    /// </summary>
+    /// <remarks>
+    /// The diff an import subtracts. One query over the candidate set rather than a probe per member:
+    /// a roster import is the one roster operation whose input is measured in hundreds.
+    /// </remarks>
+    Task<IReadOnlyList<Guid>> ListRosteredCharacterIdsAsync(
+        IReadOnlyList<Guid> characterIds, CancellationToken ct);
+
+    /// <summary>
+    /// Entries whose character belongs to none of the guilds this community currently follows,
+    /// newest first, capped at <paramref name="take"/> — plus the full count.
+    /// </summary>
+    /// <remarks>
+    /// What an import reports instead of deleting. Both halves run under the query filter on
+    /// RosterEntries AND on TenantGuilds, so "linked" means linked by THIS community: a guild the
+    /// community next door follows does not keep a row out of this list.
+    /// </remarks>
+    Task<(IReadOnlyList<UnaffiliatedRosterEntryServiceModel> Entries, int Total)> ListNotInAnyLinkedGuildAsync(
+        int take, CancellationToken ct);
+
+    /// <summary>
+    /// Removes this community's roster entries for the given characters, detaching any alts that
+    /// pointed at them first.
+    /// </summary>
+    /// <remarks>
+    /// The detach is not tidiness. An officer may link an alt across two members, so a departing
+    /// member's entry can be somebody ELSE's main; the alt FK is Restrict, so deleting without
+    /// detaching is a 500. Clearing the pointer leaves the other member's character on the roster as a
+    /// main — which is the honest outcome, since the relationship it recorded no longer has two ends.
+    /// </remarks>
+    Task RemoveEntriesForCharactersAsync(IReadOnlyList<Guid> characterIds, CancellationToken ct);
+
+    // Stages the whole import. TenantId is stamped per row by the SaveChanges interceptor, never
+    // assigned here (tenancy.md) — which is also what makes a cross-tenant import impossible to write
+    // by accident.
+    Task AddRangeAsync(IReadOnlyList<RosterEntry> entries, CancellationToken ct);
 
     // Stages only — every roster write is paired with an audit row inside one transaction. TenantId is
     // stamped by the SaveChanges interceptor, never assigned here (tenancy.md).

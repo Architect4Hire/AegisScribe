@@ -143,6 +143,41 @@ public class AltLinkingTests(AegisScribeAppFixture fixture)
     }
 
     [Fact]
+    public async Task LinkingIntoAndOutOfTheSameEntryAtOnce_CannotProduceDepthTwo()
+    {
+        // The interleaving TwoOppositeLinksRacing does NOT cover, and the one the last-owner bug in 8.3
+        // taught me to look for.
+        //
+        // There, both requests read the row the other was writing, so the second blocked. Here they do
+        // not: A→B locks A and reads B, while C→A locks C and reads A. The SET being guarded — "is
+        // anything pointing at A" — is read by a request that is updating neither A nor the alt it is
+        // looking for. That is the shape where two guards can both pass against pre-commit state.
+        //
+        // Exactly one must win. If A→B lands, A is an alt, so rule 3 must refuse C→A; if C→A lands, A
+        // has alts, so rule 4 must refuse A→B. Both landing leaves A simultaneously somebody's alt AND
+        // somebody's main, which is the two-level roster the whole design forecloses.
+        var member = await TenantSide.CreateAsync(fixture, "Alt Depth Race", TenantRole.Member);
+        var a = await SeedEntryAsync(member.Tenant.Id, "Thornwake", claimedBy: member.UserId);
+        var b = await SeedEntryAsync(member.Tenant.Id, "Thornbite", claimedBy: member.UserId);
+        var c = await SeedEntryAsync(member.Tenant.Id, "Thornhusk", claimedBy: member.UserId);
+
+        var responses = await Task.WhenAll(
+            LinkAsync(member, a, b),
+            LinkAsync(member, c, a));
+
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.NoContent));
+
+        var roster = await ListAsync(member);
+        var entryA = Assert.Single(roster, r => r.Id == a);
+
+        // Stated positively: A may be an alt, or A may have alts, but never both.
+        var aIsAnAlt = entryA.MainRosterEntryId is not null;
+        var aHasAlts = roster.Any(r => r.MainRosterEntryId == a);
+
+        Assert.False(aIsAnAlt && aHasAlts, "A ended up both an alt and a main — the roster is two levels deep.");
+    }
+
+    [Fact]
     public async Task AMemberClaimingOnlyOneEnd_Is403()
     {
         // Linking asserts a relationship BETWEEN two characters, so owning one end is not enough.

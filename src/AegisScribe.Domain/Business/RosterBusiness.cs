@@ -68,6 +68,120 @@ public class RosterBusiness(
         return entry.Id;
     }
 
+    // How many unaffiliated entries the response carries. A cap rather than the whole set: this is a
+    // prompt to go and look, not the roster screen (api-contract.md — every list has a server-enforced
+    // maximum). The full number rides alongside.
+    private const int UnaffiliatedSampleSize = 50;
+
+    public async Task<RosterImportServiceModel?> ImportFromGuildAsync(
+        ImportGuildRosterViewModel viewModel, CancellationToken ct)
+    {
+        var userId = RequireUserId();
+
+        // Read through the tenant-scoped link, never the global Guild table. A guild the community
+        // next door follows resolves to nothing under the query filter, so importing one reads as
+        // "no such guild" rather than as a refusal that confirms it exists.
+        if (await dataLayer.FindGuildLinkAsync(viewModel.GuildId, ct) is null)
+        {
+            return null;
+        }
+
+        ImportCounts counts;
+
+        try
+        {
+            counts = await ImportOnceAsync(viewModel.GuildId, userId, ct);
+        }
+        catch (CharacterAlreadyOnRosterException)
+        {
+            // The diff is a read followed by a write, so a second import — or an officer adding one
+            // character by hand — can land a row in between. The unique index refuses the duplicate
+            // rather than letting the roster double, and recomputing the diff imports whoever is
+            // genuinely still missing.
+            //
+            // Once, not in a loop: a second collision means sustained contention, and retrying under
+            // it would hide the problem behind a request that never returns.
+            counts = await ImportOnceAsync(viewModel.GuildId, userId, ct);
+        }
+
+        var (unaffiliated, unaffiliatedTotal) =
+            await dataLayer.ListNotInAnyLinkedGuildAsync(UnaffiliatedSampleSize, ct);
+
+        return new RosterImportServiceModel
+        {
+            Imported = counts.Imported,
+            AlreadyOnRoster = counts.AlreadyOnRoster,
+            NotInAnyLinkedGuild = unaffiliated,
+            NotInAnyLinkedGuildCount = unaffiliatedTotal,
+        };
+    }
+
+    // What one import run did. Both halves come from the same diff, so they always agree with each
+    // other — recomputing "already on roster" afterwards would count the rows this run just inserted.
+    private readonly record struct ImportCounts(int Imported, int AlreadyOnRoster);
+
+    private async Task<ImportCounts> ImportOnceAsync(Guid guildId, string userId, CancellationToken ct)
+    {
+        var members = await dataLayer.ListGuildMemberCharacterIdsAsync(guildId, ct);
+
+        if (members.Count == 0)
+        {
+            return new ImportCounts(Imported: 0, AlreadyOnRoster: 0);
+        }
+
+        var alreadyRostered = (await dataLayer.ListRosteredCharacterIdsAsync(members, ct)).ToHashSet();
+        var missing = members.Where(characterId => !alreadyRostered.Contains(characterId)).ToList();
+
+        // Nothing to do, and deliberately no audit row: an import that added nobody did not happen,
+        // in the same sense as detaching an alt that was never attached.
+        if (missing.Count == 0)
+        {
+            return new ImportCounts(Imported: 0, AlreadyOnRoster: alreadyRostered.Count);
+        }
+
+        var joinedAt = timeProvider.GetUtcNow();
+
+        var entries = missing
+            .Select(characterId => new RosterEntry
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = characterId,
+                // Unranked, NOT derived from GuildMember.BlizzardRank. The game's rank and the
+                // community's ladder are unrelated facts (tenancy.md) and an officer assigns the
+                // second one deliberately.
+                TenantRankId = null,
+                // A main. Who is somebody's alt is a judgement this community has not made yet, and
+                // Blizzard has no opinion to borrow.
+                MainRosterEntryId = null,
+                // No OfficerNote, and no CharacterClaim anywhere: Blizzard cannot tell us which of
+                // our members plays which character, so every imported row starts unclaimed and each
+                // member claims their own (7.2b).
+                //
+                // TenantId is absent on purpose — the interceptor stamps it (tenancy.md).
+                JoinedAt = joinedAt,
+            })
+            .ToList();
+
+        await dataLayer.ImportAsync(
+            entries,
+            new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                ActorUserId = userId,
+                // No subject: an import acts on the roster as a whole, not on one named person.
+                SubjectUserId = null,
+                Action = AuditAction.RosterImportedFromGuild,
+                TargetType = nameof(TenantGuild),
+                TargetId = guildId,
+                Before = $"{alreadyRostered.Count} of {members.Count} members on roster",
+                After = $"{alreadyRostered.Count + entries.Count} of {members.Count} members on roster",
+                OccurredAt = joinedAt,
+            },
+            ct);
+
+        return new ImportCounts(Imported: entries.Count, AlreadyOnRoster: alreadyRostered.Count);
+    }
+
     public async Task<bool> SetRankAsync(
         Guid rosterEntryId, SetRosterRankViewModel viewModel, CancellationToken ct)
     {

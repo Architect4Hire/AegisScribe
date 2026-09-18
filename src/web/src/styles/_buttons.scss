@@ -15,9 +15,47 @@
   color: var(--ink);
   line-height: 1.3;
 }
-.btn-primary { background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
-.btn-primary:hover { background: var(--brass-bright); border-color: var(--brass-bright); }
-.btn-secondary { background: var(--surface-2); border-color: var(--line-strong); color: var(--ink); }
-.btn-secondary:hover { background: var(--surface-3); border-color: var(--brass-line); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-sm { font-size: var(--t-xs); padding: 4px 10px; }
+.btn-primary {
+  background: var(--brass);
+  color: var(--brass-ink);
+  border-color: var(--brass);
+}
+.btn-primary:hover {
+  background: var(--brass-bright);
+  border-color: var(--brass-bright);
+}
+.btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+.btn-secondary:hover {
+  background: var(--surface-3);
+  border-color: var(--brass-line);
+}
+.btn-ghost {
+  color: var(--ink-2);
+  border-color: transparent;
+}
+.btn-ghost:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+// Outlined, never filled. The reference says why in as many words: filled red invites the mis-click it
+// warns about. Remove, revoke and decline all wear this.
+.btn-danger {
+  background: transparent;
+  border-color: var(--critical);
+  color: var(--critical);
+}
+.btn-danger:hover {
+  background: var(--critical-bg);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-sm {
+  font-size: var(--t-xs);
+  padding: 4px 10px;
+}

@@ -32,6 +32,18 @@ public class CharacterClaimRepository(AegisScribeDbContext db) : ICharacterClaim
     public Task<CharacterClaim?> FindEntityByCharacterAsync(Guid characterId, CancellationToken ct) =>
         db.CharacterClaims.FirstOrDefaultAsync(claim => claim.CharacterId == characterId, ct);
 
+    public async Task<IReadOnlyList<Guid>> ListCharacterIdsClaimedByAsync(string userId, CancellationToken ct) =>
+        await db.CharacterClaims
+            .AsNoTracking()
+            .Where(claim => claim.UserId == userId)
+            .Select(claim => claim.CharacterId)
+            .ToListAsync(ct);
+
+    public async Task RemoveClaimsByUserAsync(string userId, CancellationToken ct) =>
+        await db.CharacterClaims
+            .Where(claim => claim.UserId == userId)
+            .ExecuteDeleteAsync(ct);
+
     public async Task<CharacterClaim> AddAsync(CharacterClaim claim, CancellationToken ct)
     {
         db.CharacterClaims.Add(claim);

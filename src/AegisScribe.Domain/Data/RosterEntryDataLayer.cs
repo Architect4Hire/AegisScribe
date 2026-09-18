@@ -1,4 +1,5 @@
 using AegisScribe.Domain.Managers.Models.Domain;
+using AegisScribe.Domain.Managers.Models.ServiceModels;
 
 namespace AegisScribe.Domain.Data;
 
@@ -16,6 +17,8 @@ public class RosterEntryDataLayer(
     ICharacterClaimRepository claims,
     ICharacterRepository characters,
     ITenantRepository tenants,
+    ITenantGuildRepository guildLinks,
+    IGuildRepository guilds,
     IAuditLogRepository auditLog) : IRosterEntryDataLayer
 {
     public async Task<RosterPage> ListAsync(
@@ -44,6 +47,28 @@ public class RosterEntryDataLayer(
 
     public Task<bool> CharacterExistsAsync(Guid characterId, CancellationToken ct) =>
         characters.ExistsAsync(characterId, ct);
+
+    public Task<TenantGuild?> FindGuildLinkAsync(Guid guildId, CancellationToken ct) =>
+        guildLinks.FindAsync(guildId, ct);
+
+    public Task<IReadOnlyList<Guid>> ListGuildMemberCharacterIdsAsync(Guid guildId, CancellationToken ct) =>
+        guilds.ListMemberCharacterIdsAsync(guildId, ct);
+
+    public Task<IReadOnlyList<Guid>> ListRosteredCharacterIdsAsync(
+        IReadOnlyList<Guid> characterIds, CancellationToken ct) =>
+        repository.ListRosteredCharacterIdsAsync(characterIds, ct);
+
+    public Task<(IReadOnlyList<UnaffiliatedRosterEntryServiceModel> Entries, int Total)>
+        ListNotInAnyLinkedGuildAsync(int take, CancellationToken ct) =>
+        repository.ListNotInAnyLinkedGuildAsync(take, ct);
+
+    // The audit row is not optional here, unlike every other write in this file. Those are audited
+    // only when an officer reaches into somebody else's data; an import has no single subject to
+    // compare the actor against, and a bulk change to who is on the roster is exactly what the table
+    // exists to record. Business does not call this at all when there is nothing to import, so a row
+    // never claims an import that added nobody.
+    public Task ImportAsync(IReadOnlyList<RosterEntry> entries, AuditLog auditEntry, CancellationToken ct) =>
+        WriteAsync(token => repository.AddRangeAsync(entries, token), auditEntry, ct);
 
     public async Task<bool> IsClaimedByAsync(Guid characterId, string userId, CancellationToken ct) =>
         await FindClaimantAsync(characterId, ct) == userId;

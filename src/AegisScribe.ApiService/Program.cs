@@ -218,6 +218,24 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 
+    // Partitioned by caller, never by the token: putting a secret in a rate-limiter partition key is a
+    // way to get it into a metric label or a diagnostic dump, and the whole point of this endpoint's
+    // handling is that the token stays out of everything the app writes down. The anonymous preview
+    // therefore partitions on IP, and the authenticated accept on `sub`.
+    options.AddPolicy(RateLimiterPolicies.InvitationToken, httpContext =>
+    {
+        var partition = httpContext.User.FindFirst("sub")?.Value
+            ?? $"ip:{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+        return RateLimitPartition.GetFixedWindowLimiter($"invitation-token:{partition}", _ =>
+            new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimits.InvitationTokenPermitLimit,
+                Window = rateLimits.Window,
+                QueueLimit = 0,
+            });
+    });
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
         var sub = httpContext.User.FindFirst("sub")?.Value;

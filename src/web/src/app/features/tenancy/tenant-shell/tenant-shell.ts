@@ -24,12 +24,17 @@ export class TenantShell {
 
   readonly tenantSlug = input.required<string>();
 
-  // The four features these point to don't exist yet (5.7+) -- inert until they land, same as
+  // Some of these point at features that don't exist yet -- inert until they land, same as
   // TENANT_PICKER_PATH was inert from 5.5 until this task registered it.
+  //
+  // 'Members' is here for everybody, not just officers: the member list is TenantMember, so a plain
+  // member seeing who is in their community is the intended behaviour. What an officer additionally
+  // sees on that screen is decided on the screen, by the policies behind it.
   readonly navLinks = computed<NavLink[]>(() => {
     const base = `/t/${this.tenantSlug()}`;
     return [
       { label: 'Roster', path: `${base}/roster` },
+      { label: 'Members', path: `${base}/members` },
       { label: 'Calendar', path: `${base}/calendar` },
       { label: 'Armory', path: `${base}/search` },
       { label: 'Advisor', path: `${base}/advisor` },

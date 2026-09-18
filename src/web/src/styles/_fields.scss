@@ -26,8 +26,35 @@
   width: 100%;
   min-width: 0;
 }
-.field input::placeholder { color: var(--ink-3); }
-.field .icon { color: var(--ink-3); flex: none; }
+.field input::placeholder {
+  color: var(--ink-3);
+}
+.field .icon {
+  color: var(--ink-3);
+  flex: none;
+}
+
+// The reference draws .field as a wrapper around a bare <input>, and that is still the shape to reach
+// for. But a plain control often wants to BE the field — no icon, nothing else in the box — and the
+// rules above are all on `.field input`, so such a control would keep the user agent's own font and
+// its black-on-dark text. These carry the same three properties onto the control itself.
+input.field,
+select.field,
+textarea.field {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--t-sm);
+  padding: 8px 10px;
+}
+input.field::placeholder,
+textarea.field::placeholder {
+  color: var(--ink-3);
+}
+// Options are painted by the platform, not by us, so the surface has to be a real colour on both.
+select.field option {
+  background: var(--surface-2);
+  color: var(--ink);
+}
 
 .label {
   display: block;

@@ -17,7 +17,10 @@ namespace AegisScribe.ApiService.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/t/{tenantSlug}")]
 [Authorize(Policy = AuthPolicies.TenantOwner)]
-public class TenantController(ITenantFacade tenantFacade, ITenantContext tenantContext) : ControllerBase
+public class TenantController(
+    ITenantFacade tenantFacade,
+    IMembershipFacade membershipFacade,
+    ITenantContext tenantContext) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<TenantServiceModel>> Get(CancellationToken ct) =>
@@ -26,4 +29,15 @@ public class TenantController(ITenantFacade tenantFacade, ITenantContext tenantC
     [HttpPatch]
     public async Task<ActionResult<TenantServiceModel>> Rename(RenameTenantViewModel viewModel, CancellationToken ct) =>
         Ok(await tenantFacade.RenameAsync(tenantContext.TenantId, viewModel, ct));
+
+    // Its own PUT rather than a field on the PATCH above, and that is a data-safety choice: JSON
+    // cannot distinguish "field omitted" from "field set to false", so a rename sent by a UI that
+    // knows nothing about this setting would silently shut the community's door.
+    [HttpPut("join-policy")]
+    public async Task<IActionResult> SetJoinPolicy(SetJoinPolicyViewModel viewModel, CancellationToken ct)
+    {
+        await membershipFacade.SetJoinPolicyAsync(viewModel, ct);
+
+        return NoContent();
+    }
 }

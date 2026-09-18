@@ -95,6 +95,13 @@ public class GuildRepository(AegisScribeDbContext db) : IGuildRepository
     public Task<int> CountMembersAsync(Guid guildId, CancellationToken ct) =>
         db.GuildMembers.CountAsync(m => m.GuildId == guildId, ct);
 
+    public async Task<IReadOnlyList<Guid>> ListMemberCharacterIdsAsync(Guid guildId, CancellationToken ct) =>
+        await db.GuildMembers
+            .AsNoTracking()
+            .Where(m => m.GuildId == guildId)
+            .Select(m => m.CharacterId)
+            .ToListAsync(ct);
+
     public async Task<TResult> ExecuteInTransactionAsync<TResult>(
         Func<CancellationToken, Task<TResult>> operation, CancellationToken ct)
     {

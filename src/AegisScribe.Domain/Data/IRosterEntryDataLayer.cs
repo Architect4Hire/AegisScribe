@@ -23,6 +23,26 @@ public interface IRosterEntryDataLayer
 
     Task<bool> CharacterExistsAsync(Guid characterId, CancellationToken ct);
 
+    // This community's link to a guild, or null when it does not follow one. Read through the
+    // tenant-scoped link rather than the global Guild table for the same reason a re-sync is: a guild
+    // somebody else linked must be indistinguishable from a guild that does not exist.
+    Task<TenantGuild?> FindGuildLinkAsync(Guid guildId, CancellationToken ct);
+
+    // The guild's current members, as character ids. Global reference data — no tenant filter applies
+    // and none should: two communities following this guild see the same members.
+    Task<IReadOnlyList<Guid>> ListGuildMemberCharacterIdsAsync(Guid guildId, CancellationToken ct);
+
+    Task<IReadOnlyList<Guid>> ListRosteredCharacterIdsAsync(
+        IReadOnlyList<Guid> characterIds, CancellationToken ct);
+
+    Task<(IReadOnlyList<UnaffiliatedRosterEntryServiceModel> Entries, int Total)> ListNotInAnyLinkedGuildAsync(
+        int take, CancellationToken ct);
+
+    // Inserts a whole import and its single audit row in one transaction. Additive only — nothing
+    // here updates or deletes an existing entry, which is what lets a re-import leave every rank and
+    // officer note exactly where it was.
+    Task ImportAsync(IReadOnlyList<RosterEntry> entries, AuditLog auditEntry, CancellationToken ct);
+
     // Whether the caller holds the claim on the character behind a roster entry. The input to alt
     // linking's resource rule, and to whether any roster write is somebody reaching into someone
     // else's data.

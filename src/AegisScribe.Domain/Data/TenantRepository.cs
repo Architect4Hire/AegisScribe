@@ -71,6 +71,12 @@ public class TenantRepository(AegisScribeDbContext db) : ITenantRepository
         return db.SaveChangesAsync(ct);
     }
 
+    public async Task SetJoinPolicyAsync(Guid tenantId, bool acceptsJoinRequests, CancellationToken ct) =>
+        await db.Tenants
+            .Where(t => t.Id == tenantId)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(t => t.AcceptsJoinRequests, acceptsJoinRequests), ct);
+
     // The whole unit is handed in as a callback rather than exposing BeginTransactionAsync — see
     // DbContextTransactions for why that shape is forced. The callback may run more than once on a
     // transient failure, which is safe here because AddAsync/AddMembershipAsync only mark

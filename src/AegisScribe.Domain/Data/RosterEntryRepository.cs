@@ -1,4 +1,5 @@
 using System.Globalization;
+using AegisScribe.Domain.Context;
 using AegisScribe.Domain.Managers.Mappers;
 using AegisScribe.Domain.Managers.Models.Domain;
 using AegisScribe.Domain.Managers.Models.ServiceModels;
@@ -6,7 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AegisScribe.Domain.Data;
 
-public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryRepository
+// ITenantContext is here for one reason only: TryLinkAltAsync has to name the community it locks, and
+// every other query in this file leans on the ambient query filter instead. It is never used to build
+// a WHERE by hand.
+public class RosterEntryRepository(AegisScribeDbContext db, ITenantContext tenantContext)
+    : IRosterEntryRepository
 {
     // Where an unranked entry sorts under RosterSort.Rank. A sentinel rather than SQL's NULL ordering,
     // so every term of the keyset comparison is non-null.
@@ -304,6 +309,8 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
     public Task<int> CountByRankAsync(Guid rankId, CancellationToken ct) =>
         db.RosterEntries.CountAsync(entry => entry.TenantRankId == rankId, ct);
 
+    public Task<int> CountAsync(CancellationToken ct) => db.RosterEntries.CountAsync(ct);
+
     // Tracked: the callers mutate or remove what comes back.
     public Task<RosterEntry?> FindEntityAsync(Guid rosterEntryId, CancellationToken ct) =>
         db.RosterEntries.FirstOrDefaultAsync(entry => entry.Id == rosterEntryId, ct);
@@ -320,9 +327,92 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
     public Task<bool> IsOnRosterAsync(Guid characterId, CancellationToken ct) =>
         db.RosterEntries.AnyAsync(entry => entry.CharacterId == characterId, ct);
 
+    public async Task<IReadOnlyList<Guid>> ListRosteredCharacterIdsAsync(
+        IReadOnlyList<Guid> characterIds, CancellationToken ct)
+    {
+        if (characterIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.RosterEntries
+            .AsNoTracking()
+            .Where(entry => characterIds.Contains(entry.CharacterId))
+            .Select(entry => entry.CharacterId)
+            .ToListAsync(ct);
+    }
+
+    public async Task<(IReadOnlyList<UnaffiliatedRosterEntryServiceModel> Entries, int Total)>
+        ListNotInAnyLinkedGuildAsync(int take, CancellationToken ct)
+    {
+        // NOT EXISTS over the guilds this community follows, through TenantGuilds rather than the
+        // global Guilds table — same join the roster projection uses for GuildName, and for the same
+        // reason: membership of a guild nobody here follows is not this community's business.
+        var unaffiliated = db.RosterEntries
+            .AsNoTracking()
+            .Where(entry => !db.GuildMembers.Any(member =>
+                member.CharacterId == entry.CharacterId
+                && db.TenantGuilds.Any(link => link.GuildId == member.GuildId)));
+
+        var total = await unaffiliated.CountAsync(ct);
+
+        // Newest first: the rows most likely to be a surprise are the ones added since the officer
+        // last looked.
+        var entries = await unaffiliated
+            .OrderByDescending(entry => entry.JoinedAt)
+            .ThenBy(entry => entry.Id)
+            .Take(take)
+            .Select(entry => new UnaffiliatedRosterEntryServiceModel
+            {
+                RosterEntryId = entry.Id,
+                CharacterName = entry.Character.Name,
+                RealmSlug = entry.Character.Realm.Slug,
+            })
+            .ToListAsync(ct);
+
+        return (entries, total);
+    }
+
+    public async Task RemoveEntriesForCharactersAsync(IReadOnlyList<Guid> characterIds, CancellationToken ct)
+    {
+        if (characterIds.Count == 0)
+        {
+            return;
+        }
+
+        // Both statements carry the ambient query filter, so this can only ever reach rows in the
+        // resolved community — the departing member's entries next door are not this operation's.
+        var doomed = await db.RosterEntries
+            .AsNoTracking()
+            .Where(entry => characterIds.Contains(entry.CharacterId))
+            .Select(entry => entry.Id)
+            .ToListAsync(ct);
+
+        if (doomed.Count == 0)
+        {
+            return;
+        }
+
+        // Detach before delete, not after: the alt FK is Restrict, and an entry being removed may be
+        // another member's main.
+        await db.RosterEntries
+            .Where(entry => entry.MainRosterEntryId != null && doomed.Contains(entry.MainRosterEntryId.Value))
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(entry => entry.MainRosterEntryId, (Guid?)null), ct);
+
+        await db.RosterEntries.Where(entry => doomed.Contains(entry.Id)).ExecuteDeleteAsync(ct);
+    }
+
     public Task AddAsync(RosterEntry entry, CancellationToken ct)
     {
         db.RosterEntries.Add(entry);
+
+        return Task.CompletedTask;
+    }
+
+    public Task AddRangeAsync(IReadOnlyList<RosterEntry> entries, CancellationToken ct)
+    {
+        db.RosterEntries.AddRange(entries);
 
         return Task.CompletedTask;
     }
@@ -346,14 +436,22 @@ public class RosterEntryRepository(AegisScribeDbContext db) : IRosterEntryReposi
 
     public async Task<bool> TryLinkAltAsync(Guid rosterEntryId, Guid mainRosterEntryId, CancellationToken ct)
     {
-        // One UPDATE, no prior SELECT deciding anything. Both depth rules are in the WHERE, so the
-        // check and the write are one statement and concurrent callers are serialised by the row lock
-        // rather than by hope — same shape as SyncBudgetRepository.TryConsumeAsync.
+        // Serialise first, decide second. Rule 4 below asks "is anything pointing at this entry",
+        // which is a question about a SET — and a racing A→B / C→A pair each reads a set the other is
+        // about to change while writing a different row. SQL Server evaluates both predicates before
+        // either takes its exclusive lock, so both can pass and leave A an alt AND a main at once.
         //
-        // Racing links of A→B and B→A each have to read the row the other is exclusively locking, so
-        // the second blocks until the first commits and then sees the main it wanted is now an alt.
-        // That can deadlock; SQL Server's error 1205 is transient, so the execution strategy wrapping
-        // this retries the whole unit and the retry refuses properly.
+        // That window was NOT reproducible here: LinkingIntoAndOutOfTheSameEntryAtOnce and
+        // TwoOppositeLinksRacing both pass without this line. It is structurally identical to the one
+        // that WAS reproducible on the last-owner rule, though, and a race not caught in a handful of
+        // runs is weak evidence about a window measured in microseconds. See TenantLocks.
+        await db.LockCommunityAsync(tenantContext.TenantId, ct);
+
+        // One UPDATE, no prior SELECT deciding anything. Both depth rules are in the WHERE, so the
+        // check and the write are one statement — same shape as SyncBudgetRepository.TryConsumeAsync.
+        //
+        // The lock above can deadlock under contention; SQL Server's error 1205 is transient, so the
+        // execution strategy wrapping this retries the whole unit and the retry refuses properly.
         //
         // All three RosterEntries references carry the ambient query filter.
         var affected = await db.RosterEntries

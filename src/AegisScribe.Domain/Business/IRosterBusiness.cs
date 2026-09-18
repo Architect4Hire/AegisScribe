@@ -13,6 +13,14 @@ public interface IRosterBusiness
     // not this community's (400).
     Task<Guid?> AddAsync(AddRosterEntryViewModel viewModel, CancellationToken ct);
 
+    // Puts every member of a linked guild on this community's roster who is not already on it. Null
+    // when this community does not follow that guild — a 404, by the same mechanism as every other
+    // cross-tenant id here.
+    //
+    // Additive only: an entry already on the roster keeps its rank, its officer note and its alt
+    // link, which is what makes running this twice a no-op.
+    Task<RosterImportServiceModel?> ImportFromGuildAsync(ImportGuildRosterViewModel viewModel, CancellationToken ct);
+
     // False when the entry is not in this community — a 404. Throws when the rank is not this
     // community's.
     Task<bool> SetRankAsync(Guid rosterEntryId, SetRosterRankViewModel viewModel, CancellationToken ct);

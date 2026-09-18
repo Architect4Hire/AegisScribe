@@ -24,5 +24,10 @@ public interface IGuildRepository
 
     Task<int> CountMembersAsync(Guid guildId, CancellationToken ct);
 
+    // The character ids of a guild's current members — the input to a roster import. Ids only,
+    // because an imported RosterEntry holds a foreign key into the global zone and copies no
+    // character data whatsoever.
+    Task<IReadOnlyList<Guid>> ListMemberCharacterIdsAsync(Guid guildId, CancellationToken ct);
+
     Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct);
 }

@@ -1,0 +1,48 @@
+@use '../../../../styles/buttons';
+
+/* No S-numbered mockup exists for this screen in design/aegisscribe-armory.html -- like sign-in,
+   register and create-community, it is composed from the foundations directly: §04 (space & type) for
+   the measure and rhythm, §05 for the buttons, §07's tenant context for giving the community the
+   display weight. Every value below is a token; a literal hex here would be a defect. */
+.join {
+  max-width: 480px;
+  margin: var(--s-7) auto;
+  padding: 0 var(--s-4);
+  text-align: center;
+}
+
+/* Deliberately quiet: the community name below is the thing being read, and this only frames it. */
+.join-eyebrow {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin-bottom: var(--s-2);
+}
+
+.join-community {
+  font-family: var(--font-display);
+  font-size: var(--t-h1);
+  color: var(--ink);
+  margin-bottom: var(--s-2);
+}
+
+.join-role {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin-bottom: var(--s-6);
+}
+
+.join-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* Content, not a label -- it tells a signed-out visitor what is about to happen to them, so it is
+   --ink-2. --ink-3 is for labels only, never for something a user has to read. */
+.join-hint {
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+  max-width: 34ch;
+}

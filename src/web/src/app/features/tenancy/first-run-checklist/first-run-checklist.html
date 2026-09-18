@@ -1,0 +1,56 @@
+@if (visible()) {
+  <aside class="first-run" aria-labelledby="first-run-heading">
+    <header class="fr-head">
+      <div>
+        <h2 class="fr-title" id="first-run-heading">Getting started</h2>
+        <p class="fr-sub">
+          A new community starts empty. These four steps set it up, in any order — nothing here is
+          waiting on anything else.
+        </p>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="dismiss()">Hide this</button>
+    </header>
+
+    @if (loading()) {
+      <scribe-skeleton [height]="56" [count]="4" />
+    } @else {
+      <ol class="fr-steps">
+        @for (step of steps(); track step.id) {
+          <li class="fr-step" [class.is-done]="step.done">
+            <!--
+              A tick or an empty marker, plus the word "Done" for a completed step — state is never
+              carried by colour or a glyph alone.
+            -->
+            <span class="fr-marker" aria-hidden="true">{{ step.done ? '✓' : '' }}</span>
+
+            <div class="fr-body">
+              <h3 class="fr-step-label">
+                {{ step.label }}
+                @if (step.done) {
+                  <span class="fr-done-word">Done</span>
+                }
+              </h3>
+              <p class="fr-step-body">{{ step.body }}</p>
+
+              @if (step.caveat) {
+                <!--
+                  Said plainly and up front, rather than letting the officer discover it as a failure
+                  after typing a guild name. The step stays live because the manual path still works.
+                -->
+                <p class="fr-caveat">{{ step.caveat }}</p>
+              }
+            </div>
+
+            <!--
+              Always a link, never a disabled control: every step is reachable from ordinary
+              navigation, and a completed one still goes somewhere useful.
+            -->
+            <a class="btn btn-secondary btn-sm fr-go" [routerLink]="step.link">
+              {{ step.linkLabel }}
+            </a>
+          </li>
+        }
+      </ol>
+    }
+  </aside>
+}

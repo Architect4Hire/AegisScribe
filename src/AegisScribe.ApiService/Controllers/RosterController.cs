@@ -73,6 +73,25 @@ public class RosterController(IRosterFacade rosterFacade) : ControllerBase
         return rosterEntryId is null ? NotFound() : NoContent();
     }
 
+    // Importing a linked guild's members. Officer rather than Owner: this is roster upkeep, the same
+    // class of act as re-syncing the guild it draws on.
+    //
+    // It costs no sync budget, because it reaches Blizzard for nothing — the members it imports were
+    // persisted by the guild sync that the link or re-sync already paid for. Idempotency-Key'd like
+    // every other create here, though a repeat is a no-op on its own merits.
+    [HttpPost("import")]
+    [Idempotent]
+    [Authorize(Policy = AuthPolicies.TenantOfficer)]
+    public async Task<ActionResult<RosterImportServiceModel>> ImportFromGuild(
+        ImportGuildRosterViewModel viewModel, CancellationToken ct)
+    {
+        var result = await rosterFacade.ImportFromGuildAsync(viewModel, ct);
+
+        // Null means this community does not follow that guild — a 404 rather than a 403, which would
+        // confirm the guild is linked somewhere.
+        return result is null ? NotFound() : Ok(result);
+    }
+
     // Rank and note are separate PUTs rather than one PATCH, and that is a data-safety choice: JSON
     // cannot distinguish "field omitted" from "field set to null", so a combined PATCH sent by a UI that
     // only edits rank would silently wipe an officer's note.

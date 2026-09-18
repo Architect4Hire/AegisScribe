@@ -40,7 +40,10 @@ describe('TenantShell', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: CurrentUserService, useValue: { user: () => user, ensureLoaded: () => Promise.resolve(user) } },
+        {
+          provide: CurrentUserService,
+          useValue: { user: () => user, ensureLoaded: () => Promise.resolve(user) },
+        },
       ],
     }).compileComponents();
 
@@ -60,6 +63,7 @@ describe('TenantShell', () => {
 
     expect(hrefs).toEqual([
       '/t/ashes-of-dawn/roster',
+      '/t/ashes-of-dawn/members',
       '/t/ashes-of-dawn/calendar',
       '/t/ashes-of-dawn/search',
       '/t/ashes-of-dawn/advisor',

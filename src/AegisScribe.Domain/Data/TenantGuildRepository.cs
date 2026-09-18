@@ -13,6 +13,8 @@ public class TenantGuildRepository(AegisScribeDbContext db) : ITenantGuildReposi
             .OrderBy(link => link.Guild.Name)
             .ToListAsync(ct);
 
+    public Task<bool> AnyLinkedAsync(CancellationToken ct) => db.TenantGuilds.AnyAsync(ct);
+
     public Task<TenantGuild?> FindAsync(Guid guildId, CancellationToken ct) =>
         db.TenantGuilds
             .AsNoTracking()

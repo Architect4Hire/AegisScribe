@@ -10,6 +10,10 @@ public interface ITenantGuildRepository
     // Query-filtered, so this is already "this tenant's" links and cannot return another community's.
     Task<IReadOnlyList<TenantGuild>> ListAsync(CancellationToken ct);
 
+    // "Does this community follow anybody yet" — the first-run checklist's question, answered without
+    // loading the links it does not need.
+    Task<bool> AnyLinkedAsync(CancellationToken ct);
+
     Task<TenantGuild?> FindAsync(Guid guildId, CancellationToken ct);
 
     // TenantId is stamped by the SaveChanges interceptor, never assigned here (tenancy.md).

@@ -1,0 +1,269 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/fields';
+
+/* design/aegisscribe-armory.html §05 primitives on §07 chrome — this screen is not drawn in the
+   reference, so nothing here invents a token. The only non-token colour on the page is a character's
+   class colour, which arrives on the ServiceModel and is set as --class-color on the chip. */
+.member-management {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+}
+
+.mm-title {
+  font-family: var(--font-ui);
+  font-size: var(--t-h1);
+  color: var(--ink);
+  margin: 0 0 var(--s-5);
+}
+
+.mm-section {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.mm-heading {
+  font-family: var(--font-ui);
+  font-size: var(--t-h2);
+  color: var(--ink);
+  margin: 0 0 var(--s-2);
+}
+
+/* Prose a user has to read to understand the panel, so --ink-2, not --ink-3. --ink-3 is for labels,
+   and never for content. .mm-meta below is a label and keeps it. */
+.mm-sub {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin: 0 0 var(--s-4);
+  max-width: 66ch;
+}
+
+/* A failed write, reported without taking the screen away — the same treatment roster-table,
+   rank-manager and the character page's failed claim all use.
+
+   Attention rather than critical, and the line is worth stating because it reads backwards at first:
+   critical belongs to the PANEL-level state, where `scribe-empty-state variant="error"` replaces the
+   content entirely (that primitive is the reference's `.state-box.is-error`, and it already carries
+   --critical-bg). This banner is the opposite case — the data is intact, the screen is still usable,
+   and one action needs retrying. That is what attention means here, and what .mm-unclaimed and
+   .mm-token below mean by it too. */
+.mm-write-error {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-4);
+}
+
+.mm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mm-member,
+.mm-invitation,
+.mm-request {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  /* Every row wraps rather than overflowing: this screen has to hold together at 390px, and the page
+     body never scrolls sideways. */
+  flex-wrap: wrap;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.mm-request {
+  align-items: flex-start;
+}
+
+.mm-member:last-child,
+.mm-invitation:last-child,
+.mm-request:last-child {
+  border-bottom: 0;
+}
+
+.mm-person {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+}
+
+.mm-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  color: var(--ink);
+}
+
+.mm-meta {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The applicant's own words. Full width of the row so a long message never squeezes the controls. */
+.mm-message {
+  flex: 1 0 100%;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-left: 2px solid var(--line-strong);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  max-width: 66ch;
+}
+
+.mm-claims {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  flex: 1 1 200px;
+}
+
+/* One claimed character. --class-color is set inline on this element and inherited by the name.
+   The 3px is an optical adjustment off the --s-* scale, the way the reference's own .pill (3px 9px)
+   and .btn-sm (4px 10px) are: --s-1 sits too tight and --s-2 makes the chip taller than the row. */
+.mm-claim {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  padding: 3px var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.mm-claim:hover {
+  border-color: var(--brass-line);
+}
+
+.mm-claim-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  color: var(--class-color, var(--ink));
+}
+
+.mm-claim-realm {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+/* The line this screen exists for. Nobody has done anything wrong, there is just a thing left to do —
+   and the word carries it, not the colour.
+
+   A tint plus a word, deliberately NOT a status pill: this is the item cell's flagged treatment
+   (§06 "tints the cell and adds a word"), which is the right shape for "this row wants attention",
+   where a pill would read as a state the membership is in. 2px is the same optical adjustment as
+   .mm-claim above. */
+.mm-unclaimed {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: 2px var(--s-2);
+}
+
+.mm-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.mm-push-right {
+  margin-left: auto;
+}
+
+.mm-inline-label {
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-3);
+}
+
+.mm-role {
+  min-width: 96px;
+}
+
+.mm-invite-role {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  color: var(--ink);
+}
+
+.mm-invite-note {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mm-create {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-4);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.mm-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mm-field-grow {
+  flex: 1 1 200px;
+}
+
+.mm-expiry {
+  width: 110px;
+}
+
+/* The minted token. Attention, not critical: this is a thing to act on now, not a failure. */
+.mm-token {
+  border: 1px solid var(--attention-border);
+  background: var(--attention-bg);
+  border-radius: var(--r-1);
+  padding: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.mm-token-warning {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  margin: 0 0 var(--s-2);
+  max-width: 66ch;
+}
+
+.mm-token-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.mm-token-link {
+  flex: 1 1 260px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+}
+
+.mm-more {
+  margin-top: var(--s-4);
+}

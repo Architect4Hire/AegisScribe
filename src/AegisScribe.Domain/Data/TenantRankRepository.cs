@@ -23,6 +23,8 @@ public class TenantRankRepository(AegisScribeDbContext db) : ITenantRankReposito
             })
             .ToListAsync(ct);
 
+    public Task<int> CountAsync(CancellationToken ct) => db.TenantRanks.CountAsync(ct);
+
     // Tracked, not AsNoTracking: the caller is Business's update path, which mutates what comes back
     // and hands it to UpdateAsync.
     public Task<TenantRank?> FindAsync(Guid id, CancellationToken ct) =>

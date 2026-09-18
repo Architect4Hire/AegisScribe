@@ -1,0 +1,138 @@
+@use '../../../../styles/buttons';
+
+/* Not drawn in design/aegisscribe-armory.html — composed from §05 primitives on §07 chrome, inventing
+   no tokens. It is an aside above the roster, so it is deliberately quieter than the panel below it:
+   surface-1 on a soft border, no shadow, no accent fill. */
+.first-run {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.fr-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-4);
+}
+
+.fr-title {
+  font-family: var(--font-ui);
+  font-size: var(--t-h2);
+  color: var(--ink);
+  margin: 0 0 var(--s-1);
+}
+
+/* Prose the reader has to take in, so --ink-2. --ink-3 is for labels only. */
+.fr-sub {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 66ch;
+}
+
+.fr-head .btn {
+  margin-left: auto;
+}
+
+.fr-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: none;
+}
+
+.fr-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  /* Wraps rather than overflowing — this sits above the roster and has to hold at 390px. */
+  flex-wrap: wrap;
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.fr-step:last-child {
+  border-bottom: 0;
+}
+
+/* The tick box. A done step is marked three ways — the tick, the word, and the muted label — so it
+   never rests on colour alone. */
+.fr-marker {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-2);
+  color: var(--ok);
+  font-size: var(--t-sm);
+  line-height: 18px;
+  text-align: center;
+}
+
+.fr-step.is-done .fr-marker {
+  border-color: var(--ok-border);
+  background: var(--ok-bg);
+}
+
+.fr-body {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.fr-step-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+  font-family: var(--font-ui);
+  font-size: var(--t-h3);
+  color: var(--ink);
+  margin: 0 0 var(--s-1);
+}
+
+.fr-step.is-done .fr-step-label {
+  color: var(--ink-2);
+}
+
+/* The word beside the tick. State is never colour alone. */
+.fr-done-word {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ok);
+}
+
+.fr-step-body {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin: 0;
+  max-width: 66ch;
+}
+
+/* "This deployment has no Blizzard credentials." Attention rather than critical: nothing has failed,
+   there is just a thing worth knowing before you start — and the words carry it, not the tint. The
+   panel-level error state is the one that owns --critical, and it lives in scribe-empty-state. */
+.fr-caveat {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: var(--s-2) 0 0;
+  max-width: 66ch;
+}
+
+.fr-go {
+  margin-left: auto;
+  flex: none;
+  /* An <a> wearing .btn — it needs the two things the class does not set for links. */
+  text-decoration: none;
+  display: inline-block;
+}

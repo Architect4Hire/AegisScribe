@@ -30,7 +30,12 @@
       "Bash(grep -rn \"^\\\\s*//\" --include=\"*.cs\" src --exclude-dir=bin --exclude-dir=obj)",
       "Bash(grep -rn \"^\\\\s*///\" --include=\"*.cs\" src --exclude-dir=bin --exclude-dir=obj)",
       "Bash(grep -rn \"^\\\\s*//\" --include=\"*.ts\" src/web/src)",
-      "Bash(grep -rn \"^\\\\s*\\\\\\(//\\\\|///\\\\|\\\\*\\\\\\)\" --include=\"*.cs\" --include=\"*.ts\" src --exclude-dir=bin --exclude-dir=obj)"
+      "Bash(grep -rn \"^\\\\s*\\\\\\(//\\\\|///\\\\|\\\\*\\\\\\)\" --include=\"*.cs\" --include=\"*.ts\" src --exclude-dir=bin --exclude-dir=obj)",
+      "Bash(echo \"docker ready: $\\(docker info --format '{{.ServerVersion}}'\\)\")",
+      "PowerShell(dotnet build src/AegisScribe.ApiService/AegisScribe.ApiService.csproj -v q --nologo 2>&1)",
+      "PowerShell($scratch = \"C:\\\\Users\\\\chica\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--architect4hire-aegisscribe\\\\bcc22e37-4012-4180-97fb-a2f9ca685a1e\\\\scratchpad\"; Copy-Item contract\\\\openapi.v1.json \"$scratch\\\\openapi.before85.json\" -Force; Remove-Item contract\\\\openapi.v1.json; dotnet test src/AegisScribe.Tests/AegisScribe.Tests.csproj --filter \"FullyQualifiedName~OpenApiContractTests.OpenApiDocument_MatchesCommittedContract\" --nologo -v q 2>&1 | Select-String \"Failed!|Passed!\" | Select-Object -First 3)",
+      "PowerShell($scratch = \"C:\\\\Users\\\\chica\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--architect4hire-aegisscribe\\\\bcc22e37-4012-4180-97fb-a2f9ca685a1e\\\\scratchpad\"; git --no-pager diff --no-index -U1 \"$scratch\\\\openapi.before85.json\" contract\\\\openapi.v1.json)",
+      "PowerShell($scratch = \"C:\\\\Users\\\\chica\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--architect4hire-aegisscribe\\\\bcc22e37-4012-4180-97fb-a2f9ca685a1e\\\\scratchpad\"; Remove-Item contract\\\\openapi.v1.json; dotnet test src/AegisScribe.Tests/AegisScribe.Tests.csproj --filter \"FullyQualifiedName~OpenApiContractTests.OpenApiDocument_MatchesCommittedContract\" --nologo -v q 2>&1 | Select-String \"Failed!|Passed!\" | Select-Object -First 3; git --no-pager diff --no-index -U1 \"$scratch\\\\openapi.before85.json\" contract\\\\openapi.v1.json | Select-String -Pattern '^\\\\+' | Select-Object -First 60)"
     ]
   },
   "hooks": {

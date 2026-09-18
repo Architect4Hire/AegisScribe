@@ -16,6 +16,14 @@ public interface ICharacterClaimRepository
     // own claim, or an officer freeing someone else's.
     Task<CharacterClaim?> FindEntityByCharacterAsync(Guid characterId, CancellationToken ct);
 
+    // The characters this person has claimed in THIS community — the input to removing them from it.
+    // Query-filtered, so a claim they hold next door is neither listed nor removed.
+    Task<IReadOnlyList<Guid>> ListCharacterIdsClaimedByAsync(string userId, CancellationToken ct);
+
+    // Stages the removal of every claim this person holds here. Part of removing a member: a claim is
+    // tenant-scoped and means nothing without the membership behind it.
+    Task RemoveClaimsByUserAsync(string userId, CancellationToken ct);
+
     // TenantId is stamped by the SaveChanges interceptor, never assigned here (tenancy.md).
     Task<CharacterClaim> AddAsync(CharacterClaim claim, CancellationToken ct);
 

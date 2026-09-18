@@ -206,10 +206,104 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
                 return true;
 
             case LastOwnerException:
-                // Mapped ahead of the demote/remove membership work (auth.md), so that work only needs
-                // to add the throw.
+                // A community must always have an Owner (auth.md). A branded type rather than a bare
+                // 403, because the member-management screen has something specific to say here —
+                // "promote somebody else first" — and it is the one refusal on this surface that is
+                // about the community's shape rather than about the caller's rank.
                 httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = httpContext,
+                    Exception = exception,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Type = "https://api.aegisscribe.com/problems/last-owner",
+                        Title = "A community must always have an owner",
+                        Status = StatusCodes.Status403Forbidden,
+                        Detail = "Promote another member to Owner before demoting or removing this one.",
+                    },
+                });
+
+            case MembershipActionNotPermittedException notPermitted:
+                // Distinct from last-owner: this one IS about the caller's rank relative to the
+                // target's, and a client branches on the difference — one says "ask an owner", the
+                // other says "promote somebody first".
+                httpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = httpContext,
+                    Exception = exception,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Type = "https://api.aegisscribe.com/problems/membership-action-not-permitted",
+                        Title = "You may not do that to this member",
+                        Status = StatusCodes.Status403Forbidden,
+                        Detail = notPermitted.Message,
+                    },
+                });
+
+            case InvitationNotFoundException:
+                // 404 and an empty body. A token that never existed stays indistinguishable from
+                // nothing at all — the three refusals below are distinguishable on purpose, this one
+                // deliberately is not.
+                httpContext.Response.StatusCode = StatusCodes.Status404NotFound;
                 return true;
+
+            case InvitationUnusableException unusable:
+                // 410 Gone, and a DISTINCT type per reason: 8.3b requires expired, consumed and
+                // revoked to be told apart, because what the holder should do next differs — ask for a
+                // fresh link, nothing, or talk to an officer.
+                //
+                // Not one of these carries the community's name. A dead token buys its holder nothing,
+                // including the knowledge of what it was for.
+                httpContext.Response.StatusCode = StatusCodes.Status410Gone;
+                return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = httpContext,
+                    Exception = exception,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Type = unusable.Reason switch
+                        {
+                            InvitationRefusal.Expired => "https://api.aegisscribe.com/problems/invitation-expired",
+                            InvitationRefusal.Revoked => "https://api.aegisscribe.com/problems/invitation-revoked",
+                            _ => "https://api.aegisscribe.com/problems/invitation-consumed",
+                        },
+                        Title = "That invitation cannot be used",
+                        Status = StatusCodes.Status410Gone,
+                        Detail = unusable.Message,
+                    },
+                });
+
+            case AlreadyAMemberException:
+                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = httpContext,
+                    Exception = exception,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Type = "https://api.aegisscribe.com/problems/already-a-member",
+                        Title = "Already a member",
+                        Status = StatusCodes.Status409Conflict,
+                        Detail = exception.Message,
+                    },
+                });
+
+            case JoinRequestAlreadyPendingException:
+                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+                {
+                    HttpContext = httpContext,
+                    Exception = exception,
+                    ProblemDetails = new ProblemDetails
+                    {
+                        Type = "https://api.aegisscribe.com/problems/join-request-already-pending",
+                        Title = "You have already asked to join",
+                        Status = StatusCodes.Status409Conflict,
+                        Detail = exception.Message,
+                    },
+                });
 
             default:
                 return false;

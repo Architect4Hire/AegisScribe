@@ -21,6 +21,8 @@ const createdTenant: TenantServiceModel = {
   slug: 'ashes-of-dawn',
   name: 'Ashes of Dawn',
   timeZoneId: 'UTC',
+  // A brand-new community's door starts shut: an owner opens it deliberately.
+  acceptsJoinRequests: false,
 };
 
 function httpError(status: number, error?: unknown): HttpErrorResponse {

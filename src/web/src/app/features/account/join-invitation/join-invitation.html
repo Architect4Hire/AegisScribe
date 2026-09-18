@@ -1,0 +1,63 @@
+<section class="join">
+  @switch (state()) {
+    @case ('loading') {
+      <scribe-skeleton [height]="28" [count]="3" />
+    }
+
+    @case ('refused') {
+      <!-- No community named here, in any of the five cases.
+
+           The retry is offered for 'unavailable' ONLY, and that distinction is the point: that one is
+           a transient failure on our side and its copy says to try again, so it owes a control. The
+           other four are settled facts about the token — retrying cannot un-revoke a link, and a
+           button certain to fail the same way is worse than none. -->
+      <scribe-empty-state
+        variant="error"
+        [heading]="refusalCopy().heading"
+        [body]="refusalCopy().body"
+        [actionLabel]="refusal() === 'unavailable' ? 'Try again' : undefined"
+        (action)="retry()"
+      />
+    }
+
+    @default {
+      @if (preview(); as invitation) {
+        <p class="join-eyebrow">You have been invited to join</p>
+
+        <!-- §07's tenant context: the community is the subject of this screen, so it carries the
+             display weight rather than sitting in chrome. -->
+        <h1 class="join-community">{{ invitation.tenantName }}</h1>
+
+        <p class="join-role">as {{ describeRole(invitation.role) }}</p>
+
+        <div class="join-actions">
+          @if (signedIn()) {
+            <!-- aria-live on the label, because the only signal that the accept is under way is the
+                 button's own text changing, and a screen reader is otherwise told nothing between the
+                 click and the navigation. -->
+            <button
+              class="btn btn-primary"
+              type="button"
+              [disabled]="state() === 'accepting'"
+              (click)="accept()"
+            >
+              <span aria-live="polite">
+                {{ state() === 'accepting' ? 'Joining…' : 'Accept invitation' }}
+              </span>
+            </button>
+          } @else {
+            <!-- Signed out. The token rides through sign-in in the returnUrl and this route runs
+                 again on the way back. -->
+            <button class="btn btn-primary" type="button" (click)="signIn()">
+              Sign in to accept
+            </button>
+            <p class="join-hint">
+              You will come straight back here. No account yet? You can create one on the next
+              screen.
+            </p>
+          }
+        </div>
+      }
+    }
+  }
+</section>

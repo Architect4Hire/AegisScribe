@@ -984,7 +984,7 @@ UTILIZATION: @tenant-isolation-auditor, @skills-evals.
 BEHAVIOR: Report and fix.
 ```
 
-## Phase 8 — Guild sync and membership
+## Phase 8 — Guild sync and membership - done
 
 ### 8.1 Guild roster sync - done (built early, as 6.6b)
 ```
@@ -1004,7 +1004,7 @@ classic unbounded fan-out; bound the concurrency.
 BEHAVIOR: Implement, test the namespace assertion explicitly.
 ```
 
-### 8.2 Importing a linked guild's roster
+### 8.2 Importing a linked guild's roster - done
 ```
 SCOPE: Import a linked guild's members into RosterEntry rows. Linking itself is already built (6.6b:
 TenantGuild, and the Officer-gated link/unlink/re-sync endpoints) — this is only the import, which had
@@ -1023,7 +1023,7 @@ the guild, which is a judgement call rather than an obvious delete — wait for 
 two-tenant test on the SAME guild.
 ```
 
-### 8.3 Membership lifecycle
+### 8.3 Membership lifecycle - done
 ```
 SCOPE: Invitations (single-use, expiring), join requests, role changes, removal — with the last-owner
 rule.
@@ -1034,7 +1034,7 @@ as a Business rule. Every one of these writes an AuditLog row.
 BEHAVIOR: Plan the state transitions, wait for approval, implement, test every refusal.
 ```
 
-### 8.3b Accepting an invite ⚑
+### 8.3b Accepting an invite ⚑ - done
 ```
 SCOPE: The invitee's half of 8.3. POST /api/v1/invitations/{token}/accept — tenant-less on purpose, the
 caller is not a member yet so there is no /t/{slug} to resolve into — plus GET for a preview, and the

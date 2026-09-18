@@ -26,6 +26,7 @@ public class RosterFacadeTests
             new ListRosterViewModelValidator(),
             new LinkAltViewModelValidator(),
             new AddRosterEntryViewModelValidator(),
+            new ImportGuildRosterViewModelValidator(),
             new SetRosterRankViewModelValidator(),
             new SetOfficerNoteViewModelValidator());
     }
@@ -114,5 +115,28 @@ public class RosterFacadeTests
             () => _facade.AddAsync(new AddRosterEntryViewModel { CharacterId = Guid.Empty }, CancellationToken.None));
 
         Assert.Contains(ex.Errors, e => e.PropertyName == nameof(AddRosterEntryViewModel.CharacterId));
+    }
+
+    [Fact]
+    public async Task Import_EmptyGuildId_IsRejectedBeforeBusiness()
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(
+            () => _facade.ImportFromGuildAsync(
+                new ImportGuildRosterViewModel { GuildId = Guid.Empty }, CancellationToken.None));
+
+        Assert.Contains(ex.Errors, e => e.PropertyName == nameof(ImportGuildRosterViewModel.GuildId));
+
+        await _business.DidNotReceive().ImportFromGuildAsync(
+            Arg.Any<ImportGuildRosterViewModel>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Import_Valid_Delegates()
+    {
+        var viewModel = new ImportGuildRosterViewModel { GuildId = Guid.NewGuid() };
+        var expected = new RosterImportServiceModel { Imported = 3, AlreadyOnRoster = 1 };
+        _business.ImportFromGuildAsync(viewModel, Arg.Any<CancellationToken>()).Returns(expected);
+
+        Assert.Same(expected, await _facade.ImportFromGuildAsync(viewModel, CancellationToken.None));
     }
 }

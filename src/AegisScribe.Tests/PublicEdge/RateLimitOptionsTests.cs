@@ -23,6 +23,12 @@ public class RateLimitOptionsTests
 
         Assert.Equal(1000, options.ClientPermitLimit);
         Assert.Equal(30, options.SlugCheckPermitLimit);
+
+        // Tighter than slug-check, because this one is keyed by a SECRET: somebody legitimately
+        // following an invitation link makes one or two calls, and anything past a handful a minute
+        // is a script walking the token space.
+        Assert.Equal(10, options.InvitationTokenPermitLimit);
+
         Assert.Equal(TimeSpan.FromMinutes(1), options.Window);
     }
 

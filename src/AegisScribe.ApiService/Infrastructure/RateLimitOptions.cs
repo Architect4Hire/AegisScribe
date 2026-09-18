@@ -26,6 +26,11 @@ public sealed class RateLimitOptions
     // The slug-check endpoint, which stacks on top of the global limiter.
     public int SlugCheckPermitLimit { get; set; } = 30;
 
+    // The invitation preview and accept, which stack on top of the global limiter. Tighter than
+    // slug-check because these are keyed by a SECRET: somebody legitimately following a link makes
+    // one or two calls, and anything past a handful a minute is a script.
+    public int InvitationTokenPermitLimit { get; set; } = 10;
+
     public TimeSpan Window { get; set; } = TimeSpan.FromMinutes(1);
 
     public bool IsValid =>
@@ -33,5 +38,6 @@ public sealed class RateLimitOptions
         && AuthenticatedPermitLimit > 0
         && ClientPermitLimit > 0
         && SlugCheckPermitLimit > 0
+        && InvitationTokenPermitLimit > 0
         && Window > TimeSpan.Zero;
 }
