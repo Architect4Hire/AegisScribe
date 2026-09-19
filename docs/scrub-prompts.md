@@ -9,7 +9,7 @@ read, and a wrong turn costs one prompt instead of a phase.
 
 Two parts:
 
-- **Part 1 — Build sequence:** 17 phases, 112 microprompts, run in order.
+- **Part 1 — Build sequence:** 18 phases, 127 microprompts, run in order.
 - **Part 2 — Operational templates:** reusable prompts for the recurring, high-stakes moments the
   agent won't self-guard.
 
@@ -1085,6 +1085,143 @@ guild-link step says so plainly instead of failing, and the manual path (7.4's a
 reachable. Not in design/aegisscribe-armory.html — compose from §05 and §07, invent no tokens.
 BEHAVIOR: Implement, run `ng test`, @design-review, plus one two-tenant assertion: the panel's state
 comes from the ACTIVE community, never from the user's other one.
+```
+
+## Phase 8B — Character detail
+
+The profile screen (5.7) draws five tabs, and 6.3 filled only Overview. Progression and Professions
+render their panels over an empty array; Specialisations and Collections render a "not synced yet"
+placeholder. Each is a separate Blizzard profile endpoint on the character, so each is its own slice.
+Run this phase after Phase 8. It extends the Phase 6 Blizzard gateway, so run 6.7 first if it has
+not run.
+
+Three decisions hold for every prompt in the phase, and 8B.1 writes them down once:
+
+- **Global zone.** A character's professions, kills, talents and collections are public Blizzard data
+  about the character, like `CharacterEquipment`. No `TenantId`, no query filter.
+- **Each facet is its own sync.** Its own `LastSyncedAt`, fetched cache-first when its tab is read —
+  NOT bundled into the character refresh. Folding all of them into 6.5's refresh would take a
+  character from three calls to nine, for tabs most people never open.
+- **The 30-day rule still binds each facet.** A stored facet is either refreshed by the worker or
+  expired at the deadline; 8B.1 picks which, for all of them.
+
+### 8B.1 Professions ⚑
+```
+SCOPE: CharacterProfession (global) from /profile/wow/character/{realmSlug}/{characterName}/professions
+— primaries and secondaries, one row per profession per skill tier, with skill points and max.
+FetchCharacterProfessionsAsync, the cache-first read in the data layer, and
+GET /api/v1/characters/{realm}/{name}/professions beside the existing character route.
+CONSTRAINT: add-external-sync skill; references/blizzard-endpoints.md; add-endpoint skill for the route;
+.claude/rules/api-contract.md — a new route is additive, keep it that way.
+RESTRICTION: profile- namespace. Link to Profession (3.2) by Blizzard id when that row exists, but do
+NOT require it — the catalogue is not filled until 12.1, and a character's professions must not wait
+for it. No TenantId. This prompt SETTLES THE FACET PATTERN for the phase — per-facet LastSyncedAt, lazy
+fetch on read, refresh-vs-expire at the 30-day deadline — so record it in .claude/rules/external.md
+where 8B.2–8B.5 will read it, rather than in this prompt's code alone. A character with no
+professions is an empty list; a character that does not exist is still a 404. Add the table to the
+erasure routine — as a note on 14.1 if 14.1 has not run.
+BEHAVIOR: Plan the entity, the facet pattern and the refresh-vs-expire choice, wait for approval,
+implement, and test with a captured real response: fresh, stale, gateway-down-falls-back, missing, and
+no-professions-is-empty. Report the call cost per character.
+```
+
+### 8B.2 Raid progression
+```
+SCOPE: /profile/wow/character/{realmSlug}/{characterName}/encounters/raids, reduced to the current raid
+tier: per instance, per difficulty, kills out of total — the shape ProgressionRow already expects —
+plus the summary the banner's Raid tile shows (highest difficulty, e.g. 8/9 heroic). Route beside 8B.1's.
+CONSTRAINT: the facet pattern from 8B.1; add-external-sync skill; references/blizzard-endpoints.md.
+RESTRICTION: The response covers every expansion the character has ever raided. Store what the panel
+and the tile need — the current tier — not the history. "Current tier" comes from data (the journal)
+or config, NEVER a raid name or instance id written into code; it changes every season. Difficulty
+names map once from Blizzard's mode type (LFR, NORMAL, HEROIC, MYTHIC). The response only lists
+instances the character has progress in, so a character with no kills this tier has no total to
+show — plan whether the total comes from the journal instance or the tab shows an empty state, and
+say which.
+BEHAVIOR: Plan, wait for approval, implement, test with captured fixtures including a character with
+no current-tier kills. Report the call cost.
+```
+
+### 8B.3 Mythic+ rating
+```
+SCOPE: /profile/wow/character/{realmSlug}/{characterName}/mythic-keystone-profile — the current
+season's rating, for the banner's Mythic+ tile (value and season, as screen S1 draws it).
+CONSTRAINT: the facet pattern from 8B.1; references/blizzard-endpoints.md.
+RESTRICTION: One call. Confirm against a captured response that the profile carries the current
+rating; if it does, do NOT fetch the per-season detail — nothing on screen needs best runs yet. The
+season comes from the response or the season index, never a literal. Blizzard returns a colour with
+the rating: do NOT store or render it — the tile is chrome, and a fourth colour system competes with
+item quality (frontend.md). No rating this season is "no rating", not zero.
+BEHAVIOR: Implement, test with captured fixtures including a character with no rating.
+```
+
+### 8B.4 Specialisations
+```
+SCOPE: /profile/wow/character/{realmSlug}/{characterName}/specializations — the active spec, each
+spec's loadouts, and each loadout's talent export string.
+CONSTRAINT: the facet pattern from 8B.1; references/blizzard-endpoints.md.
+RESTRICTION: This response has changed shape across expansions (the talent tree rework, hero
+talents). Read the reference and a CAPTURED response; do not write the mapping from memory, and if
+the reference is out of date, say so. Store the export string verbatim — it is the thing a player
+actually wants, to paste into the game. Spec names and icons are static game data (12.1b); do not
+fetch per-talent media here.
+BEHAVIOR: Tell me the response shape you found before writing the entity. Plan, approve, implement,
+test with captured fixtures.
+```
+
+### 8B.5 Collections
+```
+SCOPE: /profile/wow/character/{realmSlug}/{characterName}/collections/mounts, /pets and /toys —
+counts, and the collected ids.
+CONSTRAINT: the facet pattern from 8B.1; references/blizzard-endpoints.md.
+RESTRICTION: Three calls and the largest payloads in the phase. Collections are ACCOUNT-wide in the
+game, so every alt of one player returns the same list — but an application token cannot tell that
+two characters share an account, so do NOT try to dedupe across characters; store per character and
+say why in a comment. Store ids, not names or icons: names come from the static mount, pet and toy
+indices, synced once globally, never per character. Heirlooms are out of scope. Collections change
+slowly, so the longest staleness in the phase is fine — still ≤ 30 days.
+BEHAVIOR: Plan, approve, implement, test with captured fixtures. Report the call cost, and the stored
+size for a character with a large collection.
+```
+
+### 8B.6 Progression and Professions tabs, and the banner tiles
+```
+SCOPE: character-profile passes real rows to progression-panel and profession-panel instead of [];
+character-banner gains the Mythic+ and Raid stat tiles S1 draws beside Item level. New CharacterService
+methods for the 8B.1–8B.3 routes.
+CONSTRAINT: aegisscribe-design-system skill; screen S1; .claude/rules/frontend.md.
+RESTRICTION: ProgressionRow and ProfessionRow are declared on the panels today — move them to
+models/character.models.ts with a "// Mirrors" comment, where the api-contract-checker looks. A tab
+fetches when it is opened, not when the page loads, matching the lazy facet read. Four states per
+panel, and DEGRADED shows the facet's own age — the provenance panel's timestamp is the character's,
+not the tab's. No literal hex.
+BEHAVIOR: Implement, run `ng test`, then @design-review and @api-contract-checker.
+```
+
+### 8B.7 Specialisations and Collections panels
+```
+SCOPE: design/aegisscribe-armory.html draws the Specialisations and Collections tabs but no panel for
+either. Add both panels to the reference first — screen S1, all four states — then build the
+components, wire them to the 8B.4 and 8B.5 routes, and remove the "not synced yet" placeholders.
+CONSTRAINT: aegisscribe-design-system skill; new-component skill; .claude/rules/frontend.md.
+RESTRICTION: Design before code — a component styled without a reference is an invented one. Chrome
+tokens only, class colour inherited through --class-color, no new hue. The talent export string gets
+a copy control. Item links are the ONLY Wowhead integration — no talent-calculator or mount links
+unless frontend.md is extended on purpose first.
+BEHAVIOR: Show me the design additions and wait for approval before building components. Then
+implement, run `ng test`, then @design-review and @api-contract-checker.
+```
+
+### 8B.8 Compliance pass ⚑
+```
+SCOPE: Audit what Phase 8B built — five new profile reads, the facet refresh or expiry, and erasure
+coverage for every new table.
+UTILIZATION: @external-compliance, then @test-gap-analyzer.
+RESTRICTION: Triage into the same three buckets as 6.7 before fixing anything. Total the calls one
+character now costs across every facet, and check the worker's refresh still fits under 36,000/hour
+at a realistic character count — state the count you assumed.
+BEHAVIOR: Run both agents, triage, fix only bucket (1), re-run, and report the count in each bucket
+and the per-character call cost.
 ```
 
 ## Phase 9 — Calendar
