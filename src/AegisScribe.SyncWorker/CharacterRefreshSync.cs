@@ -109,6 +109,11 @@ public sealed class CharacterRefreshSync(
 
             var equipment = await gateway.FetchEquipmentAsync(candidate.RealmSlug, candidate.Name, ct);
 
+            if (await gateway.TryFetchCharacterMediaAsync(candidate.RealmSlug, candidate.Name, ct) is { } media)
+            {
+                fresh.ApplyMedia(media, fresh.LastSyncedAt);
+            }
+
             await repository.ExecuteInTransactionAsync(
                 async token =>
                 {

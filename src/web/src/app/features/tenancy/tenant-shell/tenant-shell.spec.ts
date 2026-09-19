@@ -63,6 +63,7 @@ describe('TenantShell', () => {
 
     expect(hrefs).toEqual([
       '/t/ashes-of-dawn/roster',
+      '/t/ashes-of-dawn/guilds',
       '/t/ashes-of-dawn/members',
       '/t/ashes-of-dawn/calendar',
       '/t/ashes-of-dawn/search',
@@ -84,5 +85,10 @@ describe('TenantShell', () => {
     fixture.detectChanges();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/t', 'emberwatch']);
+  });
+
+  it('links the brand back to the community picker', () => {
+    const brand = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>('a.brand');
+    expect(brand?.getAttribute('href')).toBe('/tenants');
   });
 });

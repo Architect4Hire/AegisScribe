@@ -1,0 +1,50 @@
+<svg
+  [attr.width]="size()"
+  [attr.height]="size()"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.4"
+  focusable="false"
+>
+  @switch (glyph()) {
+    @case ('head') {
+      <path d="M5 11a7 7 0 0114 0v4a3 3 0 01-3 3H8a3 3 0 01-3-3z" />
+      <path d="M9 12h2M13 12h2" stroke-linecap="round" />
+    }
+    @case ('neck') {
+      <path d="M6 6a6 6 0 0012 0" />
+      <path d="M12 12l2.5 4-2.5 3-2.5-3z" />
+    }
+    @case ('shoulder') {
+      <path d="M3 15c0-4 2.5-7 5-7s4 2 4 4-2 4-4.5 4S3 15 3 15z" />
+      <path d="M21 15c0-4-2.5-7-5-7s-4 2-4 4 2 4 4.5 4S21 15 21 15z" />
+    }
+    @case ('chest') {
+      <path d="M6 5l6 2 6-2 1 12-7 3-7-3z" stroke-linejoin="round" />
+      <path d="M12 7v13" stroke-width="1.2" />
+    }
+    @case ('hand') {
+      <path
+        d="M8 4v7M11 3v8M14 4v7M17 8v6a6 6 0 01-6 6H9l-4-5 2-2 2 2V9"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    }
+    @case ('leg') {
+      <path d="M6 3h12l-1 8-2 10h-3l-.5-9L11 21H8L7 11z" stroke-linejoin="round" />
+    }
+    @case ('ring') {
+      <circle cx="12" cy="14" r="6" />
+      <path d="M9 6l3-3 3 3-3 2z" stroke-linejoin="round" />
+    }
+    @case ('trinket') {
+      <path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7z" stroke-linejoin="round" />
+      <circle cx="12" cy="12" r="2.5" />
+    }
+    @case ('weapon') {
+      <path d="M18 3l3 3-9 9-3-3z" stroke-linejoin="round" />
+      <path d="M9 12l-4 4 4 4 4-4M5 16l-2 2" stroke-linejoin="round" />
+    }
+  }
+</svg>

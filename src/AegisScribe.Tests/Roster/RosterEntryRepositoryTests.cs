@@ -136,6 +136,19 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
     }
 
     [Fact]
+    public async Task EachRowCarriesItsRealmsRegion_SoTheCharacterProfileCanBeAddressed()
+    {
+        // Not "us" on purpose: the default seed region would pass even if the projection hard-coded it.
+        var tenant = await TenantSeeding.CreateTenantAsync(fixture);
+        await SeedEntryAsync(tenant.Id, "Aldric", null, region: "eu");
+
+        var row = Assert.Single(await ListAsync(tenant.Id, RosterSort.Rank, take: 10));
+
+        Assert.Equal("eu", row.Region);
+        Assert.False(string.IsNullOrEmpty(row.RealmSlug));
+    }
+
+    [Fact]
     public async Task CountByRank_CountsOnlyTheAmbientCommunitysHolders()
     {
         // The count that decides whether a rank delete is refused. It has to be query-filtered, or one
@@ -250,9 +263,10 @@ public class RosterEntryRepositoryTests(AegisScribeAppFixture fixture)
         Guid? rankId,
         Guid? mainRosterEntryId = null,
         int itemLevel = 600,
-        string? officerNote = null)
+        string? officerNote = null,
+        string? region = null)
     {
-        var realm = await CharacterSeeding.CreateRealmAsync(fixture);
+        var realm = await CharacterSeeding.CreateRealmAsync(fixture, region);
         var character = await CharacterSeeding.CreateCharacterAsync(
             fixture, realm.Id, characterName, itemLevel: itemLevel);
 

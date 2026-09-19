@@ -63,10 +63,35 @@
             <div class="armory">
               <scribe-equipment-rail [slots]="leftSlots" [equipment]="char.equipment" side="left" />
               <div class="armory-centre">
-                <div class="render">
-                  <p class="render-note">
-                    Character render<br />coming with the Blizzard media sync
-                  </p>
+                <div class="render" [class.is-loading]="renderUrl() !== null && !renderLoaded()">
+                  @if (renderUrl(); as src) {
+                    <!--
+                      Blizzard's main-raw render: a transparent full-body PNG, so it stands on the
+                      box's own gradient. Fades in once loaded rather than painting top-down.
+                    -->
+                    <img
+                      class="render-img"
+                      [class.is-loaded]="renderLoaded()"
+                      [src]="src"
+                      [alt]="char.name + ', as rendered by Blizzard'"
+                      (load)="onRenderLoad(src)"
+                      (error)="onRenderError(src)"
+                    />
+                  } @else {
+                    <!-- No render from Blizzard, or it would not load: a designed state, not an error. -->
+                    <div class="render-empty">
+                      <svg
+                        class="render-silhouette"
+                        viewBox="0 0 120 160"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <circle cx="60" cy="48" r="22" />
+                        <path d="M18 150c0-30 18-54 42-54s42 24 42 54" />
+                      </svg>
+                      <p class="render-note">No character render</p>
+                    </div>
+                  }
                 </div>
               </div>
               <scribe-equipment-rail

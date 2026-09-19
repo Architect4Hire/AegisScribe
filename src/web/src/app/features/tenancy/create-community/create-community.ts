@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Observable, catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { CurrentUserService } from '../../../core/current-user.service';
 import { TenantService } from '../../../core/tenant.service';
 import { SlugCheckServiceModel } from '../../../models/auth.models';
 
@@ -35,6 +36,7 @@ type CheckState = 'idle' | 'checking' | 'answered' | 'unavailable';
   templateUrl: './create-community.html',
 })
 export class CreateCommunity {
+  private readonly currentUser = inject(CurrentUserService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -220,7 +222,14 @@ export class CreateCommunity {
       .subscribe({
         // Navigation, not a stored "current tenant" — there is no such variable, and one would drift
         // from the URL (frontend.md → "Tenant context is part of the chrome").
-        next: (tenant) => void this.router.navigate(['/t', tenant.slug]),
+        //
+        // The cached /me predates this community, so tenantGuard would find no membership for the new
+        // slug and bounce to the picker — which renders that same stale list. Clearing first makes the
+        // guard re-fetch and see the Owner membership the server just granted.
+        next: (tenant) => {
+          this.currentUser.clear();
+          void this.router.navigate(['/t', tenant.slug]);
+        },
         error: (error: unknown) => {
           this.state.set('idle');
           this.form.enable({ emitEvent: false });

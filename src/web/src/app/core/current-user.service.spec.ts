@@ -94,6 +94,38 @@ describe('CurrentUserService', () => {
     expect(await promise).toBeNull();
   });
 
+  it('probeSession gives up after a bounded wait and answers "signed out", so the landing never sits blank', async () => {
+    vi.useFakeTimers();
+    try {
+      const promise = service.probeSession();
+      const request = httpMock.expectOne('/api/v1/me');
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(await promise).toBeNull();
+      // The abandoned request is cancelled, not left in flight.
+      expect(request.cancelled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ensureLoaded waits as long as it takes — only the probe is bounded', async () => {
+    vi.useFakeTimers();
+    try {
+      const promise = service.ensureLoaded();
+      const request = httpMock.expectOne('/api/v1/me');
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(request.cancelled).toBe(false);
+
+      request.flush(user);
+      expect(await promise).toEqual(user);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('probeSession opts its request out of the sign-in redirect', async () => {
     const promise = service.probeSession();
     const request = httpMock.expectOne('/api/v1/me');

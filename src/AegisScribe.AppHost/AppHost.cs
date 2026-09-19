@@ -16,17 +16,17 @@ var cache = builder.AddRedis("cache", password: redisPassword)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume();
 
-// Blizzard credentials are optional on purpose: with neither configured the gateway degrades to a no-op
-// and the app runs on seeded data (external.md). Hence the callback with an empty fallback rather than a
-// bare AddParameter — an unresolved parameter makes Aspire prompt, which would block an offline
-// `aspire run` on something allowed to be missing. Set them with user secrets, never a literal here.
-var blizzardId = builder.AddParameter(
-    "blizzard-client-id",
-    () => builder.Configuration["Parameters:blizzard-client-id"] ?? string.Empty);
-var blizzardSecret = builder.AddParameter(
-    "blizzard-client-secret",
-    () => builder.Configuration["Parameters:blizzard-client-secret"] ?? string.Empty,
-    secret: true);
+// Declared like the other secrets, so an unset value makes the dashboard prompt (Unresolved parameters
+// -> Enter values, with Save to user secrets) rather than starting silently without them. The trade-off
+// is deliberate: api and sync wait until both are entered, so a clone with no Blizzard account gets
+// stuck here instead of running on seeded data. Never a literal here.
+const string BlizzardCredentialHelp =
+    "From your API client at [develop.battle.net](https://develop.battle.net/access/clients). " +
+    "Tick *Save to user secrets* so you're not asked again.";
+var blizzardId = builder.AddParameter("blizzard-client-id")
+    .WithDescription($"Blizzard API client ID. {BlizzardCredentialHelp}", enableMarkdown: true);
+var blizzardSecret = builder.AddParameter("blizzard-client-secret", secret: true)
+    .WithDescription($"Blizzard API client secret. {BlizzardCredentialHelp}", enableMarkdown: true);
 
 var api = builder.AddProject<Projects.AegisScribe_ApiService>("api")
     .WithReference(db)

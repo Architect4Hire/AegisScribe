@@ -1,8 +1,8 @@
 <div class="appbar">
-  <span class="brand">
+  <a class="brand" [routerLink]="tenantPickerPath" aria-label="AegisScribe — all communities">
     <img class="brand-mark" src="logo.png" alt="" />
     AEGISSCRIBE
-  </span>
+  </a>
   <nav class="appnav">
     @for (link of navLinks(); track link.path) {
       <a [routerLink]="link.path" routerLinkActive="is-active">{{ link.label }}</a>

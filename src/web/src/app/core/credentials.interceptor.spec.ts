@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { skipSignInRedirect } from './auth-redirect.context';
+import { skipSignInRedirect, skipTenantMissRedirect } from './auth-redirect.context';
 import { AuthService } from './auth.service';
 import { credentialsInterceptor } from './credentials.interceptor';
 import { CurrentUserService } from './current-user.service';
@@ -92,6 +92,19 @@ describe('credentialsInterceptor', () => {
     await result;
 
     expect(navigateCalls).toEqual([TENANT_PICKER_PATH]);
+  });
+
+  it('keeps the caller on the page when a tenant-scoped write opts out of the 404 redirect', async () => {
+    const result = firstValueFrom(
+      http.post('/api/v1/t/ashes-of-dawn/guilds', {}, { context: skipTenantMissRedirect() }),
+    ).catch((error: unknown) => error);
+    httpMock
+      .expectOne('/api/v1/t/ashes-of-dawn/guilds')
+      .flush(null, { status: 404, statusText: 'Not Found' });
+
+    const error = (await result) as { status: number };
+    expect(error.status).toBe(404);
+    expect(navigateCalls).toEqual([]);
   });
 
   it('does not treat a 404 from a non-tenant route as a tenant miss', async () => {

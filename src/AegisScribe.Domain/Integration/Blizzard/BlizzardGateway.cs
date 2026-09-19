@@ -135,6 +135,31 @@ public sealed class BlizzardGateway(
         return payload?.ToCharacterEquipment(timeProvider.GetUtcNow());
     }
 
+    public async Task<CharacterMedia?> FetchCharacterMediaAsync(
+        string realmSlug,
+        string characterName,
+        CancellationToken cancellationToken)
+    {
+        var payload = await GetAsync<BlizzardMediaResponse>(
+            BuildCharacterRequestUri(realmSlug, characterName, segment: "character-media"),
+            cancellationToken);
+
+        return payload?.ToCharacterMedia();
+    }
+
+    public async Task<ItemIconLookup> FetchItemIconAsync(long blizzardItemId, CancellationToken cancellationToken)
+    {
+        var settings = options.Value;
+
+        // static-, not profile-: an item's media is Game Data. The wrong namespace 404s, and a 404 here
+        // is recorded as "this item has no icon" — so getting it wrong would quietly blank every icon.
+        var payload = await GetAsync<BlizzardMediaResponse>(
+            $"/data/wow/media/item/{blizzardItemId}?namespace={settings.StaticNamespace}&locale={settings.Locale}",
+            cancellationToken);
+
+        return payload is null ? ItemIconLookup.NotFound : new ItemIconLookup(payload.ToItemIconName());
+    }
+
     private async Task<BlizzardAvailability> ProbeAsync(BlizzardOptions settings, CancellationToken cancellationToken)
     {
         // The realm index: always present, and needs no id to look up. Realms move, so they are

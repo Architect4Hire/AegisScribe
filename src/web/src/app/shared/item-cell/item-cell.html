@@ -9,6 +9,9 @@
     <span class="item-icon">
       @if (iconUrl(); as src) {
         <img [src]="src" alt="" width="34" height="34" (error)="onIconError()" />
+      } @else {
+        <!-- No icon yet, or one of the icons Blizzard genuinely 404s: the slot's outline, as S1 draws it. -->
+        <scribe-slot-glyph [slot]="slot()" />
       }
     </span>
     <span class="item-body">
@@ -27,7 +30,7 @@
   </a>
 } @else {
   <div class="item is-empty">
-    <span class="item-icon"></span>
+    <span class="item-icon"><scribe-slot-glyph [slot]="slot()" /></span>
     <span class="item-body">
       <span class="item-name">Empty — {{ slotLabel() }}</span>
       <span class="item-meta">No item equipped</span>

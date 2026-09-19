@@ -18,10 +18,33 @@ export class ProvenancePanel {
   readonly region = input.required<string>();
   readonly characterId = input.required<string>();
 
-  readonly refreshDue = computed(() => {
-    const due = new Date(this.lastSyncedAt()).getTime() + REFRESH_INTERVAL_DAYS * MS_PER_DAY;
-    return new Date(due).toISOString().slice(0, 10);
-  });
+  // In the viewer's own zone and labelled with it — this page has no community and so no community
+  // zone to prefer, and an unlabelled time is the ambiguity frontend.md warns about. The raw ISO
+  // instant stays one hover away on the <time> element, for anyone correlating with a log.
+  //
+  // Explicit fields rather than dateStyle/timeStyle: those two refuse to combine with timeZoneName and
+  // throw, and the zone label is the one part this must not lose.
+  readonly lastSyncedLabel = computed(() =>
+    new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    }).format(new Date(this.lastSyncedAt())),
+  );
+
+  // A date, not an instant: the obligation is "within thirty days", not "by 11:21".
+  readonly refreshDueDate = computed(
+    () => new Date(new Date(this.lastSyncedAt()).getTime() + REFRESH_INTERVAL_DAYS * MS_PER_DAY),
+  );
+
+  readonly refreshDue = computed(() =>
+    new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(this.refreshDueDate()),
+  );
+
+  readonly refreshDueIso = computed(() => this.refreshDueDate().toISOString().slice(0, 10));
 
   readonly source = computed(() => `profile-${this.region()}`);
 }

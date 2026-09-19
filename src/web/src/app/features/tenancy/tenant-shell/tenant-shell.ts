@@ -1,6 +1,7 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CurrentUserService } from '../../../core/current-user.service';
+import { TENANT_PICKER_PATH } from '../../../core/tenant.guard';
 import { TenantSwitcher } from '../../../shared/tenant-switcher/tenant-switcher';
 
 interface NavLink {
@@ -24,6 +25,10 @@ export class TenantShell {
 
   readonly tenantSlug = input.required<string>();
 
+  // The brand is the way out of the active community -- to the picker, where creating another one
+  // lives too.
+  readonly tenantPickerPath = TENANT_PICKER_PATH;
+
   // Some of these point at features that don't exist yet -- inert until they land, same as
   // TENANT_PICKER_PATH was inert from 5.5 until this task registered it.
   //
@@ -34,6 +39,7 @@ export class TenantShell {
     const base = `/t/${this.tenantSlug()}`;
     return [
       { label: 'Roster', path: `${base}/roster` },
+      { label: 'Guilds', path: `${base}/guilds` },
       { label: 'Members', path: `${base}/members` },
       { label: 'Calendar', path: `${base}/calendar` },
       { label: 'Armory', path: `${base}/search` },

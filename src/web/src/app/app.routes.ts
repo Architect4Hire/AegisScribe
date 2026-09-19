@@ -75,6 +75,14 @@ export const routes: Routes = [
           import('./features/roster/roster-table/roster-table').then((m) => m.RosterTable),
       },
       {
+        // Unguarded beyond the shell for the same reason as the two below: the list is TenantMember, so
+        // a plain member sees which guilds their community follows, and the link / import / re-sync /
+        // unlink controls are hidden from them and refused by TenantOfficer policies server-side.
+        path: 'guilds',
+        loadComponent: () =>
+          import('./features/guild/guild-overview/guild-overview').then((m) => m.GuildOverview),
+      },
+      {
         // Officer-facing, but NOT guarded here: hiding a route is cosmetics, and the APIs behind this
         // screen carry TenantOfficer policies of their own. A member who types the URL sees the ladder
         // read-only and every write refused (auth.md).

@@ -23,6 +23,19 @@
     </div>
   </header>
 
+  @if (isOfficer()) {
+    <!--
+      The manual path onto the roster, open from the start when there is nobody here yet. Importing a
+      linked guild lives on the Guilds screen. Hidden from members as cosmetics; POST /roster is
+      TenantOfficer. A successful add reloads the page of rows so the new entry lands in sort order.
+    -->
+    <scribe-add-character
+      [tenantSlug]="tenantSlug()"
+      [startOpen]="state() === 'empty'"
+      (added)="retry()"
+    />
+  }
+
   @switch (state()) {
     @case ('loading') {
       <!-- Shaped like the content, not a spinner: eight roster rows' worth of bar. -->
@@ -86,8 +99,23 @@
                 [style.--class-color]="entry.classColor"
               >
                 <td>
+                  <!--
+                    The in-community profile route, so the tenant chrome stays around the character
+                    rather than dropping to the public page outside it.
+                  -->
                   <span class="class-dot" aria-hidden="true"></span
-                  ><span class="char-name">{{ entry.characterName }}</span>
+                  ><a
+                    class="char-name"
+                    [routerLink]="[
+                      '/t',
+                      tenantSlug(),
+                      'characters',
+                      entry.region,
+                      entry.realmSlug,
+                      entry.characterName,
+                    ]"
+                    >{{ entry.characterName }}</a
+                  >
                 </td>
                 <td class="rank-cell">
                   @if (entry.rankName; as rankName) {

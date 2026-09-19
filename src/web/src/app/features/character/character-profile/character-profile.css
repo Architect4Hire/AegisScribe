@@ -1,5 +1,16 @@
 /* Copied from design/aegisscribe-armory.html §S1 "Character profile" (and the shared .tabs rule
    used throughout the reference). */
+
+/* Every screen pads itself — the tenant shell and the public route both hand the outlet the full
+   width — so this does what the roster and rank screens do. On the host, so the loading, empty and
+   error states sit in the same frame as the loaded page. Capped and centred: three columns stretched
+   across a 2560px monitor put the two rails a head-turn apart. */
+:host {
+  display: block;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+}
 .tabs {
   display: flex;
   gap: var(--s-1);
@@ -45,21 +56,70 @@
   margin-top: 6px;
 }
 
-/* Simplified from the reference, which radial-tints this box toward the demo character's own
-   class colour with a fixed rgba -- that value only matches one class, so it's dropped rather
-   than copied for every character. This is a placeholder for the eventual character-render image
-   either way. */
+/* The reference radial-tints this box toward the demo character's class colour with a fixed rgba,
+   which only matches one class. color-mix over the inherited --class-color does the same for every
+   class without a literal — the tint IS the class colour, at the reference's 13%. */
 .render {
+  position: relative;
   aspect-ratio: 3 / 4;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-2);
-  background: linear-gradient(180deg, var(--surface-2), var(--ground));
+  background:
+    radial-gradient(
+      120% 80% at 50% 10%,
+      color-mix(in srgb, var(--class-color, var(--ink-3)) 13%, transparent),
+      transparent 62%
+    ),
+    linear-gradient(180deg, var(--surface-2), var(--ground));
   display: grid;
   place-items: center;
   text-align: center;
-  padding: var(--s-3);
 }
-.render-note { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); line-height: 1.7; }
+
+/* "Skeleton while loading" (S1): the skeleton primitive's own shimmer, laid over the box until the
+   render arrives. The reduced-motion rule in _base.scss stops it. */
+.render.is-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 25%, var(--surface-3) 50%, transparent 75%);
+  background-size: 400% 100%;
+  opacity: 0.35;
+  animation: render-shimmer 1.4s ease infinite;
+}
+@keyframes render-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+/* main-raw is a 1600×1200 transparent PNG — landscape, with the character standing in its middle
+   third and a great deal of empty canvas either side. Contained in this 3:4 box the figure shrinks to
+   a sixth of the frame. Cover crops the empty sides away, and the modest zoom about a point just below
+   centre takes up the remaining slack without reaching the head or the feet, which sit roughly
+   between 20% and 85% of the canvas height for every race. */
+.render-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.35);
+  transform-origin: 50% 55%;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.render-img.is-loaded { opacity: 1; }
+
+.render-empty { display: grid; justify-items: center; gap: var(--s-2); padding: var(--s-3); }
+.render-silhouette {
+  width: 45%;
+  fill: var(--surface-3);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+.render-note { font-family: var(--font-mono); font-size: 10px; color: var(--ink-3); line-height: 1.7; margin: 0; }
 
 /* A failed claim, reported without taking the character page away — the same treatment the roster
    uses for a failed write. Semantic state on a tinted panel, never colour alone: the message says

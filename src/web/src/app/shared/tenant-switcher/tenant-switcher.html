@@ -1,14 +1,21 @@
-<div class="tenant-switcher" (document:click)="onDocumentClick($event)" (keydown.escape)="onEscape()">
+<div
+  class="tenant-switcher"
+  (document:click)="onDocumentClick($event)"
+  (keydown.escape)="onEscape()"
+>
   <button class="tenant-switch" type="button" [attr.aria-expanded]="isOpen()" (click)="toggle()">
     <span class="tenant-crest">{{ crestInitial() }}</span>
     <span style="text-align: left">
-      <span class="tenant-name">{{ active()?.tenantName }}</span><br />
+      <span class="tenant-name">{{ active()?.tenantName }}</span
+      ><br />
       <span class="tenant-role">{{ active()?.role }}</span>
     </span>
     <span class="tenant-caret" aria-hidden="true">▼</span>
   </button>
 
-  @if (isOpen() && otherMemberships().length > 0) {
+  <!-- Always opens, even with one membership: the way to every community and to creating another
+       lives here too, so a single-community user is never without a route out. -->
+  @if (isOpen()) {
     <div class="tenant-switch-menu">
       @for (membership of otherMemberships(); track membership.tenantSlug) {
         <button type="button" class="tenant-switch-item" (click)="pick(membership.tenantSlug)">
@@ -16,6 +23,12 @@
           <span class="tenant-role">{{ membership.role }}</span>
         </button>
       }
+      <a class="tenant-switch-action" [routerLink]="tenantPickerPath" (click)="close()"
+        >All communities</a
+      >
+      <a class="tenant-switch-action" routerLink="/tenants/new" (click)="close()"
+        >Create a community</a
+      >
     </div>
   }
 </div>

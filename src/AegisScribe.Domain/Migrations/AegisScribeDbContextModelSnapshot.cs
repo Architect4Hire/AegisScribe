@@ -75,6 +75,10 @@ namespace AegisScribe.Domain.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<long>("BlizzardCharacterId")
                         .HasColumnType("bigint");
 
@@ -93,6 +97,9 @@ namespace AegisScribe.Domain.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset?>("MediaSyncedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -106,6 +113,10 @@ namespace AegisScribe.Domain.Migrations
                     b.Property<Guid>("RealmId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("RenderUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Spec")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
@@ -116,6 +127,8 @@ namespace AegisScribe.Domain.Migrations
                         .IsUnique();
 
                     b.HasIndex("LastSyncedAt");
+
+                    b.HasIndex("MediaSyncedAt");
 
                     b.HasIndex("RealmId", "NameLower")
                         .IsUnique();
@@ -192,6 +205,9 @@ namespace AegisScribe.Domain.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<DateTimeOffset?>("IconSyncedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("ItemLevel")
                         .HasColumnType("int");
 
@@ -207,6 +223,8 @@ namespace AegisScribe.Domain.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BlizzardItemId");
 
                     b.HasIndex("CharacterEquipmentId", "Slot")
                         .IsUnique();

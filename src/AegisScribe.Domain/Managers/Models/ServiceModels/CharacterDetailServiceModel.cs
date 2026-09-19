@@ -20,6 +20,12 @@ public class CharacterDetailServiceModel
     // mirrors exactly.
     public string ClassColor { get; set; } = string.Empty;
 
+    // Blizzard render URLs, referenced directly by the client (never proxied). Both null when Blizzard
+    // has no renders for this character or has not been asked yet — the banner falls back to an
+    // initial and the centre column to a silhouette, both designed states.
+    public string? AvatarUrl { get; set; }
+    public string? RenderUrl { get; set; }
+
     // Always false today: nothing before Phase 6 (the Blizzard cache-first gateway) can serve a
     // stale row. The flag exists now so the UI's degraded state isn't designed after the fact.
     public bool IsDegraded { get; set; }

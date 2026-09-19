@@ -44,6 +44,12 @@ builder.Services.AddOptions<SyncWorkerOptions>()
         o => o.MaxConcurrentRefreshes <= o.CharacterBatchSize,
         "SyncWorker:MaxConcurrentRefreshes must not exceed CharacterBatchSize — more workers than work " +
         "is a bound that bounds nothing.")
+    .Validate(
+        o => o.MediaBatchSize > 0,
+        "SyncWorker:MediaBatchSize must be positive — a zero batch means icons and renders never fill in.")
+    .Validate(
+        o => o.MediaPollInterval > TimeSpan.Zero,
+        "SyncWorker:MediaPollInterval must be positive.")
     .ValidateOnStart();
 
 // Brings the typed HttpClient, the token provider, the shared rate limiter and the staleness options.
@@ -59,6 +65,11 @@ builder.Services.AddHostedService<CharacterRefreshWorker>();
 
 // Guild rosters. Global like the rest: a Guild row exists only because somebody linked it, so
 // refreshing every stale Guild row covers every community without iterating tenants.
+// Character renders and item icons — the images neither the character nor the equipment endpoint
+// carries. Global, and paid for by nobody's community budget.
+builder.Services.AddScoped<MediaBackfillSync>();
+builder.Services.AddHostedService<MediaBackfillWorker>();
+
 builder.Services.AddScoped<IGuildRepository, GuildRepository>();
 builder.Services.AddScoped<IGuildSyncDataLayer, GuildSyncDataLayer>();
 builder.Services.AddScoped<GuildRefreshSync>();

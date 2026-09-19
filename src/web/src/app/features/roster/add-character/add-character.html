@@ -1,0 +1,76 @@
+<!-- A native disclosure: keyboard and screen-reader behaviour for free, and no open/closed state to hold. -->
+<!-- id="add-character" is the first-run checklist's fragment target; keep them in step. -->
+<details
+  id="add-character"
+  class="add-character"
+  [open]="expanded()"
+  (toggle)="expanded.set($any($event.target).open)"
+>
+  <summary class="ac-summary">Add a character</summary>
+
+  <!-- A plain submit: no forms module here, so (ngSubmit) would never fire. -->
+  <form class="ac-form" (submit)="$event.preventDefault(); add()" novalidate>
+    <div class="ac-field ac-field-region">
+      <label class="label" for="ac-region">Region</label>
+      <select
+        id="ac-region"
+        class="field"
+        name="region"
+        [value]="region()"
+        (change)="region.set($any($event.target).value)"
+      >
+        @for (option of regions; track option) {
+          <option [value]="option">{{ option.toUpperCase() }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="ac-field">
+      <label class="label" for="ac-realm">Realm</label>
+      <input
+        id="ac-realm"
+        class="field"
+        type="text"
+        name="realm"
+        autocomplete="off"
+        spellcheck="false"
+        maxlength="64"
+        placeholder="Argent Dawn"
+        [value]="realm()"
+        (input)="realm.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="ac-field">
+      <label class="label" for="ac-name">Character</label>
+      <input
+        id="ac-name"
+        class="field"
+        type="text"
+        name="name"
+        autocomplete="off"
+        spellcheck="false"
+        maxlength="12"
+        placeholder="Thornwake"
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+      />
+    </div>
+
+    <button class="btn btn-primary ac-submit" type="submit" [disabled]="!canAdd()">
+      {{ adding() ? 'Adding…' : 'Add to roster' }}
+    </button>
+  </form>
+
+  <p class="ac-hint">
+    Looks the character up — from what AegisScribe already holds, or from Blizzard if we have never
+    seen them — and adds them unranked and unclaimed.
+  </p>
+
+  @if (notice(); as message) {
+    <p class="ac-notice" role="status">{{ message }}</p>
+  }
+  @if (error(); as message) {
+    <p class="ac-error" role="alert">{{ message }}</p>
+  }
+</details>

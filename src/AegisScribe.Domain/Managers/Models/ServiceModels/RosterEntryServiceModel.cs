@@ -16,6 +16,10 @@ public class RosterEntryServiceModel
     public Guid CharacterId { get; set; }
 
     public string CharacterName { get; set; } = string.Empty;
+
+    // Region travels with the realm because a realm slug alone does not name a character: "argent-dawn"
+    // exists in both US and EU. Together with the name they are the character profile's address.
+    public string Region { get; set; } = string.Empty;
     public string RealmSlug { get; set; } = string.Empty;
     public CharacterClass Class { get; set; }
 

@@ -115,11 +115,23 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
         existing.BlizzardCharacterId = fresh.BlizzardCharacterId;
         existing.LastSyncedAt = fresh.LastSyncedAt;
 
+        // Only when this refresh actually asked. A media call that failed leaves MediaSyncedAt null on
+        // the fresh entity, and overwriting would erase renders we hold on the strength of a request
+        // that never got an answer.
+        if (fresh.MediaSyncedAt is not null)
+        {
+            existing.AvatarUrl = fresh.AvatarUrl;
+            existing.RenderUrl = fresh.RenderUrl;
+            existing.MediaSyncedAt = fresh.MediaSyncedAt;
+        }
+
         return existing;
     }
 
     public async Task ReplaceEquipmentAsync(Guid characterId, CharacterEquipment fresh, CancellationToken ct)
     {
+        await FillKnownIconsAsync(fresh.EquippedItems, ct);
+
         var existing = await db.CharacterEquipments
             .Include(e => e.EquippedItems)
             .FirstOrDefaultAsync(e => e.CharacterId == characterId, ct);
@@ -156,6 +168,7 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
                 current.Quality = incoming.Quality;
                 current.ItemLevel = incoming.ItemLevel;
                 current.IconName = incoming.IconName;
+                current.IconSyncedAt = incoming.IconSyncedAt;
                 continue;
             }
 
@@ -167,6 +180,95 @@ public class CharacterRepository(AegisScribeDbContext db) : ICharacterRepository
         // Whatever is left was equipped before and is not now — an emptied slot is a real change, and
         // leaving the old item there would show gear the character has taken off.
         db.EquippedItems.RemoveRange(bySlot.Values);
+    }
+
+    public async Task<IReadOnlyList<StaleCharacterRef>> FindMissingMediaAsync(
+        DateTimeOffset staleBefore, int take, CancellationToken ct) =>
+        await db.Characters
+            .AsNoTracking()
+            .Where(c => c.MediaSyncedAt == null || c.MediaSyncedAt < staleBefore)
+            // Never-asked first, then the oldest answers — the same compliance-queue ordering as
+            // FindStaleAsync. Within each, members of a linked guild go ahead of everyone else: those
+            // are the characters communities actually roster, while the rest of the table can hold
+            // one-off lookups that nobody will look at again.
+            .OrderBy(c => c.MediaSyncedAt != null)
+            .ThenByDescending(c => db.GuildMembers.Any(member => member.CharacterId == c.Id))
+            .ThenBy(c => c.MediaSyncedAt)
+            .Take(take)
+            .Select(c => new StaleCharacterRef(c.Id, c.RealmId, c.Realm.Region, c.Realm.Slug, c.Name))
+            .ToListAsync(ct);
+
+    public Task SetMediaAsync(Guid characterId, CharacterMedia media, DateTimeOffset syncedAt, CancellationToken ct) =>
+        db.Characters
+            .Where(c => c.Id == characterId)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(c => c.AvatarUrl, media.AvatarUrl)
+                    .SetProperty(c => c.RenderUrl, media.RenderUrl)
+                    .SetProperty(c => c.MediaSyncedAt, syncedAt),
+                ct);
+
+    // Distinct item ids, so an item worn by a thousand characters costs one Blizzard call. Rows with an
+    // IconName but no IconSyncedAt are seeded demo data that Blizzard never described; they are left
+    // alone rather than "corrected" against ids that do not exist in the game.
+    public async Task<IReadOnlyList<long>> FindItemIdsNeedingIconAsync(
+        DateTimeOffset staleBefore, int take, CancellationToken ct) =>
+        await db.EquippedItems
+            .AsNoTracking()
+            .Where(i => i.BlizzardItemId > 0
+                && ((i.IconSyncedAt == null && i.IconName == null) || i.IconSyncedAt < staleBefore))
+            .Select(i => i.BlizzardItemId)
+            .Distinct()
+            .OrderBy(id => id)
+            .Take(take)
+            .ToListAsync(ct);
+
+    // Every row wearing the item at once — the dedupe is the whole point. Demo rows (named, never
+    // synced) are excluded for the same reason as above.
+    public Task SetItemIconAsync(long blizzardItemId, string? iconName, DateTimeOffset syncedAt, CancellationToken ct) =>
+        db.EquippedItems
+            .Where(i => i.BlizzardItemId == blizzardItemId && !(i.IconSyncedAt == null && i.IconName != null))
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(i => i.IconName, iconName)
+                    .SetProperty(i => i.IconSyncedAt, syncedAt),
+                ct);
+
+    // The equipment endpoint carries no icons, so a fresh snapshot arrives with every IconName null. An
+    // icon already resolved for the same item id — on this character's previous snapshot or anybody
+    // else's — is copied across, which both stops a refresh from blanking icons the worker filled in
+    // and means a newly seen character usually shows its gear's icons immediately. Only genuinely new
+    // items wait for the worker.
+    private async Task FillKnownIconsAsync(IEnumerable<EquippedItem> incoming, CancellationToken ct)
+    {
+        var unresolved = incoming.Where(i => i.IconSyncedAt is null && i.BlizzardItemId > 0).ToList();
+
+        if (unresolved.Count == 0)
+        {
+            return;
+        }
+
+        var ids = unresolved.Select(i => i.BlizzardItemId).Distinct().ToList();
+
+        var known = await db.EquippedItems
+            .AsNoTracking()
+            .Where(i => ids.Contains(i.BlizzardItemId) && i.IconSyncedAt != null)
+            .Select(i => new { i.BlizzardItemId, i.IconName, i.IconSyncedAt })
+            .Distinct()
+            .ToListAsync(ct);
+
+        var latest = known
+            .GroupBy(k => k.BlizzardItemId)
+            .ToDictionary(g => g.Key, g => g.MaxBy(k => k.IconSyncedAt)!);
+
+        foreach (var item in unresolved)
+        {
+            if (latest.TryGetValue(item.BlizzardItemId, out var icon))
+            {
+                item.IconName = icon.IconName;
+                item.IconSyncedAt = icon.IconSyncedAt;
+            }
+        }
     }
 
     // A callback rather than an exposed BeginTransactionAsync — see DbContextTransactions, which holds

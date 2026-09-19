@@ -99,6 +99,28 @@ describe('FirstRunChecklist', () => {
     );
   });
 
+  it('leads every step somewhere other than the roster it is rendered on', async () => {
+    // The checklist sits on the roster, so a step that links to the bare roster goes nowhere — which
+    // is exactly how "Link a guild" and "Build your roster" used to look like dead buttons.
+    const hrefs = (host: HTMLElement) =>
+      Array.from(host.querySelectorAll<HTMLAnchorElement>('.fr-go')).map((link) =>
+        link.getAttribute('href'),
+      );
+
+    const fresh = await createWith();
+    expect(hrefs(fresh.host)).toEqual([
+      '/t/emberfall/guilds',
+      '/t/emberfall/roster#add-character',
+      '/t/emberfall/ranks',
+      '/t/emberfall/members',
+    ]);
+
+    // Once a guild is linked, building the roster means importing it, which lives beside the guild.
+    const linked = await createWith({ getOverview: () => of(overview({ hasLinkedGuild: true })) });
+    expect(hrefs(linked.host)).toContain('/t/emberfall/guilds');
+    expect(linked.host.textContent).toContain('Import members');
+  });
+
   it('derives each step from what the community has, and un-completes it when that goes away', async () => {
     // The RESTRICTION this whole feature turns on. A persisted "step 3 of 4" would still claim the
     // ranks step was done after the last rank was deleted; a derived one cannot.

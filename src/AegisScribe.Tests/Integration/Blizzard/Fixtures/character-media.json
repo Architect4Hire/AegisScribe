@@ -1,0 +1,36 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/character-media?namespace=profile-us"
+    }
+  },
+  "character": {
+    "key": {
+      "href": "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric?namespace=profile-us"
+    },
+    "name": "Aldric",
+    "id": 201234567,
+    "realm": {
+      "key": {
+        "href": "https://us.api.blizzard.com/data/wow/realm/3?namespace=dynamic-us"
+      },
+      "name": "Argent Dawn",
+      "id": 3,
+      "slug": "argent-dawn"
+    }
+  },
+  "assets": [
+    {
+      "key": "avatar",
+      "value": "https://render.worldofwarcraft.com/us/character/argent-dawn/135/201234567-avatar.jpg"
+    },
+    {
+      "key": "inset",
+      "value": "https://render.worldofwarcraft.com/us/character/argent-dawn/135/201234567-inset.jpg"
+    },
+    {
+      "key": "main-raw",
+      "value": "https://render.worldofwarcraft.com/us/character/argent-dawn/135/201234567-main-raw.png"
+    }
+  ]
+}

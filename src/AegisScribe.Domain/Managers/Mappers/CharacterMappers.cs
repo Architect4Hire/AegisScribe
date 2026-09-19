@@ -29,6 +29,8 @@ public static class CharacterMappers
             .ToList()
             ?? [],
         ClassColor = ClassColorHex(character.Class),
+        AvatarUrl = character.AvatarUrl,
+        RenderUrl = character.RenderUrl,
         IsDegraded = isDegraded,
     };
 

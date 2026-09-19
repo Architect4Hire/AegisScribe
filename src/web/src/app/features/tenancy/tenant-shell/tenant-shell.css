@@ -17,7 +17,11 @@
   font-size: 0.9rem;
   letter-spacing: 0.18em;
   color: var(--ink-2);
+  text-decoration: none;
   flex: none;
+}
+.appbar .brand:hover {
+  color: var(--ink);
 }
 .appbar .brand-mark {
   width: 24px;
@@ -25,7 +29,11 @@
   object-fit: contain;
   flex: none;
 }
-.appnav { display: flex; gap: 2px; flex-wrap: wrap; }
+.appnav {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
 .appnav a {
   font-family: var(--font-ui);
   font-size: var(--t-sm);
@@ -35,6 +43,14 @@
   padding: 5px 10px;
   border-radius: var(--r-1);
 }
-.appnav a:hover { color: var(--ink); background: var(--surface-3); }
-.appnav a.is-active { color: var(--brass); background: var(--brass-dim); }
-.appbar .spacer { margin-left: auto; }
+.appnav a:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.appnav a.is-active {
+  color: var(--brass);
+  background: var(--brass-dim);
+}
+.appbar .spacer {
+  margin-left: auto;
+}

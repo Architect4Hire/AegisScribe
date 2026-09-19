@@ -594,6 +594,86 @@ public class BlizzardCharacterFetchTests
             () => harness.Gateway.FetchCharacterAsync("argent-dawn", "Aldric", CancellationToken.None));
     }
 
+    [Fact]
+    public async Task FetchCharacterMedia_RequestsTheCharacterMediaSegmentWithTheProfileNamespace()
+    {
+        var harness = Harness.Returning(HttpStatusCode.OK, Fixture("character-media.json"));
+
+        await harness.Gateway.FetchCharacterMediaAsync("argent-dawn", "Aldric", CancellationToken.None);
+
+        Assert.Equal(
+            "https://us.api.blizzard.com/profile/wow/character/argent-dawn/aldric/character-media" +
+            "?namespace=profile-us&locale=en_US",
+            harness.Handler.SingleRequest.AbsoluteUri);
+        Assert.Equal("Bearer", harness.Handler.SingleRequest.AuthorizationScheme);
+    }
+
+    [Fact]
+    public async Task FetchCharacterMedia_TakesTheAvatarAndTheRawRender_AndIgnoresTheInset()
+    {
+        var harness = Harness.Returning(HttpStatusCode.OK, Fixture("character-media.json"));
+
+        var media = await harness.Gateway.FetchCharacterMediaAsync("argent-dawn", "Aldric", CancellationToken.None);
+
+        Assert.NotNull(media);
+        Assert.EndsWith("-avatar.jpg", media.AvatarUrl);
+        Assert.EndsWith("-main-raw.png", media.RenderUrl);
+    }
+
+    [Fact]
+    public async Task FetchCharacterMedia_ReturnsNullOn404()
+    {
+        // A character with no renders is a normal answer, not a failure.
+        var harness = Harness.Returning(HttpStatusCode.NotFound);
+
+        Assert.Null(await harness.Gateway.FetchCharacterMediaAsync("argent-dawn", "Aldric", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task FetchItemIcon_RequestsTheStaticNamespace()
+    {
+        // static-, not profile-: item media is Game Data. The wrong namespace 404s, and a 404 is stored
+        // as "this item has no icon" — so this is the assertion that keeps every icon from going blank.
+        var harness = Harness.Returning(HttpStatusCode.OK, Fixture("item-media.json"));
+
+        await harness.Gateway.FetchItemIconAsync(19019, CancellationToken.None);
+
+        Assert.Equal(
+            "https://us.api.blizzard.com/data/wow/media/item/19019?namespace=static-us&locale=en_US",
+            harness.Handler.SingleRequest.AbsoluteUri);
+        Assert.DoesNotContain("access_token", harness.Handler.SingleRequest.Query);
+    }
+
+    [Fact]
+    public async Task FetchItemIcon_ReadsTheFileNameOutOfTheCapturedIconUrl()
+    {
+        // From a live capture: the URL is ".../us/icons/56/135349.jpg" — region segment, numeric file id.
+        var harness = Harness.Returning(HttpStatusCode.OK, Fixture("item-media.json"));
+
+        var lookup = await harness.Gateway.FetchItemIconAsync(19019, CancellationToken.None);
+
+        Assert.Equal("135349", lookup.IconName);
+    }
+
+    [Fact]
+    public async Task FetchItemIcon_Treats404AsNoIcon_RatherThanThrowing()
+    {
+        var harness = Harness.Returning(HttpStatusCode.NotFound);
+
+        var lookup = await harness.Gateway.FetchItemIconAsync(1, CancellationToken.None);
+
+        Assert.Null(lookup.IconName);
+    }
+
+    [Fact]
+    public async Task FetchItemIcon_ThrowsUnavailableOnAServerError_SoTheWorkerRetriesRatherThanRecording()
+    {
+        var harness = Harness.Returning(HttpStatusCode.ServiceUnavailable);
+
+        await Assert.ThrowsAsync<BlizzardUnavailableException>(
+            () => harness.Gateway.FetchItemIconAsync(19019, CancellationToken.None));
+    }
+
     private static string Fixture(string fileName) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Integration", "Blizzard", "Fixtures", fileName));
 

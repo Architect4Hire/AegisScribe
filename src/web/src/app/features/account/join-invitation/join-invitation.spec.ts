@@ -36,6 +36,7 @@ describe('JoinInvitation', () => {
   let preview: ReturnType<typeof vi.fn<() => Observable<InvitationPreviewServiceModel>>>;
   let accept: ReturnType<typeof vi.fn<() => Observable<InvitationAcceptedServiceModel>>>;
   let probeSession: ReturnType<typeof vi.fn<() => Promise<UserServiceModel | null>>>;
+  let clear: ReturnType<typeof vi.fn<() => void>>;
   let login: ReturnType<typeof vi.fn<(returnUrl: string) => void>>;
   let navigate: ReturnType<
     typeof vi.fn<(commands: readonly unknown[], extras?: unknown) => Promise<boolean>>
@@ -45,6 +46,7 @@ describe('JoinInvitation', () => {
     preview = vi.fn(() => of(livePreview));
     accept = vi.fn(() => of(accepted));
     probeSession = vi.fn(async () => null);
+    clear = vi.fn();
     login = vi.fn();
 
     await TestBed.configureTestingModule({
@@ -52,7 +54,7 @@ describe('JoinInvitation', () => {
       providers: [
         provideRouter([]),
         { provide: InvitationService, useValue: { preview, accept } },
-        { provide: CurrentUserService, useValue: { probeSession } },
+        { provide: CurrentUserService, useValue: { probeSession, clear } },
         { provide: AuthService, useValue: { login } },
         {
           provide: ActivatedRoute,
@@ -124,6 +126,16 @@ describe('JoinInvitation', () => {
     expect(navigate).toHaveBeenCalledWith(['/t', 'ashes-of-dawn'], { replaceUrl: true });
   });
 
+  it('drops the cached memberships before navigating, so the tenant guard sees the new one', async () => {
+    probeSession.mockResolvedValue(signedInUser);
+
+    await render();
+    await component.accept();
+
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(clear.mock.invocationCallOrder[0]).toBeLessThan(navigate.mock.invocationCallOrder[0]);
+  });
+
   it.each([
     ['expired', 'This invitation has expired'],
     ['consumed', 'This invitation has already been used'],
@@ -180,5 +192,6 @@ describe('JoinInvitation', () => {
     expect(component.state()).toBe('refused');
     expect(component.refusal()).toBe('consumed');
     expect(navigate).not.toHaveBeenCalled();
+    expect(clear).not.toHaveBeenCalled();
   });
 });

@@ -36,8 +36,22 @@ public interface ICharacterRepository
     // rename or a realm transfer.
     Task<Character> UpsertCharacterAsync(Character fresh, Guid realmId, CancellationToken ct);
 
-    // Reconciles the equipped-item set for a character in place, slot by slot.
+    // Reconciles the equipped-item set for a character in place, slot by slot. Icons already known for
+    // an incoming item id are copied onto it, since the equipment endpoint carries none.
     Task ReplaceEquipmentAsync(Guid characterId, CharacterEquipment fresh, CancellationToken ct);
+
+    // The media backfill. Characters whose renders were never asked for, or were asked too long ago —
+    // oldest first, like FindStaleAsync.
+    Task<IReadOnlyList<StaleCharacterRef>> FindMissingMediaAsync(DateTimeOffset staleBefore, int take, CancellationToken ct);
+
+    // Distinct Blizzard item ids whose icon has never been asked for, or was asked too long ago.
+    Task<IReadOnlyList<long>> FindItemIdsNeedingIconAsync(DateTimeOffset staleBefore, int take, CancellationToken ct);
+
+    // Unlike the staged writes above, these two execute immediately: each is one self-contained UPDATE
+    // with nothing to commit alongside it, run by the worker outside any transaction.
+    Task SetMediaAsync(Guid characterId, CharacterMedia media, DateTimeOffset syncedAt, CancellationToken ct);
+
+    Task SetItemIconAsync(long blizzardItemId, string? iconName, DateTimeOffset syncedAt, CancellationToken ct);
 
     Task<TResult> ExecuteInTransactionAsync<TResult>(Func<CancellationToken, Task<TResult>> operation, CancellationToken ct);
 }

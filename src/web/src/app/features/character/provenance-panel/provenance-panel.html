@@ -5,9 +5,13 @@
   <div class="panel-body">
     <dl class="kv">
       <dt>Last synced</dt>
-      <dd>{{ lastSyncedAt() }}</dd>
+      <dd>
+        <time [attr.datetime]="lastSyncedAt()" [title]="lastSyncedAt()">{{ lastSyncedLabel() }}</time>
+      </dd>
       <dt>Refresh due</dt>
-      <dd>{{ refreshDue() }}</dd>
+      <dd>
+        <time [attr.datetime]="refreshDueIso()">{{ refreshDue() }}</time>
+      </dd>
       <dt>Source</dt>
       <dd>{{ source() }}</dd>
       <dt>Character ID</dt>

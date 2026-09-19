@@ -1,9 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { UserServiceModel } from '../models/auth.models';
 import { skipSignInRedirect } from './auth-redirect.context';
 import { RuntimeConfigService } from './runtime-config.service';
+
+// Comfortably longer than a cold sign-in path — the gateway's first Redis connection plus a token
+// refresh against the API takes under a second locally — and short enough that nobody stares at an
+// empty page wondering whether it is broken.
+const PROBE_TIMEOUT_MS = 5000;
 
 // The one place the signed-in user and their tenant memberships are cached, so the auth guard and the
 // tenant guard both read from a single GET /api/v1/me (auth.md → "Angular side").
@@ -53,7 +58,9 @@ export class CurrentUserService {
     }
   }
 
-  // Called by the interceptor on a 401 — the session ended, so the cached identity is stale.
+  // Called by the interceptor on a 401 — the session ended, so the cached identity is stale — and by
+  // anything that just changed the caller's memberships (creating a community, accepting an
+  // invitation), so the tenant guard's next check re-fetches rather than refusing the new slug.
   clear(): void {
     this._user.set(null);
     this.pending = null;
@@ -66,11 +73,15 @@ export class CurrentUserService {
   }
 
   private async load(skipSignIn = false): Promise<UserServiceModel> {
-    const user = await firstValueFrom(
-      this.http.get<UserServiceModel>(`${this.runtimeConfig.gatewayUrl()}/api/v1/me`, {
-        context: skipSignIn ? skipSignInRedirect() : undefined,
-      }),
-    );
+    const request = this.http.get<UserServiceModel>(`${this.runtimeConfig.gatewayUrl()}/api/v1/me`, {
+      context: skipSignIn ? skipSignInRedirect() : undefined,
+    });
+
+    // The probe is bounded; the real load is not. The landing guard awaits the probe before '/' renders
+    // anything, so a gateway that is slow to answer — starting up, or waiting on an API that is — left
+    // the page blank for as long as the proxy was willing to wait. Past the limit the visitor is treated
+    // as signed out and sees the landing page, whose Log in button costs a signed-in user one click.
+    const user = await firstValueFrom(skipSignIn ? request.pipe(timeout(PROBE_TIMEOUT_MS)) : request);
     this._user.set(user);
     return user;
   }

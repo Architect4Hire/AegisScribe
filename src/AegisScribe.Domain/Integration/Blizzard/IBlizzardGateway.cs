@@ -59,4 +59,14 @@ public interface IBlizzardGateway
     // On its own endpoint and therefore with its own LastSyncedAt. Same null-on-404 contract. The
     // returned CharacterEquipment has no CharacterId — the caller sets it when attaching the snapshot.
     Task<CharacterEquipment?> FetchEquipmentAsync(string realmSlug, string characterName, CancellationToken cancellationToken);
+
+    // The avatar and full-body render. Null on 404, which callers record as "no renders" rather than
+    // "unknown" — a character can genuinely have none. Throws BlizzardUnavailableException like the
+    // reads above, and callers treat that as "unknown" and keep whatever they already held.
+    Task<CharacterMedia?> FetchCharacterMediaAsync(string realmSlug, string characterName, CancellationToken cancellationToken);
+
+    // One item's icon from /data/wow/media/item/{id}, in the static namespace. Never called per
+    // character: the sync worker asks once per distinct item id and every equipped row shares the
+    // answer.
+    Task<ItemIconLookup> FetchItemIconAsync(long blizzardItemId, CancellationToken cancellationToken);
 }

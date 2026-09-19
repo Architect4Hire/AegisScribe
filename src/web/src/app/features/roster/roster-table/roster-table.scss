@@ -117,6 +117,12 @@ th.sorted::after {
 .char-name {
   color: var(--class-color, var(--ink));
   font-weight: 600;
+  text-decoration: none;
+}
+
+/* The class colour already marks the name; the underline on hover is what says it goes somewhere. */
+.char-name:hover {
+  text-decoration: underline;
 }
 
 /* The game's rank. Mono and muted, deliberately unlike the community's pill beside it — the visual

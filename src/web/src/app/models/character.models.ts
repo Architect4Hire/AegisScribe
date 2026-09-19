@@ -36,5 +36,10 @@ export interface CharacterSummaryServiceModel {
 export interface CharacterDetailServiceModel extends CharacterSummaryServiceModel {
   equipment: EquippedItemServiceModel[];
   classColor: string;
+  // Blizzard render URLs, referenced directly — never proxied. Null when Blizzard has no renders for
+  // this character or has not been asked yet; the banner and centre column fall back to designed
+  // states rather than broken images.
+  avatarUrl: string | null;
+  renderUrl: string | null;
   isDegraded: boolean;
 }

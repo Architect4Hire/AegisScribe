@@ -17,10 +17,13 @@ public class SyncBusiness(
     ITenantSyncBudget budget,
     ICharacterDataLayer characters) : ISyncBusiness
 {
-    // A refresh costs the character summary and the equipment: two Blizzard calls, charged whether or
-    // not the stored row turns out to be current. That is the honest price — the officer asked us to go
-    // and ask Blizzard, and we did.
-    private const int CallsPerCharacterRefresh = 2;
+    // A refresh costs the character summary, the equipment and the character media: three Blizzard
+    // calls, charged whether or not the stored row turns out to be current. That is the honest price —
+    // the officer asked us to go and ask Blizzard, and we did. Item icons are deliberately NOT in this
+    // price: they are global reference data, asked once per item for the whole store (by the read path
+    // for an item nobody has seen, by the sync worker otherwise), so pressing refresh again never
+    // re-buys them and no community's budget should pay for what every community then shares.
+    private const int CallsPerCharacterRefresh = 3;
 
     public async Task<CharacterDetailServiceModel?> RefreshCharacterAsync(
         Guid tenantId, string region, string realmSlug, string name, CancellationToken ct)

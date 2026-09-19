@@ -27,7 +27,9 @@
   place-items: center;
   color: var(--ink-3);
 }
-.item-icon img { border-radius: 2px; }
+/* Blizzard serves 56px icons; they fill the 34px tile edge to edge rather than overflowing its border. */
+.item-icon { overflow: hidden; }
+.item-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .item-body { min-width: 0; flex: 1; }
 .item-name {

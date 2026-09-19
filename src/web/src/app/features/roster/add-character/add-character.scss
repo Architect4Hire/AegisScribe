@@ -1,0 +1,72 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/fields';
+
+/* Not drawn in design/aegisscribe-armory.html — composed from §05 (buttons, fields). Every value is a
+   token. */
+.add-character {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.ac-summary {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.add-character[open] .ac-summary {
+  margin-bottom: var(--s-3);
+}
+
+.ac-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+}
+
+.ac-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.ac-field-region {
+  flex: 0 0 auto;
+}
+
+.ac-submit {
+  flex: none;
+}
+
+.ac-hint {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  margin: var(--s-3) 0 0;
+}
+
+.ac-notice,
+.ac-error {
+  font-size: var(--t-sm);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: var(--s-3) 0 0;
+}
+
+.ac-notice {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-border);
+}
+
+.ac-error {
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+}

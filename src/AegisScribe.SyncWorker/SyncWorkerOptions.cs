@@ -10,7 +10,7 @@ public sealed class SyncWorkerOptions
 {
     public const string SectionName = "SyncWorker";
 
-    // Characters per pass, at two Blizzard calls each — the summary and the equipment.
+    // Characters per pass, at three Blizzard calls each — the summary, the equipment and the renders.
     //
     // Sized from the obligation rather than picked: holding N characters inside a seven-day window costs
     // N/7 refreshes a day, so 200 a run on the poll below sustains roughly 134,000 stored characters for
@@ -30,4 +30,11 @@ public sealed class SyncWorkerOptions
     // Guilds per pass. Far cheaper than characters — one call each, not two — so the batch can be larger
     // for the same spend.
     public int GuildBatchSize { get; set; } = 50;
+
+    // Per pass, for EACH of the two media selections — characters missing renders and distinct items
+    // missing icons — at one call each. So at most 2 × this per poll: 200 every five minutes is 2,400
+    // calls an hour at the very worst, while a backlog drains, and close to nothing once it has.
+    public int MediaBatchSize { get; set; } = 100;
+
+    public TimeSpan MediaPollInterval { get; set; } = TimeSpan.FromMinutes(5);
 }

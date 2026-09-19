@@ -62,9 +62,9 @@ describe('ItemCell', () => {
     fixture.componentRef.setInput('item', item({ slot: 'MainHand', quality: 'Artifact' }));
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.item-meta')?.textContent).toContain(
-      'Main hand',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.item-meta')?.textContent,
+    ).toContain('Main hand');
   });
 
   it('hides the slot in the meta line when showSlot is false', () => {
@@ -73,9 +73,9 @@ describe('ItemCell', () => {
     fixture.componentRef.setInput('showSlot', false);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.item-meta')?.textContent).not.toContain(
-      'Neck',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.item-meta')?.textContent,
+    ).not.toContain('Neck');
   });
 
   it('falls back to no icon image when iconUrl is null, rather than erroring', () => {
@@ -85,6 +85,30 @@ describe('ItemCell', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.item-icon img')).toBeNull();
   });
 
+  it("draws the slot's outline where the icon would be, rather than a blank tile", () => {
+    // An item the worker has not resolved yet, or one of the icons Blizzard genuinely 404s.
+    fixture.componentRef.setInput('item', item({ iconUrl: null }));
+    fixture.detectChanges();
+
+    const glyph = (fixture.nativeElement as HTMLElement).querySelector(
+      '.item-icon scribe-slot-glyph',
+    );
+    expect(glyph?.querySelector('svg')).not.toBeNull();
+    // Decorative: the item name beside it already says what this is.
+    expect(glyph?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('draws the slot outline in an empty slot too', () => {
+    fixture.componentRef.setInput('item', null);
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        '.is-empty .item-icon scribe-slot-glyph svg',
+      ),
+    ).not.toBeNull();
+  });
+
   it('renders the URL the API resolved directly, with no client-side path assembly', () => {
     fixture.componentRef.setInput(
       'item',
@@ -92,9 +116,9 @@ describe('ItemCell', () => {
     );
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.item-icon img')?.getAttribute('src')).toBe(
-      'https://render.worldofwarcraft.com/icons/56/inv_belt_web_c_01.jpg',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.item-icon img')?.getAttribute('src'),
+    ).toBe('https://render.worldofwarcraft.com/icons/56/inv_belt_web_c_01.jpg');
   });
 
   it('falls back to no icon image once the real one 404s', () => {
@@ -106,6 +130,31 @@ describe('ItemCell', () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('.item-icon img')).toBeNull();
+  });
+
+  it("shows the next character's icon in a slot whose previous icon failed", () => {
+    // The cell is reused when the page moves to another character; a failure belongs to the URL that
+    // failed, not to the slot.
+    fixture.componentRef.setInput(
+      'item',
+      item({ iconUrl: 'https://render.worldofwarcraft.com/icons/56/broken.jpg' }),
+    );
+    fixture.detectChanges();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector('.item-icon img')
+      ?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.item-icon img')).toBeNull();
+
+    fixture.componentRef.setInput(
+      'item',
+      item({ iconUrl: 'https://render.worldofwarcraft.com/icons/56/135349.jpg' }),
+    );
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.item-icon img')?.getAttribute('src'),
+    ).toBe('https://render.worldofwarcraft.com/icons/56/135349.jpg');
   });
 
   it('renders an empty slot as a plain div, not a link, labelled with the slot name', () => {

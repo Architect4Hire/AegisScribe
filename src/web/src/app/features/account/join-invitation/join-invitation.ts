@@ -109,6 +109,10 @@ export class JoinInvitation implements OnInit {
     try {
       const accepted = await firstValueFrom(this.invitations.accept(this.token));
 
+      // The cached /me (probeSession above) predates this membership, so tenantGuard would bounce the
+      // new member to the picker. Clearing makes the guard re-fetch and find it.
+      this.currentUser.clear();
+
       // replaceUrl: the token is spent, and leaving it in the history stack means the back button
       // re-renders a screen holding a dead secret.
       await this.router.navigate(['/t', accepted.tenantSlug], { replaceUrl: true });

@@ -10,6 +10,7 @@ import {
   TenantRankServiceModel,
 } from '../../../models/roster.models';
 import { FirstRunChecklist } from '../../tenancy/first-run-checklist/first-run-checklist';
+import { AddCharacter } from '../add-character/add-character';
 import { EmptyState } from '../../../shared/empty-state/empty-state';
 import { RankPill } from '../../../shared/rank-pill/rank-pill';
 import { Skeleton } from '../../../shared/skeleton/skeleton';
@@ -47,7 +48,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // the roster is a community's landing page, and the checklist is an aside above it that hides itself
 // for a plain member, for a set-up community, and for anyone who has dismissed it.
 @Component({
-  imports: [EmptyState, FirstRunChecklist, RankPill, RouterLink, Skeleton, StatusPill],
+  imports: [AddCharacter, EmptyState, FirstRunChecklist, RankPill, RouterLink, Skeleton, StatusPill],
   selector: 'scribe-roster-table',
   styleUrl: './roster-table.scss',
   templateUrl: './roster-table.html',

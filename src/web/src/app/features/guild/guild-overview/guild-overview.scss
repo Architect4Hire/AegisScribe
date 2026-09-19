@@ -1,0 +1,177 @@
+@use '../../../../styles/buttons';
+@use '../../../../styles/fields';
+
+/* Not drawn in design/aegisscribe-armory.html — composed from §05 (buttons, fields, pills) and the
+   rank-manager's section layout. Every value is a token. */
+.guild-overview {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+}
+
+.go-title {
+  font-family: var(--font-ui);
+  font-size: var(--t-h1);
+  color: var(--ink);
+  margin: 0 0 var(--s-2);
+}
+
+.go-intro {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  margin: 0 0 var(--s-5);
+}
+
+.go-section {
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-1);
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.go-heading {
+  font-family: var(--font-ui);
+  font-size: var(--t-h2);
+  color: var(--ink);
+  margin: 0 0 var(--s-3);
+}
+
+.go-link-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s-3);
+}
+
+.go-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.go-field-region {
+  flex: 0 0 auto;
+}
+
+.go-link-submit {
+  flex: none;
+}
+
+.go-hint {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  margin: var(--s-3) 0 0;
+}
+
+.go-caveat {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-3);
+}
+
+.go-caveat a,
+.go-import-result a {
+  color: var(--brass);
+}
+
+.go-notice {
+  font-size: var(--t-sm);
+  color: var(--ok);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-4);
+}
+
+/* A failed write, reported without taking the list away. */
+.go-write-error {
+  font-size: var(--t-sm);
+  color: var(--attention);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-border);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin: 0 0 var(--s-4);
+}
+
+.go-list,
+.go-unaffiliated-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.go-guild {
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.go-guild:last-child {
+  border-bottom: 0;
+}
+
+.go-guild-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.go-guild-id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.go-guild-name {
+  font-family: var(--font-ui);
+  font-size: var(--t-h3);
+  color: var(--ink);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.go-guild-meta {
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}
+
+.go-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.go-import-result {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  padding: var(--s-2) var(--s-3);
+  margin-top: var(--s-3);
+}
+
+.go-import-result p {
+  margin: 0;
+}
+
+.go-import-result .go-unaffiliated {
+  margin-top: var(--s-2);
+}
+
+.go-unaffiliated-list {
+  margin-top: var(--s-1);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}

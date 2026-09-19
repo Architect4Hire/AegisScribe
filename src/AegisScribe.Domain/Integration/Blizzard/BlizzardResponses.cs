@@ -174,6 +174,22 @@ internal sealed record BlizzardItemReference
     public long Id { get; init; }
 }
 
+// GET /profile/wow/character/{realmSlug}/{characterName}/character-media and
+// GET /data/wow/media/item/{itemId} share this shape: an `assets` array of
+// `{ "key": "icon", "value": "https://render.worldofwarcraft.com/us/icons/56/135349.jpg", "file_data_id": 135349 }`.
+// The key says which image it is; the value is an absolute URL we store and never follow.
+internal sealed record BlizzardMediaResponse
+{
+    public IReadOnlyList<BlizzardMediaAsset>? Assets { get; init; }
+}
+
+internal sealed record BlizzardMediaAsset
+{
+    public string? Key { get; init; }
+
+    public string? Value { get; init; }
+}
+
 // `{ "value": 639, "display_string": "Item Level 639" }` — the display string is localized, the value
 // is not.
 internal sealed record BlizzardItemLevelResponse

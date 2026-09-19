@@ -86,10 +86,47 @@ public class CharacterRefreshSyncTests
         Assert.Equal(3, result.Selected);
         Assert.Equal(3, result.Refreshed);
 
-        // Two calls per character — the summary and the equipment — which is what the per-run budget is
-        // sized against.
+        // Three calls per character — the summary, the equipment and the renders — which is what the
+        // per-run budget is sized against.
         await _gateway.ReceivedWithAnyArgs(3).FetchCharacterAsync(default!, default!, default);
         await _gateway.ReceivedWithAnyArgs(3).FetchEquipmentAsync(default!, default!, default);
+        await _gateway.ReceivedWithAnyArgs(3).FetchCharacterMediaAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task Run_CarriesTheRendersOntoTheCharacterItUpserts()
+    {
+        StoreHas(count: 1, lastSyncedAt: Now.AddDays(-20));
+        BlizzardAnswers();
+        _gateway.FetchCharacterMediaAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new CharacterMedia("https://render/avatar.jpg", "https://render/main-raw.png"));
+
+        await CreateSync().RunAsync(CancellationToken.None);
+
+        await _repository.Received(1).UpsertCharacterAsync(
+            Arg.Is<Domain.Managers.Models.Domain.Character>(c =>
+                c.AvatarUrl == "https://render/avatar.jpg" && c.MediaSyncedAt == Now),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Run_StillRefreshesTheCharacterWhenOnlyTheRendersAreUnavailable()
+    {
+        // The renders are decoration; the summary and gear are the data. A media failure must not cost
+        // the refresh, and must leave MediaSyncedAt unset so the stored renders survive the upsert.
+        StoreHas(count: 1, lastSyncedAt: Now.AddDays(-20));
+        BlizzardAnswers();
+        _gateway.FetchCharacterMediaAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<CharacterMedia?>(_ => throw new BlizzardUnavailableException("down"));
+
+        var result = await CreateSync().RunAsync(CancellationToken.None);
+
+        Assert.Equal(1, result.Refreshed);
+        await _repository.Received(1).UpsertCharacterAsync(
+            Arg.Is<Domain.Managers.Models.Domain.Character>(c => c.MediaSyncedAt == null),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

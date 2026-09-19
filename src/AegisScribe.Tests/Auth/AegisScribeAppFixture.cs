@@ -28,13 +28,13 @@ public class AegisScribeAppFixture : IAsyncLifetime
 
     /// <summary>
     /// The per-tenant sync budget this fixture's API runs with, in Blizzard calls per window.
-    /// Production is 2,000, which would take a thousand requests to exhaust over HTTP; four means two
+    /// Production is 2,000, which would take hundreds of requests to exhaust over HTTP; six means two
     /// character refreshes and then a 429. Same mechanism, smaller number.
     /// </summary>
-    public const int SyncBudgetCallsPerWindow = 4;
+    public const int SyncBudgetCallsPerWindow = 6;
 
-    /// <summary>Calls one character refresh costs: the summary and the equipment.</summary>
-    public const int CallsPerCharacterRefresh = 2;
+    /// <summary>Calls one character refresh costs: the summary, the equipment and the renders.</summary>
+    public const int CallsPerCharacterRefresh = 3;
 
     public DistributedApplication App { get; private set; } = null!;
     public HttpClient ApiClient { get; private set; } = null!;
@@ -72,6 +72,12 @@ public class AegisScribeAppFixture : IAsyncLifetime
 
         var api = appHost.Resources.OfType<ProjectResource>().Single(resource => resource.Name == "api");
         appHost.CreateResourceBuilder(api)
+            // The AppHost declares the Blizzard credentials as required parameters so a developer is
+            // prompted for them. Overridden empty here, replacing the parameter reference, so the suite
+            // neither waits on a prompt nobody will answer nor calls real Blizzard with a developer's
+            // saved credentials -- the gateways no-op, which is what these tests run against.
+            .WithEnvironment("Blizzard__ClientId", string.Empty)
+            .WithEnvironment("Blizzard__ClientSecret", string.Empty)
             .WithEnvironment(
                 "RateLimits__AnonymousPermitLimit",
                 AnonymousPermitLimit.ToString(CultureInfo.InvariantCulture))

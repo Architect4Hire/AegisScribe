@@ -21,6 +21,9 @@ export interface RosterEntryServiceModel {
   id: string;
   characterId: string;
   characterName: string;
+  // With realmSlug and characterName, the character profile's address — a realm slug alone exists in
+  // more than one region.
+  region: string;
   realmSlug: string;
   // `class` matches the JSON key. A friendlier name would deserialize to undefined and fail silently.
   class: CharacterClass;
@@ -54,6 +57,13 @@ export interface RosterEntryServiceModel {
   officerNote: string | null;
 
   joinedAt: string;
+}
+
+// Mirrors `AddRosterEntryViewModel`. A character id, not a realm and name: the character must already
+// exist in the global zone, which is what the preceding character lookup guarantees.
+export interface AddRosterEntryViewModel {
+  characterId: string;
+  tenantRankId: string | null;
 }
 
 // Mirrors `CharacterClaimServiceModel` — who in THIS community has claimed a character. All three

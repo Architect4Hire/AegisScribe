@@ -25,10 +25,90 @@ public class CharacterDataLayer(
 
         if (local is not null && !IsStale(local))
         {
+            await FillNeverAskedMediaAsync(local, realmSlug, name, ct);
+            await ResolveUnknownIconsAsync(local.Equipment?.EquippedItems ?? [], local.LastSyncedAt, ct);
+
             return CharacterReadResult.Current(local);
         }
 
         return await FetchAndPersistAsync(region, realmSlug, name, local, ct);
+    }
+
+    // Icons for items nobody has asked Blizzard about yet — typically a guild member opened for the
+    // first time, whose gear this very request just fetched. Somebody is looking at the page now, so
+    // waiting for the worker's next pass would show them a rail of outlines that fills in only on a
+    // reload. Bounded by construction: one character's equipment is at most sixteen slots, and only
+    // items unknown to the whole store reach Blizzard — the worker still covers anything that fails here.
+    //
+    // Fetches concurrently (bounded by the slot count, and every call still takes a lease from the
+    // shared limiter), writes sequentially: the repository's DbContext is not thread-safe. Stamped with
+    // the character's fetch instant, like the renders, so nothing looks fresher than its row.
+    private async Task ResolveUnknownIconsAsync(IEnumerable<EquippedItem> items, DateTimeOffset syncedAt, CancellationToken ct)
+    {
+        var unknown = items
+            .Where(item => item.IconSyncedAt is null && item.IconName is null && item.BlizzardItemId > 0)
+            .ToList();
+
+        if (unknown.Count == 0 || !gateway.IsConfigured)
+        {
+            return;
+        }
+
+        var lookups = await Task.WhenAll(
+            unknown.Select(item => item.BlizzardItemId).Distinct().Select(async itemId =>
+            {
+                try
+                {
+                    return (ItemId: itemId, Lookup: await gateway.FetchItemIconAsync(itemId, ct) ?? ItemIconLookup.NotFound);
+                }
+                catch (BlizzardUnavailableException)
+                {
+                    // Left unresolved; the worker's backfill picks it up.
+                    return (ItemId: itemId, Lookup: (ItemIconLookup?)null);
+                }
+            }));
+
+        foreach (var (itemId, lookup) in lookups)
+        {
+            if (lookup is null)
+            {
+                continue;
+            }
+
+            await repository.SetItemIconAsync(itemId, lookup.IconName, syncedAt, ct);
+
+            // The read path's own copy too, for the fresh-row case that returns without re-reading.
+            foreach (var item in unknown.Where(item => item.BlizzardItemId == itemId))
+            {
+                item.IconName = lookup.IconName;
+                item.IconSyncedAt = syncedAt;
+            }
+        }
+    }
+
+    // A current row whose renders nobody has asked Blizzard for — stored before media was synced, or
+    // arrived through a guild roster, which carries none. Somebody is looking at it right now, so one
+    // call fetches the renders rather than leaving the page on its fallbacks until the worker's backfill
+    // reaches it. Only the media: the rest of the row is current and re-fetching it would spend two
+    // calls to learn nothing.
+    //
+    // Stamped with the row's own LastSyncedAt rather than now, so the renders never look fresher than
+    // the character they belong to and are re-asked when it is.
+    private async Task FillNeverAskedMediaAsync(Character local, string realmSlug, string name, CancellationToken ct)
+    {
+        if (local.MediaSyncedAt is not null || !gateway.IsConfigured)
+        {
+            return;
+        }
+
+        if (await gateway.TryFetchCharacterMediaAsync(realmSlug, name, ct) is not { } media)
+        {
+            // Unavailable: serve the row without renders; the next view or the backfill tries again.
+            return;
+        }
+
+        await repository.SetMediaAsync(local.Id, media, local.LastSyncedAt, ct);
+        local.ApplyMedia(media, local.LastSyncedAt);
     }
 
     public async Task<CharacterReadResult> RefreshCharacterAsync(
@@ -92,6 +172,14 @@ public class CharacterDataLayer(
 
         await PersistAsync(fetched, ct);
 
+        // After the write, so the icons land on persisted rows, and before the re-read below, so the
+        // page that asked gets them. The equipment write already copied every icon known for these
+        // item ids; what is left here is only what nobody has ever worn.
+        if (fetched.Equipment is not null)
+        {
+            await ResolveUnknownIconsAsync(fetched.Equipment.EquippedItems, fetched.Character.LastSyncedAt, ct);
+        }
+
         // Re-read rather than returning the entity the upsert handed back. The stored shape is what the
         // caller expects — realm included, equipment included, untracked — and composing that by hand
         // from three staged writes would be a second definition of the read.
@@ -143,6 +231,13 @@ public class CharacterDataLayer(
         }
 
         var equipment = await gateway.FetchEquipmentAsync(realmSlug, name, ct);
+
+        // Stamped with the summary's own fetch instant, so media and character age together. Left unset
+        // when Blizzard could not be asked, and the upsert then keeps the renders already stored.
+        if (await gateway.TryFetchCharacterMediaAsync(realmSlug, name, ct) is { } media)
+        {
+            character.ApplyMedia(media, character.LastSyncedAt);
+        }
 
         return new BlizzardFetch(character, equipment, realm?.Id, fetchedRealm);
     }

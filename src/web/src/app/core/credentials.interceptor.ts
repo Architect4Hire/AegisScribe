@@ -2,7 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { SKIP_SIGN_IN_REDIRECT } from './auth-redirect.context';
+import { SKIP_SIGN_IN_REDIRECT, SKIP_TENANT_MISS_REDIRECT } from './auth-redirect.context';
 import { AuthService } from './auth.service';
 import { CurrentUserService } from './current-user.service';
 import { TENANT_PICKER_PATH } from './tenant.guard';
@@ -21,7 +21,8 @@ const TENANT_ROUTE_PATTERN = /\/api\/v\d+\/t\/[^/]+(\/|$)/;
 //
 // The exception is a request carrying SKIP_SIGN_IN_REDIRECT: the cached identity is still dropped, but
 // the browser stays put, because that request is asking WHETHER anyone is signed in rather than acting
-// as someone who is.
+// as someone who is. SKIP_TENANT_MISS_REDIRECT is the 404 counterpart, for a write whose 404 is about
+// the thing acted on (a guild Blizzard does not know) rather than about the community.
 export const credentialsInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const currentUser = inject(CurrentUserService);
@@ -41,7 +42,11 @@ export const credentialsInterceptor: HttpInterceptorFn = (req, next) => {
           if (!req.context.get(SKIP_SIGN_IN_REDIRECT)) {
             authService.login(window.location.pathname + window.location.search);
           }
-        } else if (error.status === 404 && TENANT_ROUTE_PATTERN.test(req.url)) {
+        } else if (
+          error.status === 404 &&
+          TENANT_ROUTE_PATTERN.test(req.url) &&
+          !req.context.get(SKIP_TENANT_MISS_REDIRECT)
+        ) {
           void router.navigateByUrl(TENANT_PICKER_PATH);
         }
       }

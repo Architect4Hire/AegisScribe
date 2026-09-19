@@ -2771,6 +2771,18 @@
           "classColor": {
             "type": "string"
           },
+          "avatarUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "renderUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "isDegraded": {
             "type": "boolean"
           }
@@ -3363,6 +3375,9 @@
             "format": "uuid"
           },
           "characterName": {
+            "type": "string"
+          },
+          "region": {
             "type": "string"
           },
           "realmSlug": {

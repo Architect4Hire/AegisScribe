@@ -16,16 +16,20 @@ describe('ProvenancePanel', () => {
     fixture.detectChanges();
   });
 
-  it('shows the real last-synced value', () => {
-    expect((fixture.nativeElement as HTMLElement).querySelector('dd')?.textContent).toContain(
-      '2026-09-02T07:41:00Z',
-    );
+  it('shows the last sync as a readable time, keeping the exact instant machine-readable', () => {
+    const time = (fixture.nativeElement as HTMLElement).querySelector('dd time');
+
+    // The instant itself stays on the element for anyone correlating with a log…
+    expect(time?.getAttribute('datetime')).toBe('2026-09-02T07:41:00Z');
+    // …while what is read is a date, never the raw ISO string.
+    expect(time?.textContent).not.toContain('T07:41');
+    expect(time?.textContent).toContain('2026');
   });
 
   it('computes refresh-due as 30 days after the last sync, per the Blizzard refresh obligation', () => {
     const host = fixture.nativeElement as HTMLElement;
     const dds = Array.from(host.querySelectorAll('dd'));
-    expect(dds[1].textContent).toContain('2026-10-02');
+    expect(dds[1].querySelector('time')?.getAttribute('datetime')).toBe('2026-10-02');
   });
 
   it('derives the source from the real region, using the documented profile-{region} namespace shape', () => {

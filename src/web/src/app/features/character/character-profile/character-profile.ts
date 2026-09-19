@@ -118,6 +118,30 @@ export class CharacterProfile {
     });
   }
 
+  // The centre column's three states, all keyed on the URL they are about so a navigation to another
+  // character never inherits the previous one's: no URL (silhouette), loading (the render box's own
+  // gradient, the image fading in over it), and failed (silhouette again — Blizzard renders 404 too).
+  private readonly loadedRender = signal<string | null>(null);
+  private readonly failedRender = signal<string | null>(null);
+
+  readonly renderUrl = computed(() => {
+    const url = this.character()?.renderUrl ?? null;
+    return url && url !== this.failedRender() ? url : null;
+  });
+
+  readonly renderLoaded = computed(() => {
+    const url = this.renderUrl();
+    return url !== null && url === this.loadedRender();
+  });
+
+  onRenderLoad(url: string): void {
+    this.loadedRender.set(url);
+  }
+
+  onRenderError(url: string): void {
+    this.failedRender.set(url);
+  }
+
   selectTab(tab: TabId): void {
     this.activeTab.set(tab);
   }

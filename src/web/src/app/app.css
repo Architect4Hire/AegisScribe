@@ -1,8 +1,22 @@
+/* The shell is at least one viewport tall and the routed screen grows to fill it, so the footer
+   sits at the bottom of the window on a short screen and after the content on a long one. A
+   plain div, not <main> -- some routed screens bring their own landmark. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.app-main {
+  flex: 1 0 auto;
+}
+
 /* Copied from design/aegisscribe-armory.html §S1/§10. Blizzard Terms of Use attribution — every
    screen carries it, not just the character page, so it lives once at the app root. */
 .app-footer {
+  flex-shrink: 0;
   margin-top: var(--s-5);
-  padding-top: var(--s-3);
+  padding-block: var(--s-3);
   padding-inline: var(--s-4);
   border-top: 1px solid var(--line);
   font-size: var(--t-xs);
@@ -11,4 +25,6 @@
   flex-wrap: wrap;
   gap: var(--s-2) var(--s-4);
 }
-.app-footer-tooltip-credit { margin-left: auto; }
+.app-footer-tooltip-credit {
+  margin-left: auto;
+}

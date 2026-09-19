@@ -23,6 +23,7 @@ function entry(overrides: Partial<RosterEntryServiceModel> = {}): RosterEntrySer
     id: 'entry-1',
     characterId: 'char-1',
     characterName: 'Thornwake',
+    region: 'us',
     realmSlug: 'emberfall',
     class: 'Warrior',
     classColor: '#C69B6D',
@@ -105,6 +106,17 @@ function page(rows: RosterEntryServiceModel[]): CursorPageServiceModel<RosterEnt
 }
 
 describe('RosterTable', () => {
+  it("links each character to its profile inside this community, in the character's own region", async () => {
+    // EU on purpose: a link that assumed US would still pass with the fixture's default.
+    const { host } = await createWith(() =>
+      of(page([entry({ region: 'eu', realmSlug: 'argent-dawn', characterName: 'Thornwake' })])),
+    );
+
+    const link = host.querySelector<HTMLAnchorElement>('a.char-name');
+    expect(link?.textContent?.trim()).toBe('Thornwake');
+    expect(link?.getAttribute('href')).toBe('/t/emberfall/characters/eu/argent-dawn/Thornwake');
+  });
+
   it('shows BOTH ranks in separate columns, rendered differently', async () => {
     // 7.5's central restriction. The community's rank is a pill; the game's is plain mono text. The
     // difference is deliberate — matching treatments would imply one derives from the other.

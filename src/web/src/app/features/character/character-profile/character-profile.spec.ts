@@ -7,7 +7,9 @@ import { CurrentUserService } from '../../../core/current-user.service';
 import { CharacterDetailServiceModel } from '../../../models/character.models';
 import { CharacterProfile } from './character-profile';
 
-function character(overrides: Partial<CharacterDetailServiceModel> = {}): CharacterDetailServiceModel {
+function character(
+  overrides: Partial<CharacterDetailServiceModel> = {},
+): CharacterDetailServiceModel {
   return {
     id: 'c1',
     realmSlug: 'argent-dawn',
@@ -19,9 +21,18 @@ function character(overrides: Partial<CharacterDetailServiceModel> = {}): Charac
     faction: 'Alliance',
     lastSyncedAt: '2026-09-02T07:41:00Z',
     equipment: [
-      { slot: 'MainHand', blizzardItemId: 1, itemName: "Scalecommander's Sundering Edge", quality: 'Artifact', itemLevel: 652, iconUrl: null },
+      {
+        slot: 'MainHand',
+        blizzardItemId: 1,
+        itemName: "Scalecommander's Sundering Edge",
+        quality: 'Artifact',
+        itemLevel: 652,
+        iconUrl: null,
+      },
     ],
     classColor: '#33937F',
+    avatarUrl: null,
+    renderUrl: null,
     isDegraded: false,
     ...overrides,
   };
@@ -47,11 +58,15 @@ describe('CharacterProfile', () => {
     const fixture = await createWith(() => new Observable());
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('scribe-skeleton').length).toBeGreaterThan(0);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('scribe-skeleton').length,
+    ).toBeGreaterThan(0);
   });
 
   it('shows the empty state, naming the character and realm, on a 404', async () => {
-    const fixture = await createWith(() => throwError(() => new HttpErrorResponse({ status: 404 })));
+    const fixture = await createWith(() =>
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -61,7 +76,9 @@ describe('CharacterProfile', () => {
   });
 
   it('shows a retryable error state for a genuine failure, distinct from a 404', async () => {
-    const fixture = await createWith(() => throwError(() => new HttpErrorResponse({ status: 500 })));
+    const fixture = await createWith(() =>
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
@@ -76,10 +93,54 @@ describe('CharacterProfile', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('scribe-character-banner')).not.toBeNull();
     expect(host.querySelectorAll('scribe-equipment-rail').length).toBe(2);
-    expect(host.querySelector('.weapon-row')?.textContent).toContain("Scalecommander's Sundering Edge");
-    expect((host.querySelector('.character-profile') as HTMLElement)?.style.getPropertyValue('--class-color')).toBe(
-      '#33937F',
+    expect(host.querySelector('.weapon-row')?.textContent).toContain(
+      "Scalecommander's Sundering Edge",
     );
+    expect(
+      (host.querySelector('.character-profile') as HTMLElement)?.style.getPropertyValue(
+        '--class-color',
+      ),
+    ).toBe('#33937F');
+  });
+
+  it("shows Blizzard's full-body render in the centre column, fading in once it has loaded", async () => {
+    const render = 'https://render.worldofwarcraft.com/us/character/argent-dawn/1/2-main-raw.png';
+    const fixture = await createWith(() => of(character({ renderUrl: render })));
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const img = host.querySelector<HTMLImageElement>('.render-img');
+    expect(img?.getAttribute('src')).toBe(render);
+    // Loading: the box shimmers and the image is not yet shown.
+    expect(host.querySelector('.render')?.classList.contains('is-loading')).toBe(true);
+    expect(img?.classList.contains('is-loaded')).toBe(false);
+
+    img?.dispatchEvent(new Event('load'));
+    fixture.detectChanges();
+
+    expect(host.querySelector('.render')?.classList.contains('is-loading')).toBe(false);
+    expect(host.querySelector('.render-img')?.classList.contains('is-loaded')).toBe(true);
+  });
+
+  it('shows the silhouette, not developer text, when there is no render or it fails to load', async () => {
+    const none = await createWith(() => of(character({ renderUrl: null })));
+    none.detectChanges();
+
+    const host = none.nativeElement as HTMLElement;
+    expect(host.querySelector('.render-silhouette')).not.toBeNull();
+    expect(host.textContent).not.toContain('coming with');
+
+    TestBed.resetTestingModule();
+    const broken = await createWith(() =>
+      of(character({ renderUrl: 'https://render/broken.png' })),
+    );
+    broken.detectChanges();
+    const brokenHost = broken.nativeElement as HTMLElement;
+    brokenHost.querySelector('.render-img')?.dispatchEvent(new Event('error'));
+    broken.detectChanges();
+
+    expect(brokenHost.querySelector('.render-img')).toBeNull();
+    expect(brokenHost.querySelector('.render-silhouette')).not.toBeNull();
   });
 
   it('the provenance panel is always visible, regardless of the active tab', async () => {
@@ -137,7 +198,12 @@ describe('CharacterProfile claim state', () => {
       getClaim:
         claimState.getClaim ??
         vi.fn(() =>
-          of({ characterId: 'c1', claimedByUserId: null, claimedByDisplayName: null, claimedAt: null }),
+          of({
+            characterId: 'c1',
+            claimedByUserId: null,
+            claimedByDisplayName: null,
+            claimedAt: null,
+          }),
         ),
       claim:
         claimState.claim ??
@@ -164,7 +230,13 @@ describe('CharacterProfile claim state', () => {
             user: () => ({
               id: 'u1',
               memberships: [
-                { tenantId: 't', tenantSlug: 'emberfall', tenantName: 'Emberfall', role, joinedAt: '' },
+                {
+                  tenantId: 't',
+                  tenantSlug: 'emberfall',
+                  tenantName: 'Emberfall',
+                  role,
+                  joinedAt: '',
+                },
               ],
             }),
           },

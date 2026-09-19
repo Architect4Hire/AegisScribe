@@ -14,6 +14,8 @@ export interface ChecklistStep {
   done: boolean;
   /** Router path this step leads to. Always a real destination — no step is a dead end. */
   link: string[];
+  /** A panel on the destination to scroll to — for a step whose screen is the one already showing. */
+  fragment?: string;
   linkLabel: string;
   /**
    * Set when the step can be started but this deployment cannot finish it the usual way. Renders as a
@@ -26,6 +28,10 @@ export interface ChecklistStep {
 // checklist is a preference about a screen, not a fact about the community, and storing it server-side
 // would mean one officer's "hide this" hid it from everybody.
 const DISMISSED_KEY_PREFIX = 'aegisscribe:first-run-dismissed:';
+
+// The id scribe-add-character puts on its panel. The checklist renders on the roster, so a plain link to
+// the roster would go nowhere; the fragment scrolls to the form instead.
+const ADD_CHARACTER_ANCHOR = 'add-character';
 
 // "You just created this — here's what's next."
 //
@@ -82,7 +88,7 @@ export class FirstRunChecklist {
         label: 'Link your guild',
         body: 'Point this community at its guild in game, and AegisScribe keeps its roster and ranks in step.',
         done: overview.hasLinkedGuild,
-        link: [...base, 'roster'],
+        link: [...base, 'guilds'],
         linkLabel: 'Link a guild',
         // Credentials are optional by design and the gateway no-ops without them (CLAUDE.md → Usage),
         // so this says so plainly instead of letting an officer type a guild name and hit a failure.
@@ -96,8 +102,12 @@ export class FirstRunChecklist {
         label: 'Build your roster',
         body: 'Import the members of a linked guild, or add characters one at a time.',
         done: overview.rosterCount > 0,
-        link: [...base, 'roster'],
-        linkLabel: 'Go to the roster',
+        // Two ways onto the roster, and the step leads to whichever this community can use: importing
+        // lives beside the linked guild, adding by hand is on the roster itself (the panel opens on its
+        // own there while the roster is empty).
+        link: overview.hasLinkedGuild ? [...base, 'guilds'] : [...base, 'roster'],
+        fragment: overview.hasLinkedGuild ? undefined : ADD_CHARACTER_ANCHOR,
+        linkLabel: overview.hasLinkedGuild ? 'Import members' : 'Add a character',
       },
       {
         id: 'ranks',

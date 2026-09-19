@@ -1,7 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ImportGuildRosterViewModel, RosterImportServiceModel } from '../models/guild.models';
 import {
+  AddRosterEntryViewModel,
   CursorPageServiceModel,
   GuildRankNameServiceModel,
   RankViewModel,
@@ -9,6 +11,7 @@ import {
   RosterSort,
   TenantRankServiceModel,
 } from '../models/roster.models';
+import { skipTenantMissRedirect } from './auth-redirect.context';
 import { RuntimeConfigService } from './runtime-config.service';
 
 // Everything a community owns lives under /t/{tenantSlug}, and the slug comes from the active route
@@ -50,6 +53,28 @@ export class RosterService {
 
   // Officer-only server-side. The UI hides these behind a role check, but that is cosmetics — every
   // one of them has a TenantOfficer policy behind it (.claude/rules/auth.md).
+  //
+  // A 404 means the character id is unknown and a 409 that it is already on the roster — both answers
+  // about the character, so neither may bounce the officer to the tenant picker.
+  addEntry(tenantSlug: string, viewModel: AddRosterEntryViewModel): Observable<void> {
+    return this.http.post<void>(`${this.base(tenantSlug)}/roster`, viewModel, {
+      context: skipTenantMissRedirect(),
+    });
+  }
+
+  // Reaches Blizzard for nothing and costs no budget: the members were persisted by the guild sync the
+  // link already paid for. A 404 means this community does not follow that guild (any more).
+  importFromGuild(
+    tenantSlug: string,
+    viewModel: ImportGuildRosterViewModel,
+  ): Observable<RosterImportServiceModel> {
+    return this.http.post<RosterImportServiceModel>(
+      `${this.base(tenantSlug)}/roster/import`,
+      viewModel,
+      { context: skipTenantMissRedirect() },
+    );
+  }
+
   setRank(
     tenantSlug: string,
     rosterEntryId: string,

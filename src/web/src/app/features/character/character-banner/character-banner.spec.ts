@@ -2,7 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CharacterDetailServiceModel } from '../../../models/character.models';
 import { CharacterBanner } from './character-banner';
 
-function character(overrides: Partial<CharacterDetailServiceModel> = {}): CharacterDetailServiceModel {
+function character(
+  overrides: Partial<CharacterDetailServiceModel> = {},
+): CharacterDetailServiceModel {
   return {
     id: 'c1',
     realmSlug: 'argent-dawn',
@@ -15,6 +17,8 @@ function character(overrides: Partial<CharacterDetailServiceModel> = {}): Charac
     lastSyncedAt: new Date().toISOString(),
     equipment: [],
     classColor: '#33937F',
+    avatarUrl: null,
+    renderUrl: null,
     isDegraded: false,
     ...overrides,
   };
@@ -42,6 +46,35 @@ describe('CharacterBanner', () => {
     expect(host.textContent).toContain('Devastation');
   });
 
+  it("shows Blizzard's avatar in the portrait, straight from the URL the API stored", () => {
+    const avatar = 'https://render.worldofwarcraft.com/us/character/argent-dawn/1/2-avatar.jpg';
+    fixture.componentRef.setInput('character', character({ avatarUrl: avatar }));
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.portrait img')?.getAttribute('src')).toBe(avatar);
+    expect(host.querySelector('.portrait span')).toBeNull();
+  });
+
+  it('falls back to the initial when there is no avatar, or it fails to load', () => {
+    fixture.componentRef.setInput('character', character({ avatarUrl: null }));
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.portrait span')?.textContent).toBe('T');
+
+    fixture.componentRef.setInput(
+      'character',
+      character({ avatarUrl: 'https://render/broken.jpg' }),
+    );
+    fixture.detectChanges();
+    host.querySelector('.portrait img')?.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    expect(host.querySelector('.portrait img')).toBeNull();
+    expect(host.querySelector('.portrait span')?.textContent).toBe('T');
+  });
+
   it('title-cases the realm slug and shows the region from the route', () => {
     fixture.componentRef.setInput('character', character({ realmSlug: 'argent-dawn' }));
     fixture.detectChanges();
@@ -61,7 +94,10 @@ describe('CharacterBanner', () => {
   it('shows an attention "Stale" pill when degraded, never a fresh-looking pill over old data', () => {
     fixture.componentRef.setInput(
       'character',
-      character({ isDegraded: true, lastSyncedAt: new Date(Date.now() - 6 * 86_400_000).toISOString() }),
+      character({
+        isDegraded: true,
+        lastSyncedAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
+      }),
     );
     fixture.detectChanges();
 
@@ -75,9 +111,9 @@ describe('CharacterBanner', () => {
     fixture.componentRef.setInput('character', character({ itemLevel: 639 }));
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('.tile-value')?.textContent).toContain(
-      '639',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.tile-value')?.textContent,
+    ).toContain('639');
   });
 });
 

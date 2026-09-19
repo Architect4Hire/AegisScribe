@@ -1,4 +1,6 @@
 import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { TENANT_PICKER_PATH } from '../../core/tenant.guard';
 import { TenantMembershipServiceModel } from '../../models/auth.models';
 
 // Active community + the viewer's role in it. Switching navigates -- it never mutates hidden
@@ -6,7 +8,7 @@ import { TenantMembershipServiceModel } from '../../models/auth.models';
 // looking at one community's data inside another's chrome. See .claude/rules/frontend.md ->
 // "Tenant context is part of the chrome".
 @Component({
-  imports: [],
+  imports: [RouterLink],
   selector: 'scribe-tenant-switcher',
   styleUrl: './tenant-switcher.css',
   templateUrl: './tenant-switcher.html',
@@ -19,6 +21,8 @@ export class TenantSwitcher {
   readonly switched = output<string>();
 
   readonly isOpen = signal(false);
+
+  readonly tenantPickerPath = TENANT_PICKER_PATH;
 
   readonly active = computed(() =>
     this.memberships().find((membership) => membership.tenantSlug === this.activeTenantSlug()),
@@ -37,6 +41,10 @@ export class TenantSwitcher {
   pick(tenantSlug: string): void {
     this.isOpen.set(false);
     this.switched.emit(tenantSlug);
+  }
+
+  close(): void {
+    this.isOpen.set(false);
   }
 
   onDocumentClick(event: MouseEvent): void {

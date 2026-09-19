@@ -311,6 +311,11 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
             entity.Property(c => c.Name).HasMaxLength(64).IsRequired();
             entity.Property(c => c.NameLower).HasMaxLength(64).IsRequired();
             entity.Property(c => c.Spec).HasMaxLength(32);
+            entity.Property(c => c.AvatarUrl).HasMaxLength(500);
+            entity.Property(c => c.RenderUrl).HasMaxLength(500);
+
+            // The media backfill's selection: characters never asked, or asked too long ago.
+            entity.HasIndex(c => c.MediaSyncedAt);
 
             entity.HasOne(c => c.Realm)
                 .WithMany()
@@ -343,6 +348,9 @@ public class AegisScribeDbContext(DbContextOptions<AegisScribeDbContext> options
         {
             entity.Property(i => i.ItemName).HasMaxLength(200).IsRequired();
             entity.Property(i => i.IconName).HasMaxLength(200);
+
+            // The icon backfill groups by item id and the equipment write looks icons up by it.
+            entity.HasIndex(i => i.BlizzardItemId);
 
             entity.HasOne(i => i.CharacterEquipment)
                 .WithMany(e => e.EquippedItems)

@@ -1,6 +1,12 @@
 <div class="char-banner">
   <div class="portrait">
-    <span>{{ portraitInitial() }}</span>
+    @if (avatarUrl(); as src) {
+      <!-- alt="" because the name sits right beside it; a described portrait would be read twice. -->
+      <img [src]="src" alt="" width="72" height="72" (error)="onAvatarError()" />
+    } @else {
+      <!-- No render from Blizzard, or it failed to load: the reference's initial tile. -->
+      <span>{{ portraitInitial() }}</span>
+    }
   </div>
   <div class="char-id">
     <div class="char-name">{{ character().name }}</div>

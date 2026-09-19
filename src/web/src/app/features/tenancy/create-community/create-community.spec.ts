@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
+import { CurrentUserService } from '../../../core/current-user.service';
 import { TenantService } from '../../../core/tenant.service';
 import { SlugCheckServiceModel, TenantServiceModel } from '../../../models/auth.models';
 import { CreateCommunity } from './create-community';
@@ -36,16 +37,22 @@ describe('CreateCommunity', () => {
     typeof vi.fn<(query: { name: string } | { slug: string }) => Observable<SlugCheckServiceModel>>
   >;
   let create: ReturnType<typeof vi.fn<() => Observable<TenantServiceModel>>>;
+  let clear: ReturnType<typeof vi.fn<() => void>>;
 
   // The stubs are created here and reconfigured per test with mockReturnValue, because TestBed setup
   // is async and the timer control below is not.
   beforeEach(async () => {
     checkSlug = vi.fn(() => of(available));
     create = vi.fn(() => of(createdTenant));
+    clear = vi.fn();
 
     await TestBed.configureTestingModule({
       imports: [CreateCommunity],
-      providers: [provideRouter([]), { provide: TenantService, useValue: { checkSlug, create } }],
+      providers: [
+        provideRouter([]),
+        { provide: TenantService, useValue: { checkSlug, create } },
+        { provide: CurrentUserService, useValue: { clear } },
+      ],
     }).compileComponents();
   });
 
@@ -211,6 +218,18 @@ describe('CreateCommunity', () => {
 
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith(['/t', 'ashes-of-dawn']);
+  });
+
+  it('drops the cached memberships before navigating, so the tenant guard sees the new community', () => {
+    render();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    component.form.controls.name.setValue('Ashes of Dawn');
+    vi.advanceTimersByTime(PAST_DEBOUNCE);
+    component.submit();
+
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(clear.mock.invocationCallOrder[0]).toBeLessThan(navigate.mock.invocationCallOrder[0]);
   });
 
   it('flags the slug field and unlocks it on a 409, keeping every other field', () => {

@@ -207,11 +207,43 @@ internal static class BlizzardResponseMappers
             ItemLevel = response.Level?.Value ?? 0,
 
             // The equipment response carries only a media *href*; resolving it to a filename is a
-            // separate call per item, which would turn one character fetch into seventeen. Icon sync has
-            // its own dedupe story and belongs with the item catalogue.
+            // separate call per item, which would turn one character fetch into seventeen. The sync
+            // worker's icon backfill resolves it once per distinct item id instead, and the equipment
+            // write copies icons already known for the same item.
             IconName = null,
         };
     }
+
+    // `avatar` for the banner, `main-raw` for the profile's full-body render. `main` is the older,
+    // backgrounded render — used only when `main-raw` is absent, because its baked-in scenery fights
+    // the page's own surface.
+    public static CharacterMedia ToCharacterMedia(this BlizzardMediaResponse response) =>
+        new(
+            AssetValue(response, "avatar"),
+            AssetValue(response, "main-raw") ?? AssetValue(response, "main"));
+
+    // The icon's file name, e.g. "135349" from ".../us/icons/56/135349.jpg". Stored as a name rather
+    // than a URL so CharacterMappers owns the one place the icon URL is built, and so the size in the
+    // path is ours to choose. Null when the response has no icon asset.
+    public static string? ToItemIconName(this BlizzardMediaResponse response)
+    {
+        if (AssetValue(response, "icon") is not { } url
+            || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        var name = Path.GetFileNameWithoutExtension(uri.AbsolutePath);
+
+        return string.IsNullOrWhiteSpace(name) ? null : name;
+    }
+
+    private static string? AssetValue(BlizzardMediaResponse response, string key) =>
+        response.Assets?
+            .FirstOrDefault(asset => string.Equals(asset.Key, key, StringComparison.OrdinalIgnoreCase))
+            ?.Value is { Length: > 0 } value
+            ? value
+            : null;
 
     // Class and faction identify the character itself, so an unmappable value fails the whole fetch
     // rather than guessing. The caller falls back to the stored row, which is right: persisting a

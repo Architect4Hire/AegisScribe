@@ -96,6 +96,165 @@ public class CharacterDataLayerTests
     }
 
     [Fact]
+    public async Task GetCharacter_WhenAFreshRowHasNeverHadRenders_FetchesOnlyTheRenders()
+    {
+        // Somebody is looking at it now. One call for the renders, not three for data that is current.
+        var stored = StoredCharacter();
+        stored.MediaSyncedAt = null;
+        StoredIs(stored);
+        var media = new CharacterMedia("https://render/avatar.jpg", "https://render/main-raw.png");
+        _gateway.FetchCharacterMediaAsync(RealmSlug, Name, Arg.Any<CancellationToken>()).Returns(media);
+
+        var result = await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        Assert.Equal("https://render/main-raw.png", result.Character!.RenderUrl);
+        await _repository.Received(1).SetMediaAsync(stored.Id, media, stored.LastSyncedAt, Arg.Any<CancellationToken>());
+        await _gateway.DidNotReceiveWithAnyArgs().FetchCharacterAsync(default!, default!, default);
+        await _gateway.DidNotReceiveWithAnyArgs().FetchEquipmentAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task GetCharacter_OnARefresh_ResolvesIconsForItemsNobodyHasSeen_OncePerItem()
+    {
+        // A guild member opened for the first time: this request fetched their gear, and the page that
+        // asked should get its icons now rather than after the worker's next pass.
+        var stored = StoredCharacter();
+        StoredIs(stored, thenAfterRefresh: StoredCharacter());
+        _staleness.IsStale(stored.LastSyncedAt).Returns(true);
+        RealmIsKnown();
+        BlizzardHas(FetchedCharacter(), Equipped((EquipmentSlot.Finger1, 19019), (EquipmentSlot.Finger2, 19019), (EquipmentSlot.Head, 71086)));
+        _gateway.FetchItemIconAsync(19019, Arg.Any<CancellationToken>()).Returns(new ItemIconLookup("135349"));
+        _gateway.FetchItemIconAsync(71086, Arg.Any<CancellationToken>()).Returns(ItemIconLookup.NotFound);
+
+        await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        // Two rings, one item: one call.
+        await _gateway.Received(1).FetchItemIconAsync(19019, Arg.Any<CancellationToken>());
+        await _repository.Received(1).SetItemIconAsync(19019, "135349", Now, Arg.Any<CancellationToken>());
+        // A 404 is recorded too, so nobody asks again.
+        await _repository.Received(1).SetItemIconAsync(71086, null, Now, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCharacter_DoesNotAskAboutAnItemWhoseIconIsAlreadyKnown()
+    {
+        var stored = StoredCharacter();
+        StoredIs(stored, thenAfterRefresh: StoredCharacter());
+        _staleness.IsStale(stored.LastSyncedAt).Returns(true);
+        RealmIsKnown();
+
+        // The equipment write copies known icons onto the incoming items; this stands in for that.
+        var equipment = Equipped((EquipmentSlot.Head, 19019));
+        equipment.EquippedItems.Single().IconName = "135349";
+        equipment.EquippedItems.Single().IconSyncedAt = Now;
+        BlizzardHas(FetchedCharacter(), equipment);
+
+        await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        await _gateway.DidNotReceiveWithAnyArgs().FetchItemIconAsync(default, default);
+    }
+
+    [Fact]
+    public async Task GetCharacter_OnAFreshRow_ResolvesUnknownIconsAndReturnsThem()
+    {
+        // Gear fetched before icons existed, or while the icon call was down: current, but outlined.
+        var stored = StoredCharacter();
+        stored.Equipment = Equipped((EquipmentSlot.Head, 19019));
+        StoredIs(stored);
+        _gateway.FetchItemIconAsync(19019, Arg.Any<CancellationToken>()).Returns(new ItemIconLookup("135349"));
+
+        var result = await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        Assert.Equal("135349", result.Character!.Equipment!.EquippedItems.Single().IconName);
+        await _repository.Received(1).SetItemIconAsync(19019, "135349", stored.LastSyncedAt, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCharacter_LeavesAnIconForTheWorkerWhenBlizzardIsUnavailable()
+    {
+        var stored = StoredCharacter();
+        stored.Equipment = Equipped((EquipmentSlot.Head, 19019));
+        StoredIs(stored);
+        _gateway.FetchItemIconAsync(19019, Arg.Any<CancellationToken>())
+            .Returns<ItemIconLookup>(_ => throw new BlizzardUnavailableException("down"));
+
+        var result = await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        Assert.False(result.IsDegraded);
+        await _repository.DidNotReceiveWithAnyArgs().SetItemIconAsync(default, default, default, default);
+    }
+
+    [Fact]
+    public async Task GetCharacter_WhenAFreshRowAlreadyHasRenders_DoesNotAskAgain()
+    {
+        StoredIs(StoredCharacter());
+
+        await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        await _gateway.DidNotReceiveWithAnyArgs().FetchCharacterMediaAsync(default!, default!, default);
+    }
+
+    [Fact]
+    public async Task GetCharacter_WhenTheRendersAreUnavailable_ServesTheFreshRowWithoutThem()
+    {
+        var stored = StoredCharacter();
+        stored.MediaSyncedAt = null;
+        StoredIs(stored);
+        _gateway.FetchCharacterMediaAsync(RealmSlug, Name, Arg.Any<CancellationToken>())
+            .Returns<CharacterMedia?>(_ => throw new BlizzardUnavailableException("down"));
+
+        var result = await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        Assert.Same(stored, result.Character);
+        Assert.False(result.IsDegraded);
+        await _repository.DidNotReceiveWithAnyArgs().SetMediaAsync(default, default!, default, default);
+    }
+
+    [Fact]
+    public async Task GetCharacter_OnARefresh_FetchesTheRendersAndPersistsThemWithTheCharacter()
+    {
+        var stored = StoredCharacter();
+        StoredIs(stored, thenAfterRefresh: StoredCharacter());
+        _staleness.IsStale(stored.LastSyncedAt).Returns(true);
+        RealmIsKnown();
+        BlizzardHas(FetchedCharacter(), FetchedEquipment());
+        _gateway.FetchCharacterMediaAsync(RealmSlug, Name, Arg.Any<CancellationToken>())
+            .Returns(new CharacterMedia("https://render/avatar.jpg", "https://render/main-raw.png"));
+
+        await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        // Stamped with the summary's fetch instant, so the renders age with the character.
+        await _repository.Received(1).UpsertCharacterAsync(
+            Arg.Is<Domain.Managers.Models.Domain.Character>(c =>
+                c.RenderUrl == "https://render/main-raw.png" && c.MediaSyncedAt == Now),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCharacter_WhenOnlyTheRendersAreUnavailable_StillRefreshesAndIsNotDegraded()
+    {
+        // Decoration failing must not turn fresh data into a degraded read.
+        var stored = StoredCharacter();
+        var refreshed = StoredCharacter();
+        StoredIs(stored, thenAfterRefresh: refreshed);
+        _staleness.IsStale(stored.LastSyncedAt).Returns(true);
+        RealmIsKnown();
+        BlizzardHas(FetchedCharacter(), FetchedEquipment());
+        _gateway.FetchCharacterMediaAsync(RealmSlug, Name, Arg.Any<CancellationToken>())
+            .Returns<CharacterMedia?>(_ => throw new BlizzardUnavailableException("down"));
+
+        var result = await _dataLayer.GetCharacterAsync(Region, RealmSlug, Name, CancellationToken.None);
+
+        Assert.Same(refreshed, result.Character);
+        Assert.False(result.IsDegraded);
+        await _repository.Received(1).UpsertCharacterAsync(
+            Arg.Is<Domain.Managers.Models.Domain.Character>(c => c.MediaSyncedAt == null),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task GetCharacter_WhenTheEquipmentSnapshotIsStale_RefreshesEvenThoughTheCharacterRowIsNot()
     {
         // Gear and the summary come from separate endpoints with separate LastSyncedAt columns, but a
@@ -350,12 +509,15 @@ public class CharacterDataLayerTests
         _gateway.FetchEquipmentAsync(RealmSlug, Name, Arg.Any<CancellationToken>()).Returns(equipment);
     }
 
+    // Renders already asked for, so a fresh stored row really is "nothing to do" — the never-asked case
+    // has tests of its own below.
     private static Domain.Managers.Models.Domain.Character StoredCharacter() => new()
     {
         Id = Guid.NewGuid(),
         Name = Name,
         NameLower = Name.ToLowerInvariant(),
         LastSyncedAt = Now.AddDays(-1),
+        MediaSyncedAt = Now.AddDays(-1),
         Equipment = new CharacterEquipment { LastSyncedAt = Now.AddDays(-1) },
     };
 
@@ -368,4 +530,18 @@ public class CharacterDataLayerTests
     };
 
     private static CharacterEquipment FetchedEquipment() => new() { LastSyncedAt = Now };
+
+    // Straight from the equipment endpoint: no icons on anything.
+    private static CharacterEquipment Equipped(params (EquipmentSlot Slot, long ItemId)[] items) => new()
+    {
+        LastSyncedAt = Now,
+        EquippedItems = [.. items.Select(item => new EquippedItem
+        {
+            Slot = item.Slot,
+            BlizzardItemId = item.ItemId,
+            ItemName = "Item",
+            Quality = ItemQuality.Rare,
+            ItemLevel = 600,
+        })],
+    };
 }

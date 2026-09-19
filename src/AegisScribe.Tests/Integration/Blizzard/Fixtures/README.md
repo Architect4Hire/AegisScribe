@@ -37,3 +37,5 @@ The tests assert on values, so a replacement capture means updating the expectat
 | `character-summary-unspecced.json` | No `guild` and no `active_spec` — both genuinely absent, not null. The reference warns that fields are more optional than they look. |
 | `character-equipment.json` | Slot and quality mapping, including a `SHIRT` and a `TABARD` that `EquipmentSlot` has no member for, and a `HEIRLOOM`. |
 | `character-equipment-empty.json` | A character with nothing equipped. `equipped_items` is present and empty. |
+| `item-media.json` | **Captured live** (2026-09-19, item 19019) — the one fixture here that is not reconstructed. It is how we learned the icon URL now carries a region segment and a numeric file id (`/us/icons/56/135349.jpg`) rather than an `inv_*` name. |
+| `character-media.json` | Reconstructed: `avatar`, `inset` and `main-raw` assets. The mapper takes `avatar` and `main-raw` and ignores the rest. Replace with a capture of a real character when convenient. |

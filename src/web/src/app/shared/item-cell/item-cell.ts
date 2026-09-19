@@ -1,5 +1,6 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { EquipmentSlot, EquippedItemServiceModel } from '../../models/item.models';
+import { SlotGlyph } from '../slot-glyph/slot-glyph';
 
 // Sentence-case display labels for the meta line ("Main hand · Legendary"). Finger/trinket slots
 // collapse to their game-facing name — nobody calls it "Finger1" in the UI.
@@ -23,7 +24,7 @@ const SLOT_LABELS: Record<EquipmentSlot, string> = {
 };
 
 @Component({
-  imports: [],
+  imports: [SlotGlyph],
   selector: 'scribe-item-cell',
   styleUrl: './item-cell.css',
   templateUrl: './item-cell.html',
@@ -34,7 +35,10 @@ export class ItemCell {
   readonly showSlot = input(true);
   readonly flagged = input(false);
 
-  private readonly iconLoadFailed = signal(false);
+  // The URL that failed, not a flag. A cell is reused when the page moves to another character — the
+  // route stays the same and only the inputs change — so a bare "failed" boolean from the previous
+  // character's item would hide every later icon in this slot until a full reload.
+  private readonly failedIconUrl = signal<string | null>(null);
 
   readonly slotLabel = computed(() => SLOT_LABELS[this.slot()]);
 
@@ -42,7 +46,7 @@ export class ItemCell {
   // client-side. See .claude/rules/frontend.md -> "Images come from Blizzard, referenced directly".
   readonly iconUrl = computed(() => {
     const iconUrl = this.item()?.iconUrl;
-    return iconUrl && !this.iconLoadFailed() ? iconUrl : null;
+    return iconUrl && iconUrl !== this.failedIconUrl() ? iconUrl : null;
   });
 
   readonly itemClasses = computed(() => {
@@ -60,6 +64,6 @@ export class ItemCell {
   });
 
   onIconError(): void {
-    this.iconLoadFailed.set(true);
+    this.failedIconUrl.set(this.item()?.iconUrl ?? null);
   }
 }

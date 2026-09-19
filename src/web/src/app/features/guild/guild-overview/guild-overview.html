@@ -1,0 +1,193 @@
+<section class="guild-overview">
+  <h1 class="go-title">Guilds</h1>
+  <p class="go-intro">
+    The guilds in game this community follows. AegisScribe fetches each one's roster from Blizzard
+    and keeps it fresh; importing puts those members on your roster.
+  </p>
+
+  @if (notice(); as message) {
+    <p class="go-notice" role="status">{{ message }}</p>
+  }
+  @if (writeError(); as message) {
+    <!-- A failed write, reported above the list rather than replacing it. -->
+    <p class="go-write-error" role="alert">{{ message }}</p>
+  }
+
+  @if (isOfficer()) {
+    <section class="go-section" aria-labelledby="go-link-heading">
+      <h2 class="go-heading" id="go-link-heading">Link a guild</h2>
+
+      @if (!blizzardConfigured()) {
+        <!--
+          Said up front rather than discovered as a failure after typing a guild name. The manual
+          path — adding characters one at a time — still works, so the roster is named as the way on.
+        -->
+        <p class="go-caveat">
+          This deployment has no Blizzard credentials, so guilds cannot be fetched from the game. You
+          can still <a [routerLink]="rosterLink()">add characters to the roster</a> by hand.
+        </p>
+      }
+
+      <!-- A plain submit: no forms module here, so (ngSubmit) would never fire. -->
+      <form class="go-link-form" (submit)="$event.preventDefault(); link()" novalidate>
+        <div class="go-field go-field-region">
+          <label class="label" for="go-region">Region</label>
+          <select
+            id="go-region"
+            class="field"
+            name="region"
+            [value]="region()"
+            (change)="region.set($any($event.target).value)"
+          >
+            @for (option of regions; track option) {
+              <option [value]="option">{{ option.toUpperCase() }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="go-field">
+          <label class="label" for="go-realm">Realm</label>
+          <input
+            id="go-realm"
+            class="field"
+            type="text"
+            name="realm"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="64"
+            placeholder="Argent Dawn"
+            [value]="realm()"
+            (input)="realm.set($any($event.target).value)"
+          />
+        </div>
+
+        <div class="go-field">
+          <label class="label" for="go-guild-name">Guild name</label>
+          <input
+            id="go-guild-name"
+            class="field"
+            type="text"
+            name="guildName"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="24"
+            placeholder="Ashes of Dawn"
+            [value]="guildName()"
+            (input)="guildName.set($any($event.target).value)"
+          />
+        </div>
+
+        <button class="btn btn-primary go-link-submit" type="submit" [disabled]="!canLink()">
+          {{ linking() ? 'Fetching from Blizzard…' : 'Link guild' }}
+        </button>
+      </form>
+
+      <p class="go-hint">
+        Type the realm and guild name as they appear in game. Linking fetches the guild's roster from
+        Blizzard straight away and uses one call from this community's sync budget.
+      </p>
+    </section>
+  }
+
+  <section class="go-section" aria-labelledby="go-list-heading">
+    <h2 class="go-heading" id="go-list-heading">Followed guilds</h2>
+
+    @switch (state()) {
+      @case ('loading') {
+        <scribe-skeleton [height]="56" [count]="2" />
+      }
+      @case ('error') {
+        <scribe-empty-state
+          heading="Couldn't load this community's guilds"
+          body="Something went wrong reaching AegisScribe. Check your connection and try again."
+          actionLabel="Try again"
+          variant="error"
+          (action)="retry()"
+        />
+      }
+      @case ('loaded') {
+        @if (guilds().length === 0) {
+          <scribe-empty-state heading="No guilds linked yet" [body]="emptyBody()" />
+        } @else {
+          <ul class="go-list">
+            @for (guild of guilds(); track guild.id) {
+              <li class="go-guild">
+                <div class="go-guild-main">
+                  <div class="go-guild-id">
+                    <h3 class="go-guild-name">{{ guild.name }}</h3>
+                    <span class="go-guild-meta">
+                      {{ guild.realmSlug }} · {{ guild.faction }} ·
+                      {{ guild.memberCount }} {{ guild.memberCount === 1 ? 'member' : 'members' }}
+                    </span>
+                  </div>
+
+                  <!-- Staleness is visible: the roster behind this row is only as fresh as this. -->
+                  <scribe-status-pill [state]="syncState(guild)" [label]="syncLabel(guild)" />
+
+                  @if (isOfficer()) {
+                    <div class="go-actions">
+                      <button
+                        class="btn btn-primary btn-sm"
+                        type="button"
+                        [disabled]="busyWith(guild) !== null"
+                        (click)="importMembers(guild)"
+                      >
+                        {{ busyWith(guild) === 'importing' ? 'Importing…' : 'Import members' }}
+                      </button>
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        type="button"
+                        [disabled]="busyWith(guild) !== null"
+                        [attr.aria-label]="'Re-sync ' + guild.name + ' from Blizzard'"
+                        (click)="resync(guild)"
+                      >
+                        {{ busyWith(guild) === 'syncing' ? 'Syncing…' : 'Re-sync' }}
+                      </button>
+                      <!-- Outlined, never filled: a destructive action should not invite the click. -->
+                      <button
+                        class="btn btn-danger btn-sm"
+                        type="button"
+                        [disabled]="busyWith(guild) !== null"
+                        [attr.aria-label]="'Unlink ' + guild.name"
+                        (click)="unlink(guild)"
+                      >
+                        {{ busyWith(guild) === 'unlinking' ? 'Unlinking…' : 'Unlink' }}
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                @if (importResultFor(guild); as result) {
+                  <div class="go-import-result" role="status">
+                    <p>
+                      Imported {{ result.imported }} ·
+                      {{ result.alreadyOnRoster }} already on the roster, left as they were.
+                      <a [routerLink]="rosterLink()">View the roster</a>
+                    </p>
+
+                    @if (result.notInAnyLinkedGuildCount > 0) {
+                      <!--
+                        Reported, never acted on: import is additive, and a character outside every
+                        linked guild is often an alt, a break or a transfer rather than a departure.
+                      -->
+                      <p class="go-unaffiliated">
+                        {{ result.notInAnyLinkedGuildCount }} roster
+                        {{ result.notInAnyLinkedGuildCount === 1 ? 'entry is' : 'entries are' }}
+                        in none of the guilds this community follows. Nothing was removed.
+                      </p>
+                      <ul class="go-unaffiliated-list">
+                        @for (entry of result.notInAnyLinkedGuild; track entry.rosterEntryId) {
+                          <li>{{ entry.characterName }} · {{ entry.realmSlug }}</li>
+                        }
+                      </ul>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </section>
+</section>

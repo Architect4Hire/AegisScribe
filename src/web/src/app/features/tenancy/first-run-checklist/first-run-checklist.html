@@ -45,7 +45,7 @@
               Always a link, never a disabled control: every step is reachable from ordinary
               navigation, and a completed one still goes somewhere useful.
             -->
-            <a class="btn btn-secondary btn-sm fr-go" [routerLink]="step.link">
+            <a class="btn btn-secondary btn-sm fr-go" [routerLink]="step.link" [fragment]="step.fragment">
               {{ step.linkLabel }}
             </a>
           </li>

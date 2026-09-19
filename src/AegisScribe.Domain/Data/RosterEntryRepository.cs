@@ -167,6 +167,7 @@ public class RosterEntryRepository(AegisScribeDbContext db, ITenantContext tenan
                     Id = entry.Id,
                     CharacterId = entry.CharacterId,
                     CharacterName = entry.Character.Name,
+                    Region = entry.Character.Realm.Region,
                     RealmSlug = entry.Character.Realm.Slug,
                     Class = entry.Character.Class,
                     Level = entry.Character.Level,

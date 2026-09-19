@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TenantMembershipServiceModel } from '../../models/auth.models';
 import { TenantSwitcher } from './tenant-switcher';
 
@@ -25,6 +26,7 @@ describe('TenantSwitcher', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TenantSwitcher],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TenantSwitcher);
@@ -88,6 +90,37 @@ describe('TenantSwitcher', () => {
     fixture.detectChanges();
 
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(host.querySelector('.tenant-switch-menu')).toBeNull();
+  });
+
+  it('offers every community and creating one, beneath the other memberships', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    host.querySelector<HTMLButtonElement>('.tenant-switch')?.click();
+    fixture.detectChanges();
+
+    const actions = Array.from(host.querySelectorAll<HTMLAnchorElement>('.tenant-switch-action'));
+    expect(actions.map((a) => a.getAttribute('href'))).toEqual(['/tenants', '/tenants/new']);
+  });
+
+  it('still opens with a single membership, so there is always a way out', () => {
+    fixture.componentRef.setInput('memberships', [memberships[0]]);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    host.querySelector<HTMLButtonElement>('.tenant-switch')?.click();
+    fixture.detectChanges();
+
+    expect(host.querySelectorAll('.tenant-switch-item').length).toBe(0);
+    expect(host.querySelectorAll('.tenant-switch-action').length).toBe(2);
+  });
+
+  it('closes when one of its links is followed', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    host.querySelector<HTMLButtonElement>('.tenant-switch')?.click();
+    fixture.detectChanges();
+    host.querySelector<HTMLAnchorElement>('.tenant-switch-action')?.click();
     fixture.detectChanges();
 
     expect(host.querySelector('.tenant-switch-menu')).toBeNull();

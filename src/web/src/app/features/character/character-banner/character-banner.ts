@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { CharacterDetailServiceModel } from '../../../models/character.models';
 import { CharacterClaimServiceModel } from '../../../models/roster.models';
 import { StatTile } from '../../../shared/stat-tile/stat-tile';
@@ -36,6 +36,21 @@ export class CharacterBanner {
   readonly cleared = output<void>();
 
   readonly portraitInitial = computed(() => this.character().name.charAt(0).toUpperCase());
+
+  // Keyed on the URL it failed for, so navigating to another character with a working avatar is not
+  // stuck on the previous one's failure.
+  private readonly failedAvatar = signal<string | null>(null);
+
+  // The URL the API stored, referenced directly — never rebuilt client-side (frontend.md → "Images
+  // come from Blizzard, referenced directly").
+  readonly avatarUrl = computed(() => {
+    const url = this.character().avatarUrl;
+    return url && url !== this.failedAvatar() ? url : null;
+  });
+
+  onAvatarError(): void {
+    this.failedAvatar.set(this.character().avatarUrl);
+  }
 
   // "argent-dawn" -> "Argent Dawn". The API only carries the slug; this is a display transform of
   // real data, not an invented name.

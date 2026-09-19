@@ -2,7 +2,9 @@
    design/aegisscribe-armory.html §07. The crest here is always the initial-letter fallback tile
    -- the reference explicitly calls that a designed fallback, used until a linked guild crest is
    wired up (frontend.md -> "A guild crest is composed, not fetched"). */
-.tenant-switcher { position: relative; }
+.tenant-switcher {
+  position: relative;
+}
 
 .tenant-switch {
   display: flex;
@@ -14,7 +16,9 @@
   padding: 4px 9px;
   cursor: pointer;
 }
-.tenant-switch:hover { border-color: var(--brass-line); }
+.tenant-switch:hover {
+  border-color: var(--brass-line);
+}
 
 .tenant-crest {
   width: 24px;
@@ -43,14 +47,18 @@
   letter-spacing: 0.09em;
   color: var(--brass);
 }
-.tenant-caret { color: var(--ink-3); font-size: 10px; }
+.tenant-caret {
+  color: var(--ink-3);
+  font-size: 10px;
+}
 
 /* No reference markup for the open dropdown -- built fresh from existing tokens only. */
 .tenant-switch-menu {
   position: absolute;
   top: calc(100% + var(--s-1));
-  left: 0;
   right: 0;
+  min-width: 100%;
+  white-space: nowrap;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -72,5 +80,24 @@
   cursor: pointer;
   text-align: left;
 }
-.tenant-switch-item:last-child { border-bottom: 0; }
-.tenant-switch-item:hover { background: var(--surface-3); }
+.tenant-switch-item:hover {
+  background: var(--surface-3);
+}
+
+/* Navigation out of the active community, beneath the membership list. */
+.tenant-switch-action {
+  font-family: var(--font-ui);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line-soft);
+  padding: var(--s-2) var(--s-3);
+}
+.tenant-switch-action:last-child {
+  border-bottom: 0;
+}
+.tenant-switch-action:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
